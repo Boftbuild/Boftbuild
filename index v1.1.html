@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Bandits of the Framing — Professional framing & structural construction. Serving Utah County & Salt Lake County. Licensed & Insured.">
+<meta property="og:title" content="Bandits of the Framing | BOFT Build">
+<meta property="og:description" content="Professional framing & structural construction in Utah County & Salt Lake County.">
+<meta property="og:url" content="https://www.boftbuild.com">
+<title>Bandits of the Framing | BOFT Build</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --black: #0a0b0d;
+    --black-2: #0f1114;
+    --black-3: #141618;
+    --neon: #00b4ff;
+    --neon-dim: rgba(0,180,255,0.12);
+    --gold: #c8922a;
+    --gold-light: #e8b84b;
+    --gold-dim: rgba(200,146,42,0.12);
+    --text: #e8e2d4;
+    --text-muted: #7a7570;
+    --border: rgba(200,146,42,0.2);
+    --border-neon: rgba(0,180,255,0.25);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* HEX BACKGROUND */
+  .hex-bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 3rem;
+    background: rgba(10,11,13,0.94);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+  }
+
+  .nav-logo {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    letter-spacing: 0.1em;
+    text-decoration: none;
+  }
+
+  .nav-logo span { color: var(--neon); }
+
+  .nav-links {
+    display: flex;
+    gap: 2.5rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+    position: relative;
+  }
+
+  .nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: -4px; left: 0;
+    width: 0; height: 1px;
+    background: var(--gold);
+    transition: width 0.3s;
+  }
+
+  .nav-links a:hover { color: var(--gold-light); }
+  .nav-links a:hover::after { width: 100%; }
+
+  .nav-cta {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--black);
+    background: var(--gold);
+    border: none;
+    padding: 0.5rem 1.4rem;
+    cursor: pointer;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    transition: background 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .nav-cta:hover { background: var(--gold-light); }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 8rem 2rem 4rem;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .hero-content { position: relative; z-index: 2; max-width: 800px; }
+
+  .hero-badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--neon);
+    border: 1px solid var(--border-neon);
+    padding: 0.35rem 1.2rem;
+    margin-bottom: 2rem;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+    background: rgba(0,180,255,0.05);
+  }
+
+  .hero h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(2.2rem, 6vw, 4.5rem);
+    font-weight: 900;
+    line-height: 1.05;
+    color: var(--gold-light);
+    text-shadow: 0 0 60px rgba(200,146,42,0.25);
+    margin-bottom: 0.3rem;
+  }
+
+  .hero h1 .accent {
+    color: var(--text-muted);
+    font-size: 0.55em;
+    display: block;
+    font-weight: 400;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    font-family: 'Rajdhani', sans-serif;
+  }
+
+  .hero-sub {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    margin: 1.5rem auto 2.5rem;
+    max-width: 520px;
+    line-height: 1.8;
+  }
+
+  .hero-sub strong { color: var(--text); font-weight: 600; }
+
+  .hero-btns {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--black);
+    background: var(--gold);
+    border: none;
+    padding: 0.85rem 2.2rem;
+    cursor: pointer;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+    transition: background 0.2s, transform 0.15s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); }
+
+  .btn-secondary {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--neon);
+    background: transparent;
+    border: 1px solid var(--neon);
+    padding: 0.85rem 2.2rem;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-secondary:hover { background: var(--neon-dim); transform: translateY(-1px); }
+
+  /* HEX FRAME HERO */
+  .hero-hex {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(600px, 90vw);
+    height: min(600px, 90vh);
+    pointer-events: none;
+    opacity: 0.1;
+    animation: pulse-neon 4s ease-in-out infinite;
+  }
+
+  /* DIVIDER */
+  .hex-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 3rem;
+    margin: 0 auto;
+    max-width: 1100px;
+    position: relative;
+    z-index: 1;
+  }
+  .hex-divider::before, .hex-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+  }
+  .hex-divider::before { background: linear-gradient(90deg, transparent, var(--border)); }
+  .hex-divider::after { background: linear-gradient(90deg, var(--border), transparent); }
+
+  /* SECTIONS */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 5rem 3rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--neon);
+    margin-bottom: 0.6rem;
+  }
+
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 700;
+    color: var(--gold-light);
+    margin-bottom: 1rem;
+  }
+
+  .section-desc {
+    color: var(--text-muted);
+    max-width: 520px;
+    font-size: 1rem;
+    line-height: 1.8;
+  }
+
+  /* STATS */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    margin: 3rem 0;
+  }
+
+  .stat-item {
+    background: var(--black-2);
+    padding: 2rem 1.5rem;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    display: block;
+  }
+
+  .stat-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+  }
+
+  /* SERVICES */
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5px;
+    margin-top: 3rem;
+    background: var(--border);
+  }
+
+  .service-card {
+    background: var(--black-2);
+    padding: 2.5rem 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+
+  .service-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 0;
+    background: var(--neon);
+    transition: height 0.4s;
+  }
+
+  .service-card:hover { background: var(--black-3); }
+  .service-card:hover::before { height: 100%; }
+
+  .service-num {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 2.5rem;
+    color: rgba(200,146,42,0.1);
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 1rem;
+  }
+
+  .service-icon { width: 42px; height: 42px; margin-bottom: 1.2rem; }
+
+  .service-card h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    margin-bottom: 0.75rem;
+    letter-spacing: 0.05em;
+  }
+
+  .service-card p { font-size: 0.95rem; color: var(--text-muted); line-height: 1.7; }
+
+  .service-tag {
+    display: inline-block;
+    margin-top: 1.2rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--neon);
+    border-top: 1px solid var(--border-neon);
+    padding-top: 0.8rem;
+    width: 100%;
+  }
+
+  /* WHY US */
+  .why-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 3rem;
+  }
+
+  .why-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    background: var(--black-2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .why-item::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: var(--border-neon);
+    transform: scaleX(0);
+    transition: transform 0.3s;
+    transform-origin: left;
+  }
+
+  .why-item:hover::after { transform: scaleX(1); }
+
+  .why-dot {
+    width: 8px; height: 8px;
+    background: var(--neon);
+    flex-shrink: 0;
+    margin-top: 0.4rem;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+
+  .why-dot.gold {
+    background: var(--gold);
+    clip-path: none;
+    border-radius: 2px;
+  }
+
+  .why-item h4 {
+    font-family: 'Cinzel', serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+
+  .why-item p { font-size: 0.88rem; color: var(--text-muted); line-height: 1.6; }
+
+  /* GALLERY */
+  .filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2.5rem;
+    margin-top: 2.5rem;
+  }
+
+  .filter-tab {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 0.45rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  }
+
+  .filter-tab:hover { color: var(--gold-light); border-color: var(--gold); }
+  .filter-tab.active { color: var(--black); background: var(--gold); border-color: var(--gold); }
+
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+  }
+
+  .gallery-grid .featured { grid-column: span 2; grid-row: span 2; }
+
+  .gallery-card {
+    position: relative;
+    overflow: hidden;
+    background: var(--black-2);
+    cursor: pointer;
+    aspect-ratio: 1;
+    transition: opacity 0.3s;
+  }
+
+  .gallery-card.featured { aspect-ratio: unset; }
+
+  .gallery-card-inner {
+    width: 100%; height: 100%;
+    min-height: 200px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .card-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .card-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(10,11,13,0.92) 0%, rgba(10,11,13,0.3) 50%, transparent 100%);
+    opacity: 0;
+    transition: opacity 0.35s;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1.5rem;
+  }
+
+  .gallery-card:hover .card-overlay { opacity: 1; }
+
+  .card-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 1rem 1.2rem 0.9rem;
+    background: linear-gradient(to top, rgba(10,11,13,0.88), transparent);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .card-tag {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--neon);
+    background: rgba(0,180,255,0.1);
+    border: 1px solid var(--border-neon);
+    padding: 0.2rem 0.6rem;
+    clip-path: polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%);
+  }
+
+  .card-tag.gold {
+    color: var(--gold-light);
+    background: var(--gold-dim);
+    border-color: var(--border);
+  }
+
+  .card-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.3rem;
+  }
+
+  .card-sub { font-size: 0.82rem; color: var(--text-muted); }
+
+  .hex-corner {
+    position: absolute;
+    top: 0.8rem; right: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .gallery-card:hover .hex-corner { opacity: 1; }
+
+  .upload-card {
+    background: var(--black-2);
+    border: 1px dashed rgba(200,146,42,0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    aspect-ratio: 1;
+    min-height: 180px;
+  }
+
+  .upload-card:hover { border-color: var(--gold); background: var(--gold-dim); }
+  .upload-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .gallery-cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .gallery-cta p { font-size: 0.95rem; color: var(--text-muted); font-style: italic; }
+
+  /* CONTACT */
+  .contact-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: start;
+    margin-top: 3rem;
+  }
+
+  .contact-info p { font-size: 1rem; color: var(--text-muted); line-height: 1.8; margin-bottom: 2rem; }
+
+  .contact-line {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .contact-line:last-child { border-bottom: none; }
+
+  .contact-line-icon {
+    width: 36px; height: 36px;
+    background: var(--gold-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  }
+
+  .contact-line-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .contact-line-val { font-size: 1rem; font-weight: 600; color: var(--text); }
+  .contact-line a { color: var(--gold-light); text-decoration: none; transition: color 0.2s; }
+  .contact-line a:hover { color: var(--neon); }
+
+  .contact-form {
+    border: 1px solid var(--border);
+    background: var(--black-2);
+    padding: 2rem;
+  }
+
+  .form-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-input {
+    width: 100%;
+    background: var(--black);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.75rem 1rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 1rem;
+  }
+
+  .form-input:focus { border-color: rgba(0,180,255,0.5); }
+
+  textarea.form-input { resize: none; }
+
+  /* FOOTER */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 2.5rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  footer .logo {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+  }
+
+  footer .footer-copy { font-size: 0.8rem; color: var(--text-muted); }
+
+  footer .footer-links {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+  }
+
+  footer .footer-links a {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  footer .footer-links a:hover { color: var(--gold-light); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse-neon {
+    0%, 100% { opacity: 0.08; }
+    50% { opacity: 0.15; }
+  }
+
+  .hero-content > * { animation: fadeUp 0.7s ease both; }
+  .hero-badge { animation-delay: 0.1s; }
+  .hero h1 { animation-delay: 0.25s; }
+  .hero-sub { animation-delay: 0.4s; }
+  .hero-btns { animation-delay: 0.55s; }
+
+  /* MOBILE */
+  @media (max-width: 768px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    section { padding: 4rem 1.5rem; }
+    .why-grid { grid-template-columns: 1fr; }
+    .contact-wrap { grid-template-columns: 1fr; gap: 2rem; }
+    .gallery-grid { grid-template-columns: 1fr 1fr; }
+    .gallery-grid .featured { grid-column: span 2; }
+    footer { flex-direction: column; text-align: center; }
+    .hero { padding: 7rem 1.5rem 3rem; }
+    .hex-divider { padding: 0 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEX BACKGROUND -->
+<div class="hex-bg">
+  <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:0;">
+    <defs>
+      <pattern id="hexPat" x="0" y="0" width="80" height="92" patternUnits="userSpaceOnUse">
+        <polygon points="40,2 74,21 74,71 40,90 6,71 6,21" fill="none" stroke="rgba(200,146,42,0.07)" stroke-width="0.8"/>
+        <polygon points="80,47 114,66 114,116 80,135 46,116 46,66" fill="none" stroke="rgba(200,146,42,0.07)" stroke-width="0.8"/>
+      </pattern>
+      <radialGradient id="heroGrad" cx="50%" cy="40%" r="60%">
+        <stop offset="0%" stop-color="rgba(0,180,255,0.05)"/>
+        <stop offset="50%" stop-color="rgba(200,146,42,0.03)"/>
+        <stop offset="100%" stop-color="transparent"/>
+      </radialGradient>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#hexPat)"/>
+    <rect width="100%" height="100%" fill="url(#heroGrad)"/>
+  </svg>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">BOFT<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#gallery">Gallery</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <a href="tel:8012148570" class="nav-cta">Call Now</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero" style="position:relative;z-index:1;">
+  <div class="hero-content">
+    <div class="hero-badge">Utah County &amp; Salt Lake County</div>
+    <h1>
+      <span class="accent">Bandits of the</span>
+      Framing
+    </h1>
+    <p class="hero-sub">
+      Professional framing &amp; structural construction.<br>
+      <strong>Licensed. Insured. Built to last.</strong>
+    </p>
+    <div class="hero-btns">
+      <a href="tel:8012148570" class="btn-primary">Get a Free Estimate</a>
+      <a href="#services" class="btn-secondary">Our Services</a>
+    </div>
+  </div>
+  <svg class="hero-hex" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="300,20 555,155 555,445 300,580 45,445 45,155" stroke="#00b4ff" stroke-width="1.5"/>
+    <polygon points="300,50 525,170 525,430 300,550 75,430 75,170" stroke="#c8922a" stroke-width="0.5"/>
+  </svg>
+</div>
+
+<!-- DIVIDER -->
+<div class="hex-divider">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <polygon points="12,2 21,7 21,17 12,22 3,17 3,7" stroke="#c8922a" stroke-width="1" fill="rgba(200,146,42,0.1)"/>
+  </svg>
+</div>
+
+<!-- STATS -->
+<section>
+  <div class="stats-row">
+    <div class="stat-item">
+      <span class="stat-num">10+</span>
+      <span class="stat-label">Years Experience</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">500+</span>
+      <span class="stat-label">Projects Completed</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">2</span>
+      <span class="stat-label">Counties Served</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num">100%</span>
+      <span class="stat-label">Licensed &amp; Insured</span>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="section-label">What We Do</div>
+  <h2 class="section-title">Our Services</h2>
+  <p class="section-desc">Structural work done with precision. Every nail, every beam — built to code and built to last.</p>
+  <div class="services-grid">
+    <div class="service-card">
+      <div class="service-num">01</div>
+      <svg class="service-icon" viewBox="0 0 42 42" fill="none">
+        <polygon points="21,3 38,12 38,30 21,39 4,30 4,12" stroke="#c8922a" stroke-width="1.2" fill="rgba(200,146,42,0.08)"/>
+        <path d="M12 28L21 14L30 28" stroke="#c8922a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="14" y1="24" x2="28" y2="24" stroke="#c8922a" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      <h3>Residential Framing</h3>
+      <p>New construction, room additions, and full remodel framing. We frame fast without cutting corners.</p>
+      <span class="service-tag">New Build · Addition · Remodel</span>
+    </div>
+    <div class="service-card">
+      <div class="service-num">02</div>
+      <svg class="service-icon" viewBox="0 0 42 42" fill="none">
+        <polygon points="21,3 38,12 38,30 21,39 4,30 4,12" stroke="#00b4ff" stroke-width="1.2" fill="rgba(0,180,255,0.06)"/>
+        <rect x="13" y="15" width="16" height="14" rx="1" stroke="#00b4ff" stroke-width="1.2"/>
+        <line x1="21" y1="15" x2="21" y2="10" stroke="#00b4ff" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="16" y1="10" x2="26" y2="10" stroke="#00b4ff" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <h3>Structural Repairs</h3>
+      <p>Load-bearing wall modifications, beam replacement, and structural corrections done right the first time.</p>
+      <span class="service-tag" style="color:var(--neon);border-color:var(--border-neon);">Load Bearing · Beam Work · Corrections</span>
+    </div>
+    <div class="service-card">
+      <div class="service-num">03</div>
+      <svg class="service-icon" viewBox="0 0 42 42" fill="none">
+        <polygon points="21,3 38,12 38,30 21,39 4,30 4,12" stroke="#c8922a" stroke-width="1.2" fill="rgba(200,146,42,0.08)"/>
+        <rect x="10" y="24" width="22" height="10" rx="1" stroke="#c8922a" stroke-width="1.2"/>
+        <line x1="14" y1="24" x2="14" y2="18" stroke="#c8922a" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="21" y1="24" x2="21" y2="16" stroke="#c8922a" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="28" y1="24" x2="28" y2="18" stroke="#c8922a" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      <h3>Deck Framing &amp; Builds</h3>
+      <p>Code-compliant deck structures designed for durability. Strong foundations for outdoor living spaces.</p>
+      <span class="service-tag">Deck Build · Code Compliant · Outdoor</span>
+    </div>
+  </div>
+</section>
+
+<!-- GALLERY -->
+<section id="gallery">
+  <div class="section-label">Our Work</div>
+  <h2 class="section-title">Recent Projects</h2>
+  <p class="section-desc">Every job tells a story. Here's some of what we've built across Utah County and Salt Lake County.</p>
+
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="filterGallery('all',this)">All</button>
+    <button class="filter-tab" onclick="filterGallery('framing',this)">Framing</button>
+    <button class="filter-tab" onclick="filterGallery('structural',this)">Structural</button>
+    <button class="filter-tab" onclick="filterGallery('deck',this)">Deck Builds</button>
+  </div>
+
+  <div class="gallery-grid" id="galleryGrid">
+    <!-- FEATURED -->
+    <div class="gallery-card featured" data-cat="framing" onclick="openLight('New Construction Framing','Residential Framing','Eagle Mountain, Utah County')">
+      <div class="gallery-card-inner" style="min-height:400px;">
+        <svg class="card-svg" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+          <rect width="600" height="400" fill="#0d1016"/>
+          <polygon points="80,40 110,57 110,91 80,108 50,91 50,57" fill="none" stroke="rgba(200,146,42,0.08)" stroke-width="1"/>
+          <polygon points="160,10 190,27 190,61 160,78 130,61 130,27" fill="none" stroke="rgba(0,180,255,0.07)" stroke-width="1"/>
+          <polygon points="500,30 530,47 530,81 500,98 470,81 470,47" fill="none" stroke="rgba(200,146,42,0.07)" stroke-width="1"/>
+          <line x1="100" y1="300" x2="100" y2="160" stroke="#c8922a" stroke-width="3" stroke-linecap="round"/>
+          <line x1="500" y1="300" x2="500" y2="160" stroke="#c8922a" stroke-width="3" stroke-linecap="round"/>
+          <line x1="100" y1="300" x2="500" y2="300" stroke="#c8922a" stroke-width="3"/>
+          <line x1="100" y1="160" x2="300" y2="60" stroke="#c8922a" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="500" y1="160" x2="300" y2="60" stroke="#c8922a" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="300" y1="60" x2="300" y2="300" stroke="rgba(200,146,42,0.4)" stroke-width="1.5" stroke-dasharray="6 4"/>
+          <line x1="100" y1="230" x2="500" y2="230" stroke="rgba(200,146,42,0.5)" stroke-width="1.5"/>
+          <line x1="175" y1="160" x2="175" y2="300" stroke="rgba(200,146,42,0.35)" stroke-width="1.5"/>
+          <line x1="250" y1="160" x2="250" y2="300" stroke="rgba(200,146,42,0.35)" stroke-width="1.5"/>
+          <line x1="350" y1="160" x2="350" y2="300" stroke="rgba(200,146,42,0.35)" stroke-width="1.5"/>
+          <line x1="425" y1="160" x2="425" y2="300" stroke="rgba(200,146,42,0.35)" stroke-width="1.5"/>
+          <line x1="150" y1="160" x2="225" y2="100" stroke="rgba(200,146,42,0.3)" stroke-width="1.2"/>
+          <line x1="450" y1="160" x2="375" y2="100" stroke="rgba(200,146,42,0.3)" stroke-width="1.2"/>
+          <line x1="100" y1="160" x2="500" y2="160" stroke="rgba(0,180,255,0.5)" stroke-width="1"/>
+          <circle cx="100" cy="160" r="3" fill="#00b4ff" opacity="0.8"/>
+          <circle cx="500" cy="160" r="3" fill="#00b4ff" opacity="0.8"/>
+          <circle cx="300" cy="60" r="4" fill="#c8922a" opacity="0.9"/>
+          <circle cx="40" cy="30" r="1" fill="rgba(255,255,255,0.4)"/>
+          <circle cx="560" cy="50" r="1.2" fill="rgba(255,255,255,0.3)"/>
+          <circle cx="420" cy="20" r="0.8" fill="rgba(255,255,255,0.5)"/>
+        </svg>
+        <div class="card-overlay">
+          <div class="card-title">New Construction Framing</div>
+          <div class="card-sub">Eagle Mountain, Utah County</div>
+        </div>
+        <div class="card-bar"><span class="card-tag gold">Residential Framing</span></div>
+        <svg class="hex-corner" width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <polygon points="10,1 18,5.5 18,14.5 10,19 2,14.5 2,5.5" stroke="#00b4ff" stroke-width="1" fill="rgba(0,180,255,0.1)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- CARD 2 -->
+    <div class="gallery-card" data-cat="deck" onclick="openLight('Backyard Deck Build','Deck Framing','Provo, Utah County')">
+      <div class="gallery-card-inner">
+        <svg class="card-svg" viewBox="0 0 300 240" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+          <rect width="300" height="240" fill="#0c0f12"/>
+          <rect x="30" y="140" width="240" height="80" fill="rgba(200,146,42,0.05)" stroke="rgba(200,146,42,0.2)" stroke-width="1"/>
+          <line x1="30" y1="155" x2="270" y2="155" stroke="rgba(200,146,42,0.4)" stroke-width="1.5"/>
+          <line x1="30" y1="170" x2="270" y2="170" stroke="rgba(200,146,42,0.4)" stroke-width="1.5"/>
+          <line x1="30" y1="185" x2="270" y2="185" stroke="rgba(200,146,42,0.4)" stroke-width="1.5"/>
+          <line x1="30" y1="200" x2="270" y2="200" stroke="rgba(200,146,42,0.4)" stroke-width="1.5"/>
+          <rect x="40" y="100" width="8" height="40" fill="rgba(200,146,42,0.6)"/>
+          <rect x="146" y="100" width="8" height="40" fill="rgba(200,146,42,0.6)"/>
+          <rect x="252" y="100" width="8" height="40" fill="rgba(200,146,42,0.6)"/>
+          <line x1="30" y1="100" x2="270" y2="100" stroke="#c8922a" stroke-width="2" stroke-linecap="round"/>
+          <line x1="60" y1="100" x2="60" y2="140" stroke="rgba(200,146,42,0.4)" stroke-width="1"/>
+          <line x1="80" y1="100" x2="80" y2="140" stroke="rgba(200,146,42,0.4)" stroke-width="1"/>
+          <line x1="100" y1="100" x2="100" y2="140" stroke="rgba(200,146,42,0.4)" stroke-width="1"/>
+          <line x1="120" y1="100" x2="120" y2="140" stroke="rgba(200,146,42,0.4)" stroke-width="1"/>
+          <line x1="160" y1="100" x2="160" y2="140" stroke="rgba(200,146,42,0.4)" stroke-width="1"/>
+          <line x1="180" y1="100" x2="180" y2="140" stroke="rgba(200,146,42,0.4)" stroke-width="1"/>
+          <line x1="200" y1="100" x2="200" y2="140" stroke="rgba(200,146,42,0.4)" stroke-width="1"/>
+          <line x1="220" y1="100" x2="220" y2="140" stroke="rgba(200,146,42,0.4)" stroke-width="1"/>
+          <line x1="240" y1="100" x2="240" y2="140" stroke="rgba(200,146,42,0.4)" stroke-width="1"/>
+          <line x1="0" y1="220" x2="300" y2="220" stroke="rgba(0,180,255,0.3)" stroke-width="1"/>
+        </svg>
+        <div class="card-overlay">
+          <div class="card-title">Backyard Deck Build</div>
+          <div class="card-sub">Provo, Utah County</div>
+        </div>
+        <div class="card-bar"><span class="card-tag">Deck Build</span></div>
+        <svg class="hex-corner" width="16" height="16" viewBox="0 0 20 20" fill="none">
+          <polygon points="10,1 18,5.5 18,14.5 10,19 2,14.5 2,5.5" stroke="#00b4ff" stroke-width="1" fill="rgba(0,180,255,0.1)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- CARD 3 -->
+    <div class="gallery-card" data-cat="structural" onclick="openLight('LVL Beam Replacement','Structural Repair','Salt Lake County')">
+      <div class="gallery-card-inner">
+        <svg class="card-svg" viewBox="0 0 300 240" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+          <rect width="300" height="240" fill="#0c0f12"/>
+          <rect x="20" y="40" width="260" height="160" fill="rgba(0,180,255,0.03)" stroke="rgba(0,180,255,0.15)" stroke-width="1"/>
+          <rect x="40" y="40" width="10" height="160" fill="rgba(200,146,42,0.25)"/>
+          <rect x="90" y="40" width="10" height="160" fill="rgba(200,146,42,0.25)"/>
+          <rect x="140" y="40" width="10" height="160" fill="rgba(200,146,42,0.25)"/>
+          <rect x="190" y="40" width="10" height="160" fill="rgba(200,146,42,0.25)"/>
+          <rect x="240" y="40" width="10" height="160" fill="rgba(200,146,42,0.25)"/>
+          <rect x="20" y="80" width="260" height="18" fill="rgba(0,180,255,0.12)" stroke="#00b4ff" stroke-width="1.5"/>
+          <text x="150" y="93" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="9" fill="rgba(0,180,255,0.8)" letter-spacing="2">LVL BEAM</text>
+          <circle cx="45" cy="89" r="4" fill="none" stroke="#00b4ff" stroke-width="1" opacity="0.8"/>
+          <circle cx="95" cy="89" r="4" fill="none" stroke="#00b4ff" stroke-width="1" opacity="0.8"/>
+          <circle cx="145" cy="89" r="4" fill="none" stroke="#00b4ff" stroke-width="1" opacity="0.8"/>
+          <circle cx="195" cy="89" r="4" fill="none" stroke="#00b4ff" stroke-width="1" opacity="0.8"/>
+          <circle cx="245" cy="89" r="4" fill="none" stroke="#00b4ff" stroke-width="1" opacity="0.8"/>
+          <line x1="0" y1="200" x2="300" y2="200" stroke="rgba(200,146,42,0.4)" stroke-width="2"/>
+        </svg>
+        <div class="card-overlay">
+          <div class="card-title">LVL Beam Replacement</div>
+          <div class="card-sub">Salt Lake County</div>
+        </div>
+        <div class="card-bar"><span class="card-tag">Structural Repair</span></div>
+        <svg class="hex-corner" width="16" height="16" viewBox="0 0 20 20" fill="none">
+          <polygon points="10,1 18,5.5 18,14.5 10,19 2,14.5 2,5.5" stroke="#00b4ff" stroke-width="1" fill="rgba(0,180,255,0.1)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- CARD 4 -->
+    <div class="gallery-card" data-cat="framing" onclick="openLight('Room Addition Frame','Residential Framing','West Jordan, SL County')">
+      <div class="gallery-card-inner">
+        <svg class="card-svg" viewBox="0 0 300 240" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+          <rect width="300" height="240" fill="#0c0f12"/>
+          <rect x="40" y="60" width="220" height="150" fill="rgba(200,146,42,0.04)" stroke="rgba(200,146,42,0.2)" stroke-width="1"/>
+          <line x1="40" y1="60" x2="40" y2="210" stroke="#c8922a" stroke-width="2.5"/>
+          <line x1="260" y1="60" x2="260" y2="210" stroke="#c8922a" stroke-width="2.5"/>
+          <line x1="40" y1="210" x2="260" y2="210" stroke="#c8922a" stroke-width="2.5"/>
+          <line x1="40" y1="60" x2="260" y2="60" stroke="#c8922a" stroke-width="2.5"/>
+          <line x1="90" y1="60" x2="90" y2="210" stroke="rgba(200,146,42,0.35)" stroke-width="1.2"/>
+          <line x1="140" y1="60" x2="140" y2="210" stroke="rgba(200,146,42,0.35)" stroke-width="1.2"/>
+          <line x1="190" y1="60" x2="190" y2="210" stroke="rgba(200,146,42,0.35)" stroke-width="1.2"/>
+          <line x1="210" y1="60" x2="210" y2="210" stroke="rgba(200,146,42,0.35)" stroke-width="1.2"/>
+          <rect x="100" y="90" width="80" height="70" fill="none" stroke="rgba(0,180,255,0.4)" stroke-width="1.5"/>
+          <line x1="140" y1="90" x2="140" y2="160" stroke="rgba(0,180,255,0.3)" stroke-width="1"/>
+          <line x1="100" y1="125" x2="180" y2="125" stroke="rgba(0,180,255,0.3)" stroke-width="1"/>
+        </svg>
+        <div class="card-overlay">
+          <div class="card-title">Room Addition Frame</div>
+          <div class="card-sub">West Jordan, SL County</div>
+        </div>
+        <div class="card-bar"><span class="card-tag gold">Residential Framing</span></div>
+        <svg class="hex-corner" width="16" height="16" viewBox="0 0 20 20" fill="none">
+          <polygon points="10,1 18,5.5 18,14.5 10,19 2,14.5 2,5.5" stroke="#00b4ff" stroke-width="1" fill="rgba(0,180,255,0.1)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- CARD 5 -->
+    <div class="gallery-card" data-cat="deck" onclick="openLight('Multi-Level Deck','Deck Framing','Lehi, Utah County')">
+      <div class="gallery-card-inner">
+        <svg class="card-svg" viewBox="0 0 300 240" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+          <rect width="300" height="240" fill="#0c0f12"/>
+          <rect x="30" y="160" width="240" height="50" fill="rgba(200,146,42,0.05)" stroke="rgba(200,146,42,0.2)" stroke-width="1"/>
+          <rect x="80" y="100" width="140" height="60" fill="rgba(200,146,42,0.08)" stroke="rgba(200,146,42,0.3)" stroke-width="1.2"/>
+          <rect x="55" y="145" width="30" height="15" fill="rgba(200,146,42,0.15)" stroke="rgba(200,146,42,0.3)" stroke-width="1"/>
+          <rect x="60" y="130" width="20" height="15" fill="rgba(200,146,42,0.12)" stroke="rgba(200,146,42,0.25)" stroke-width="1"/>
+          <line x1="80" y1="90" x2="220" y2="90" stroke="#c8922a" stroke-width="1.5"/>
+          <line x1="90" y1="90" x2="90" y2="100" stroke="rgba(200,146,42,0.5)" stroke-width="1"/>
+          <line x1="110" y1="90" x2="110" y2="100" stroke="rgba(200,146,42,0.5)" stroke-width="1"/>
+          <line x1="130" y1="90" x2="130" y2="100" stroke="rgba(200,146,42,0.5)" stroke-width="1"/>
+          <line x1="150" y1="90" x2="150" y2="100" stroke="rgba(200,146,42,0.5)" stroke-width="1"/>
+          <line x1="170" y1="90" x2="170" y2="100" stroke="rgba(200,146,42,0.5)" stroke-width="1"/>
+          <line x1="190" y1="90" x2="190" y2="100" stroke="rgba(200,146,42,0.5)" stroke-width="1"/>
+          <line x1="210" y1="90" x2="210" y2="100" stroke="rgba(200,146,42,0.5)" stroke-width="1"/>
+          <line x1="80" y1="100" x2="220" y2="100" stroke="rgba(0,180,255,0.5)" stroke-width="1"/>
+          <line x1="30" y1="160" x2="270" y2="160" stroke="rgba(0,180,255,0.3)" stroke-width="1"/>
+        </svg>
+        <div class="card-overlay">
+          <div class="card-title">Multi-Level Deck</div>
+          <div class="card-sub">Lehi, Utah County</div>
+        </div>
+        <div class="card-bar"><span class="card-tag">Deck Build</span></div>
+        <svg class="hex-corner" width="16" height="16" viewBox="0 0 20 20" fill="none">
+          <polygon points="10,1 18,5.5 18,14.5 10,19 2,14.5 2,5.5" stroke="#00b4ff" stroke-width="1" fill="rgba(0,180,255,0.1)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- UPLOAD PLACEHOLDER -->
+    <div class="upload-card">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style="opacity:0.5;">
+        <polygon points="18,2 32,10 32,26 18,34 4,26 4,10" stroke="#c8922a" stroke-width="1.2" fill="rgba(200,146,42,0.08)"/>
+        <line x1="18" y1="23" x2="18" y2="13" stroke="#c8922a" stroke-width="1.5" stroke-linecap="round"/>
+        <polyline points="14,17 18,13 22,17" stroke="#c8922a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="upload-label">Your Photos Coming Soon</span>
+    </div>
+  </div>
+
+  <div class="gallery-cta">
+    <p>More projects completed every week across Utah &amp; Salt Lake County.</p>
+    <a href="https://www.instagram.com/boftbuild/" target="_blank" class="btn-primary">Follow @boftbuild ↗</a>
+  </div>
+</section>
+
+<!-- WHY US -->
+<section id="about">
+  <div class="section-label">Why BOFT</div>
+  <h2 class="section-title">The Bandit Standard</h2>
+  <p class="section-desc">We move fast, we build right, and we don't disappear after the job's done.</p>
+  <div class="why-grid">
+    <div class="why-item">
+      <div class="why-dot"></div>
+      <div>
+        <h4>Licensed &amp; Insured</h4>
+        <p>Full coverage on every job. You're protected, and so is the work.</p>
+      </div>
+    </div>
+    <div class="why-item">
+      <div class="why-dot gold"></div>
+      <div>
+        <h4>Code-Compliant Builds</h4>
+        <p>Every structure built to Utah code. No shortcuts, no surprises at inspection.</p>
+      </div>
+    </div>
+    <div class="why-item">
+      <div class="why-dot"></div>
+      <div>
+        <h4>Fast Turnaround</h4>
+        <p>We respect your timeline. Efficient crews that show up and deliver.</p>
+      </div>
+    </div>
+    <div class="why-item">
+      <div class="why-dot gold"></div>
+      <div>
+        <h4>Local Utah Roots</h4>
+        <p>Serving Utah County &amp; Salt Lake County. We know the terrain, the codes, and the community.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="section-label">Get in Touch</div>
+  <h2 class="section-title">Start Your Project</h2>
+  <div class="contact-wrap">
+    <div class="contact-info">
+      <p>Ready to build? Reach out directly — we respond within 24 hours and offer free estimates on all projects.</p>
+      <div class="contact-line">
+        <div class="contact-line-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M2 3h12v10H2z" stroke="#c8922a" stroke-width="1.2" fill="none"/>
+            <path d="M2 3l6 5.5L14 3" stroke="#c8922a" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="contact-line-label">Email</div>
+          <div class="contact-line-val"><a href="mailto:info@boftbuild.com">info@boftbuild.com</a></div>
+        </div>
+      </div>
+      <div class="contact-line">
+        <div class="contact-line-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 2h3l1.5 4L6 7.5s1 2.5 2.5 2.5L10 8.5 14 10v3c-7 1-12-6-11-11z" stroke="#c8922a" stroke-width="1.2" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+        <div>
+          <div class="contact-line-label">Phone / Text</div>
+          <div class="contact-line-val"><a href="tel:8012148570">801-214-8570</a></div>
+        </div>
+      </div>
+      <div class="contact-line">
+        <div class="contact-line-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="7" r="2.5" stroke="#c8922a" stroke-width="1.2"/>
+            <path d="M8 1C5.2 1 3 3.2 3 6c0 4 5 9 5 9s5-5 5-9c0-2.8-2.2-5-5-5z" stroke="#c8922a" stroke-width="1.2" fill="none"/>
+          </svg>
+        </div>
+        <div>
+          <div class="contact-line-label">Service Area</div>
+          <div class="contact-line-val">Utah County &amp; Salt Lake County, UT</div>
+        </div>
+      </div>
+      <div class="contact-line">
+        <div class="contact-line-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="2" y="2" width="12" height="12" rx="3" stroke="#c8922a" stroke-width="1.2" fill="none"/>
+            <circle cx="8" cy="8" r="2.5" stroke="#c8922a" stroke-width="1.2"/>
+            <circle cx="11.5" cy="4.5" r="0.8" fill="#c8922a"/>
+          </svg>
+        </div>
+        <div>
+          <div class="contact-line-label">Instagram</div>
+          <div class="contact-line-val"><a href="https://www.instagram.com/boftbuild/" target="_blank">@boftbuild</a></div>
+        </div>
+      </div>
+      <div class="contact-line">
+        <div class="contact-line-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="2" y="2" width="12" height="12" rx="3" stroke="#c8922a" stroke-width="1.2" fill="none"/>
+            <path d="M9 8H10.5L11 6.5H9V5.5C9 5 9.2 4.5 10 4.5H11V3.2C11 3.2 10.3 3 9.6 3C8 3 7 4 7 5.5V6.5H5.5V8H7V13H9V8Z" stroke="#c8922a" stroke-width="0.8" fill="none" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="contact-line-label">Facebook</div>
+          <div class="contact-line-val"><a href="https://www.facebook.com/profile.php?id=61587905534771" target="_blank">Bandits of the Framing</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="contact-form">
+      <div class="section-label" style="margin-bottom:1.5rem;">Send a Message</div>
+      <label class="form-label">Name</label>
+      <input type="text" class="form-input" placeholder="Your name">
+      <label class="form-label">Phone or Email</label>
+      <input type="text" class="form-input" placeholder="How should we reach you?">
+      <label class="form-label">Project Details</label>
+      <textarea class="form-input" rows="4" placeholder="Tell us about your project..."></textarea>
+      <button class="btn-primary" style="width:100%;text-align:center;border:none;">Send Message</button>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo">BOFT</div>
+  <ul class="footer-links">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#gallery">Gallery</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="footer-copy">© 2026 Bandits of the Framing LLC. All rights reserved.</div>
+</footer>
+
+<!-- LIGHTBOX -->
+<div id="lightbox" style="display:none;position:fixed;inset:0;background:rgba(10,11,13,0.97);z-index:999;align-items:center;justify-content:center;flex-direction:column;" onclick="closeLightbox(event)">
+  <div style="max-width:800px;width:90%;position:relative;">
+    <button onclick="closeLightbox()" style="position:absolute;top:-2.5rem;right:0;font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--text-muted);background:none;border:none;cursor:pointer;">✕ Close</button>
+    <svg id="lightboxSvg" style="width:100%;border:1px solid var(--border);display:block;" viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg">
+      <rect width="600" height="400" fill="#0d1016"/>
+    </svg>
+    <div style="padding:1rem 0;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);margin-top:1rem;">
+      <span id="lightboxTitle" style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;color:var(--gold-light);"></span>
+      <span id="lightboxTag" style="font-size:0.72rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--neon);"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openLight(title, cat, loc) {
+    document.getElementById('lightboxTitle').textContent = title + ' — ' + loc;
+    document.getElementById('lightboxTag').textContent = cat;
+    const lb = document.getElementById('lightbox');
+    lb.style.display = 'flex';
+  }
+
+  function closeLightbox(e) {
+    if (!e || e.target === document.getElementById('lightbox') || e.currentTarget === document.querySelector('[onclick="closeLightbox()"]')) {
+      document.getElementById('lightbox').style.display = 'none';
+    }
+  }
+
+  function filterGallery(cat, btn) {
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.gallery-card[data-cat]').forEach(card => {
+      const match = cat === 'all' || card.dataset.cat === cat;
+      card.style.opacity = match ? '1' : '0.2';
+      card.style.pointerEvents = match ? 'auto' : 'none';
+    });
+  }
+
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.service-card, .why-item, .stat-item').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(16px)';
+    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    observer.observe(el);
+  });
+</script>
+</body>
+</html>
