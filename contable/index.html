@@ -399,10 +399,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   <div class="modal">
     <div class="modal-header"><div style="display:flex;align-items:center;gap:0.75rem;"><span class="modal-title">Log Income</span><span class="modal-type income">Income</span></div><button class="modal-close" onclick="closeModal('income')">✕</button></div>
     <div class="modal-body">
-      <div class="field-row"><div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="inc-date"></div><div><label class="field-label">Account <span>*</span></label><select class="field-input"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select></div></div>
-      <div class="field-row"><div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" placeholder="0.00" step="0.01"></div><div><label class="field-label">Income Type <span>*</span></label><select class="field-input"><option value="">Select...</option><option>Client Payment</option><option>Owner Injection</option><option>Refund</option><option>Other Income</option></select></div></div>
-      <div class="field-row"><div><label class="field-label">Project / Client</label><input type="text" class="field-input" placeholder="Client or project name"></div><div><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" placeholder="Deck deposit, Final payment..."></div></div>
-      <div class="field-group"><label class="field-label">Receipt / Proof</label><input type="text" class="field-input" placeholder="https://drive.google.com/..."></div>
+      <div class="field-row"><div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="inc-date"></div><div><label class="field-label">Account <span>*</span></label><select class="field-input" id="inc-account"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select></div></div>
+      <div class="field-row"><div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" id="inc-amount" placeholder="0.00" step="0.01"></div><div><label class="field-label">Income Type <span>*</span></label><select class="field-input" id="inc-type"><option value="">Select...</option><option>Client Payment</option><option>Owner Injection</option><option>Refund</option><option>Other Income</option></select></div></div>
+      <div class="field-row"><div><label class="field-label">Project / Client</label><input type="text" class="field-input" id="inc-project" placeholder="Client or project name"></div><div><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" id="inc-description" placeholder="Deck deposit, Final payment..."></div></div>
+      <div class="field-group"><label class="field-label">Receipt / Proof</label><input type="text" class="field-input" id="inc-receipt" placeholder="https://drive.google.com/..."></div>
     </div>
     <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('income')">Cancel</button><button class="btn-submit" onclick="submitForm('income')">Submit Income</button></div>
   </div>
@@ -412,11 +412,11 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   <div class="modal">
     <div class="modal-header"><div style="display:flex;align-items:center;gap:0.75rem;"><span class="modal-title">Log Payment</span><span class="modal-type payment">Payment</span></div><button class="modal-close" onclick="closeModal('payment')">✕</button></div>
     <div class="modal-body">
-      <div class="field-row"><div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="pay-date"></div><div><label class="field-label">Account <span>*</span></label><select class="field-input"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select></div></div>
-      <div class="field-row"><div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" placeholder="0.00" step="0.01"></div><div><label class="field-label">Payment Type <span>*</span></label><select class="field-input"><option value="">Select...</option><option>Helper Payment</option><option>Subcontractor Payment</option><option>Owner Reimbursement</option></select></div></div>
-      <div class="field-row"><div><label class="field-label">Payee <span>*</span></label><select class="field-input"><option value="">Select...</option><option>Juan</option><option>Carlos</option><option>Mike</option><option>Other</option></select></div><div><label class="field-label">Project</label><input type="text" class="field-input" placeholder="Project name (optional)"></div></div>
-      <div class="field-group"><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" placeholder="Framing day, Concrete help..."></div>
-      <div class="field-group"><label class="field-label">Receipt</label><input type="text" class="field-input" placeholder="https://drive.google.com/..."></div>
+      <div class="field-row"><div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="pay-date"></div><div><label class="field-label">Account <span>*</span></label><select class="field-input" id="pay-account"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select></div></div>
+      <div class="field-row"><div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" id="pay-amount" placeholder="0.00" step="0.01"></div><div><label class="field-label">Payment Type <span>*</span></label><select class="field-input" id="pay-type"><option value="">Select...</option><option>Helper Payment</option><option>Subcontractor Payment</option><option>Owner Reimbursement</option></select></div></div>
+      <div class="field-row"><div><label class="field-label">Payee <span>*</span></label><select class="field-input" id="pay-payee"><option value="">Select...</option><option>Juan</option><option>Carlos</option><option>Mike</option><option>Other</option></select></div><div><label class="field-label">Project</label><input type="text" class="field-input" id="pay-project" placeholder="Project name (optional)"></div></div>
+      <div class="field-group"><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" id="pay-description" placeholder="Framing day, Concrete help..."></div>
+      <div class="field-group"><label class="field-label">Receipt</label><input type="text" class="field-input" id="pay-receipt" placeholder="https://drive.google.com/..."></div>
     </div>
     <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('payment')">Cancel</button><button class="btn-submit" onclick="submitForm('payment')">Submit Payment</button></div>
   </div>
@@ -849,12 +849,11 @@ async function confirmDelete() {
 // SUBMIT FORMS
 // ============================================================
 async function submitForm(type) {
-  const modal = document.getElementById('modal-' + type);
-  const inputs = modal.querySelectorAll('.field-input');
-
   let payload = { action: 'add' + type.charAt(0).toUpperCase() + type.slice(1) };
 
   if (type === 'expense') {
+    const modal = document.getElementById('modal-expense');
+    const inputs = modal.querySelectorAll('.field-input');
     payload = {
       ...payload,
       date:        inputs[0].value,
@@ -869,26 +868,28 @@ async function submitForm(type) {
   } else if (type === 'income') {
     payload = {
       ...payload,
-      date:        inputs[0].value,
-      account:     inputs[1].value,
-      amount:      inputs[2].value,
-      incomeType:  inputs[3].value,
-      project:     inputs[4].value,
-      description: inputs[5].value,
-      receipt:     inputs[6].value,
+      date:        document.getElementById('inc-date').value,
+      account:     document.getElementById('inc-account').value,
+      amount:      document.getElementById('inc-amount').value,
+      incomeType:  document.getElementById('inc-type').value,
+      project:     document.getElementById('inc-project').value,
+      description: document.getElementById('inc-description').value,
+      receipt:     document.getElementById('inc-receipt').value,
     };
+    console.log('Income payload:', payload);
   } else if (type === 'payment') {
     payload = {
       ...payload,
-      date:        inputs[0].value,
-      account:     inputs[1].value,
-      amount:      inputs[2].value,
-      paymentType: inputs[3].value,
-      payee:       inputs[4].value,
-      project:     inputs[5].value,
-      description: inputs[6].value,
-      receipt:     inputs[7].value,
+      date:        document.getElementById('pay-date').value,
+      account:     document.getElementById('pay-account').value,
+      amount:      document.getElementById('pay-amount').value,
+      paymentType: document.getElementById('pay-type').value,
+      payee:       document.getElementById('pay-payee').value,
+      project:     document.getElementById('pay-project').value,
+      description: document.getElementById('pay-description').value,
+      receipt:     document.getElementById('pay-receipt').value,
     };
+    console.log('Payment payload:', payload);
   }
 
   closeModal(type);
