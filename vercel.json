@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/proxy.js": {
+      "runtime": "node@18"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" }
+  ]
+}
