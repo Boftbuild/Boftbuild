@@ -1,41 +1,28 @@
-const APPS_SCRIPT_URL = 'https://script.google.com/a/macros/boftbuild.com/s/AKfycbwSdp9oLK0aUb41qbxEia8m5ThAy8fdbsCt20E0KdsEBUXt3Dm4vppcE5MM3WoSv3dP/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwt2QTMPuSym_Lh57Mi1IDQBTY3AgVU1Vl2CgIiSlGw2PUVgTyokWs_HBA1iOPFy7oD/exec';
 
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', 'https://www.boftbuild.com');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token || '';
+  const token = req.headers.authorization?.replace('Bearer ', '') || '';
 
   try {
     let response;
 
     if (req.method === 'GET') {
-      const params = new URLSearchParams({ ...req.query });
-      params.delete('token');
-
+      const params = new URLSearchParams({ ...req.query, token });
       const url = APPS_SCRIPT_URL + '?' + params.toString();
-      response = await fetch(url, {
-        headers: {
-          Authorization: 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
-        redirect: 'follow'
-      });
+      response = await fetch(url, { redirect: 'follow' });
 
     } else if (req.method === 'POST') {
+      const body = { ...req.body, token };
       response = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        headers: {
-          Authorization: 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(req.body),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
         redirect: 'follow'
       });
     }
