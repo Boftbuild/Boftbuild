@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOFT — Sistema Contable</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --black:#0a0b0d;--black2:#0f1114;--black3:#141618;
+  --neon:#00b4ff;--neon-dim:rgba(0,180,255,0.1);
+  --gold:#c8922a;--gold-light:#e8b84b;--gold-dim:rgba(200,146,42,0.12);
+  --text:#e8e2d4;--muted:#7a7570;
+  --border:rgba(200,146,42,0.2);--border-neon:rgba(0,180,255,0.25);
+  --red:#e05555;--green:#4caf7d;
+  --nav-h:52px;
+}
+html{scroll-behavior:smooth;}
+body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;}
+
+/* LOGIN */
+.login-screen{
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--black);
+  position:relative;overflow:hidden;
+}
+.login-hex-bg{position:absolute;inset:0;pointer-events:none;}
+.login-box{
+  background:var(--black2);
+  border:1px solid var(--border);
+  padding:2.5rem 2rem;
+  width:100%;max-width:380px;
+  position:relative;z-index:1;
+  text-align:center;
+}
+.login-logo{font-family:'Cinzel',serif;font-size:2rem;font-weight:700;color:var(--gold-light);margin-bottom:0.25rem;}
+.login-logo span{color:var(--neon);}
+.login-sub{font-size:0.72rem;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:var(--muted);margin-bottom:2rem;}
+.login-label{font-size:0.68rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);display:block;text-align:left;margin-bottom:0.4rem;}
+.login-input{
+  width:100%;background:var(--black);border:1px solid var(--border);
+  color:var(--text);padding:0.75rem 1rem;
+  font-family:'Rajdhani',sans-serif;font-size:1rem;outline:none;
+  transition:border-color 0.2s;margin-bottom:1rem;
+}
+.login-input:focus{border-color:rgba(0,180,255,0.5);}
+.login-btn{
+  width:100%;font-family:'Rajdhani',sans-serif;font-size:0.85rem;font-weight:700;
+  letter-spacing:0.25em;text-transform:uppercase;
+  color:var(--black);background:var(--gold);border:none;
+  padding:0.85rem;cursor:pointer;
+  clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);
+  transition:background 0.2s;margin-top:0.5rem;
+}
+.login-btn:hover{background:var(--gold-light);}
+.login-error{font-size:0.8rem;color:var(--red);margin-top:0.75rem;display:none;}
+.login-error.show{display:block;}
+.login-hex{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.06;pointer-events:none;}
+
+/* DASHBOARD */
+.dashboard{display:none;}
+
+/* STICKY NAV */
+.sticky-nav{
+  position:sticky;top:0;z-index:50;
+  background:rgba(10,11,13,0.97);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(10px);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 2rem;height:var(--nav-h);gap:1rem;
+}
+.nav-logo-sm{font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:var(--gold-light);white-space:nowrap;}
+.nav-logo-sm span{color:var(--neon);}
+.nav-links-sm{display:flex;align-items:center;gap:0.25rem;overflow-x:auto;scrollbar-width:none;}
+.nav-links-sm::-webkit-scrollbar{display:none;}
+.nav-link{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;padding:0.4rem 0.75rem;transition:color 0.2s;white-space:nowrap;border-bottom:2px solid transparent;}
+.nav-link:hover{color:var(--gold-light);}
+.nav-link.active{color:var(--gold-light);border-bottom-color:var(--gold);}
+.nav-right{display:flex;align-items:center;gap:0.75rem;}
+.nav-sync{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.35rem 1rem;cursor:pointer;clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);white-space:nowrap;}
+.nav-logout{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid rgba(122,117,112,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:color 0.2s;}
+.nav-logout:hover{color:var(--red);border-color:rgba(224,85,85,0.4);}
+
+.page{max-width:1100px;margin:0 auto;padding:1.5rem 2rem 3rem;}
+.top-bar{display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0 2rem;border-bottom:1px solid var(--border);margin-bottom:2rem;}
+.top-logo{font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;color:var(--gold-light);}
+.top-logo span{color:var(--neon);}
+.top-badge{font-size:0.7rem;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--neon);border:1px solid var(--border-neon);padding:0.3rem 1rem;background:var(--neon-dim);clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);}
+.section-label{font-size:0.68rem;font-weight:700;letter-spacing:0.35em;text-transform:uppercase;color:var(--neon);margin-bottom:0.5rem;}
+.section-title{font-family:'Cinzel',serif;font-size:1.2rem;font-weight:700;color:var(--gold-light);margin-bottom:1.5rem;}
+
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);margin-bottom:2px;}
+.stat-card{background:var(--black2);padding:1.5rem 1.2rem;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;}
+.stat-card.income::before{background:var(--green);}
+.stat-card.expense::before{background:var(--red);}
+.stat-card.net::before{background:var(--red);}
+.stat-card.missing::before{background:var(--gold);}
+.stat-label{font-size:0.68rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
+.stat-num{font-family:'Cinzel',serif;font-size:1.6rem;font-weight:700;}
+.stat-num.green{color:var(--green);}
+.stat-num.red{color:var(--red);}
+.stat-num.warning{color:var(--gold-light);}
+.stat-sub{font-size:0.72rem;color:var(--muted);margin-top:0.3rem;}
+
+.panel{background:var(--black2);padding:1.5rem;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--border);margin-top:2px;}
+.cash-row{display:flex;align-items:center;justify-content:space-between;padding:0.85rem 0;border-bottom:1px solid rgba(200,146,42,0.1);}
+.cash-row:last-child{border-bottom:none;}
+.cash-account{display:flex;align-items:center;gap:0.75rem;}
+.cash-dot{width:6px;height:6px;border-radius:50%;}
+.cash-dot.bank{background:var(--neon);}
+.cash-dot.venmo{background:var(--gold-light);}
+.cash-dot.cash{background:#a78bfa;}
+.cash-name{font-size:0.9rem;font-weight:600;color:var(--text);}
+.cash-amount{font-size:0.95rem;font-weight:700;font-family:'Cinzel',serif;}
+.cash-amount.neg{color:var(--red);}
+.cash-total-row{display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);}
+.cash-total-label{font-size:0.72rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);}
+.bar-wrap{margin-top:0.75rem;}
+.bar-label-row{display:flex;justify-content:space-between;margin-bottom:0.3rem;}
+.bar-label{font-size:0.75rem;color:var(--muted);}
+.bar-val{font-size:0.75rem;font-weight:600;color:var(--text);}
+.bar-track{height:4px;background:rgba(200,146,42,0.1);border-radius:2px;margin-bottom:0.6rem;}
+.bar-fill{height:4px;border-radius:2px;background:var(--red);}
+.project-row{display:flex;align-items:center;justify-content:space-between;padding:0.85rem 0;border-bottom:1px solid rgba(200,146,42,0.1);}
+.project-row:last-child{border-bottom:none;}
+.project-name{font-size:0.9rem;font-weight:600;color:var(--text);}
+.project-tag{font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:0.15rem 0.5rem;border:1px solid;margin-left:0.5rem;}
+.project-tag.active{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
+.project-tag.closed{color:var(--muted);border-color:rgba(122,117,112,0.3);}
+.project-net{font-size:0.95rem;font-weight:700;font-family:'Cinzel',serif;}
+.project-net.pos{color:var(--green);}
+.project-net.neg{color:var(--red);}
+.ledger-table{width:100%;border-collapse:collapse;font-size:0.85rem;table-layout:fixed;}
+.ledger-table th{font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);padding:0.5rem 0.75rem;text-align:left;border-bottom:1px solid var(--border);}
+.ledger-table td{padding:0.7rem 0.75rem;border-bottom:1px solid rgba(200,146,42,0.08);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.type-badge{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.15rem 0.5rem;border:1px solid;}
+.type-badge.income{color:var(--green);border-color:rgba(76,175,125,0.3);background:rgba(76,175,125,0.08);}
+.type-badge.expense{color:var(--red);border-color:rgba(224,85,85,0.3);background:rgba(224,85,85,0.08);}
+.type-badge.payment{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
+
+.missing-section{margin-top:2px;background:var(--black2);padding:1.5rem;}
+.missing-row{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 0;border-bottom:1px solid rgba(200,146,42,0.08);}
+.missing-row:last-child{border-bottom:none;}
+.missing-info{display:flex;align-items:center;gap:0.75rem;}
+.missing-warn{width:6px;height:6px;background:var(--gold-light);clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%);flex-shrink:0;}
+.missing-desc{font-size:0.88rem;color:var(--text);}
+.missing-cat{font-size:0.72rem;color:var(--muted);}
+.missing-amount{font-size:0.9rem;font-weight:700;color:var(--gold-light);font-family:'Cinzel',serif;}
+.add-receipt-btn{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-light);border:1px solid var(--border);background:var(--gold-dim);padding:0.2rem 0.6rem;cursor:pointer;transition:background 0.2s;}
+.add-receipt-btn:hover{background:rgba(200,146,42,0.25);}
+
+.reports-section{margin-top:2px;background:var(--black2);padding:1.5rem;}
+.reports-actions{display:flex;gap:0.75rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+.btn-action{font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;border:none;padding:0.55rem 1.4rem;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all 0.2s;}
+.btn-action.gold{color:var(--black);background:var(--gold);}
+.btn-action.gold:hover{background:var(--gold-light);}
+.btn-action.outline{color:var(--neon);background:transparent;border:1px solid var(--neon);clip-path:none;}
+.btn-action.outline:hover{background:var(--neon-dim);}
+.btn-action.danger{color:var(--red);background:transparent;border:1px solid rgba(224,85,85,0.4);clip-path:none;}
+.report-row{display:flex;align-items:center;justify-content:space-between;padding:0.85rem 0;border-bottom:1px solid rgba(200,146,42,0.08);}
+.report-row:last-child{border-bottom:none;}
+.report-info{display:flex;align-items:center;gap:0.75rem;}
+.report-icon{width:32px;height:32px;background:rgba(224,85,85,0.1);border:1px solid rgba(224,85,85,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:var(--red);}
+.report-name{font-size:0.88rem;font-weight:600;color:var(--text);}
+.report-meta{font-size:0.72rem;color:var(--muted);}
+.report-btns{display:flex;gap:0.5rem;}
+.btn-sm{font-family:'Rajdhani',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:0.28rem 0.75rem;cursor:pointer;border:1px solid;background:transparent;transition:all 0.2s;}
+.btn-sm.view{color:var(--neon);border-color:var(--border-neon);}
+.btn-sm.view:hover{background:var(--neon-dim);}
+.btn-sm.dl{color:var(--gold-light);border-color:var(--border);}
+.btn-sm.dl:hover{background:var(--gold-dim);}
+
+.search-section{margin-top:2px;background:var(--black2);padding:1.5rem;}
+.search-bar{display:flex;gap:0.75rem;margin-bottom:1rem;align-items:center;}
+.search-input{flex:1;background:var(--black);border:1px solid var(--border);color:var(--text);padding:0.65rem 1rem;font-family:'Rajdhani',sans-serif;font-size:0.95rem;outline:none;transition:border-color 0.2s;}
+.search-input:focus{border-color:rgba(0,180,255,0.5);}
+.search-input::placeholder{color:var(--muted);}
+.btn-search{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.65rem 1.4rem;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);white-space:nowrap;}
+.filters-row{display:grid;grid-template-columns:repeat(5,1fr);gap:0.5rem;margin-bottom:1.5rem;}
+.filter-select{background:var(--black);border:1px solid var(--border);color:var(--muted);padding:0.5rem 0.6rem;font-family:'Rajdhani',sans-serif;font-size:0.78rem;outline:none;width:100%;}
+.filter-select:focus{border-color:var(--border-neon);color:var(--text);}
+.filter-select option{background:var(--black2);}
+.search-results{border-top:1px solid var(--border);padding-top:1rem;}
+.result-row{display:flex;align-items:center;justify-content:space-between;padding:0.85rem 0;border-bottom:1px solid rgba(200,146,42,0.06);gap:0.75rem;}
+.result-row:last-child{border-bottom:none;}
+.result-left{display:flex;align-items:center;gap:0.75rem;min-width:0;flex:1;}
+.result-info{min-width:0;}
+.result-desc{font-size:0.88rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.result-meta{font-size:0.72rem;color:var(--muted);}
+.result-right{display:flex;align-items:center;gap:0.6rem;flex-shrink:0;}
+.result-amount{font-size:0.92rem;font-weight:700;font-family:'Cinzel',serif;}
+.result-amount.neg{color:var(--red);}
+.result-amount.pos{color:var(--green);}
+.receipt-btn{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--neon);border:1px solid var(--border-neon);background:var(--neon-dim);padding:0.2rem 0.6rem;cursor:pointer;white-space:nowrap;}
+.results-count{font-size:0.75rem;color:var(--muted);margin-bottom:0.75rem;}
+
+.forms-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--border);margin-top:2px;}
+.form-card{background:var(--black2);padding:1.5rem;display:flex;flex-direction:column;gap:0.75rem;cursor:pointer;transition:background 0.2s;position:relative;overflow:hidden;}
+.form-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--neon);transform:scaleX(0);transition:transform 0.3s;transform-origin:left;}
+.form-card:hover{background:var(--black3);}
+.form-card:hover::after{transform:scaleX(1);}
+.form-icon{width:36px;height:36px;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);}
+.form-card h4{font-family:'Cinzel',serif;font-size:0.95rem;font-weight:700;color:var(--gold-light);}
+.form-card p{font-size:0.8rem;color:var(--muted);line-height:1.5;}
+.form-arrow{font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--neon);margin-top:auto;}
+
+.success-toast{display:none;align-items:center;gap:0.75rem;background:var(--black3);border:1px solid rgba(76,175,125,0.4);border-left:3px solid var(--green);padding:0.75rem 1rem;margin-bottom:1rem;position:sticky;top:calc(var(--nav-h) + 8px);z-index:40;}
+.success-toast.show{display:flex;}
+.toast-text{font-size:0.85rem;color:var(--green);font-weight:600;}
+
+.confirm-overlay{display:none;position:fixed;inset:0;background:rgba(5,6,8,0.97);z-index:200;align-items:center;justify-content:center;}
+.confirm-overlay.open{display:flex;}
+.confirm-box{background:var(--black2);border:1px solid var(--border);padding:2rem;max-width:400px;width:90%;text-align:center;}
+.confirm-title{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold-light);margin-bottom:0.75rem;}
+.confirm-desc{font-size:0.88rem;color:var(--muted);line-height:1.6;margin-bottom:1.5rem;}
+.confirm-btns{display:flex;gap:0.75rem;justify-content:center;}
+
+/* MODAL FORMS */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(5,6,8,0.96);z-index:100;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--black2);border:1px solid var(--border);width:100%;max-width:540px;position:relative;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);}
+.modal-title{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold-light);}
+.modal-type{font-size:0.68rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;padding:0.2rem 0.75rem;clip-path:polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%);}
+.modal-type.expense{color:var(--red);border:1px solid rgba(224,85,85,0.4);background:rgba(224,85,85,0.08);}
+.modal-type.income{color:var(--green);border:1px solid rgba(76,175,125,0.4);background:rgba(76,175,125,0.08);}
+.modal-type.payment{color:var(--gold-light);border:1px solid var(--border);background:var(--gold-dim);}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;line-height:1;padding:0.2rem;}
+.modal-close:hover{color:var(--text);}
+.modal-body{padding:1.5rem;}
+.field-group{margin-bottom:1rem;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;}
+.field-label{font-size:0.68rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:0.4rem;}
+.field-label span{color:var(--red);margin-left:2px;}
+.field-input{width:100%;background:var(--black);border:1px solid var(--border);color:var(--text);padding:0.65rem 0.9rem;font-family:'Rajdhani',sans-serif;font-size:0.92rem;outline:none;transition:border-color 0.2s;}
+.field-input:focus{border-color:rgba(0,180,255,0.5);}
+.field-input option{background:var(--black2);}
+.field-hint{font-size:0.72rem;color:var(--muted);margin-top:0.3rem;}
+.modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.btn-submit{font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.65rem 1.8rem;cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);transition:background 0.2s;}
+.btn-submit:hover{background:var(--gold-light);}
+.btn-cancel{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;}
+.btn-cancel:hover{color:var(--text);}
+
+@media(max-width:700px){
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .two-col{grid-template-columns:1fr;}
+  .forms-grid{grid-template-columns:1fr;}
+  .filters-row{grid-template-columns:1fr 1fr;}
+  .sticky-nav{padding:0 1rem;}
+  .field-row{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <svg class="login-hex" width="600" height="600" viewBox="0 0 600 600" fill="none">
+    <polygon points="300,20 555,155 555,445 300,580 45,445 45,155" stroke="#00b4ff" stroke-width="1"/>
+    <polygon points="300,60 520,175 520,425 300,540 80,425 80,175" stroke="#c8922a" stroke-width="0.5"/>
+  </svg>
+  <div class="login-box">
+    <div class="login-logo">BOFT<span>.</span></div>
+    <div class="login-sub">Sistema Contable Interno</div>
+    <label class="login-label">Username</label>
+    <input type="text" class="login-input" id="loginUser" placeholder="Enter username" autocomplete="off">
+    <label class="login-label">Password</label>
+    <input type="password" class="login-input" id="loginPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">Access System</button>
+    <div class="login-error" id="loginError">Invalid credentials. Try again.</div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard">
+
+  <nav class="sticky-nav">
+    <div class="nav-logo-sm">BOFT<span>.</span></div>
+    <div class="nav-links-sm">
+      <button class="nav-link active" onclick="navTo('sec-dashboard',this)">Dashboard</button>
+      <button class="nav-link" onclick="navTo('sec-missing',this)">Missing</button>
+      <button class="nav-link" onclick="navTo('sec-reports',this)">Reports</button>
+      <button class="nav-link" onclick="navTo('sec-search',this)">Search</button>
+      <button class="nav-link" onclick="navTo('sec-entry',this)">New Entry</button>
+    </div>
+    <div class="nav-right">
+      <button class="nav-sync" onclick="showToast('Syncing with Google Sheets...')">Sync</button>
+      <button class="nav-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </nav>
+
+  <div class="page">
+    <div class="top-bar">
+      <div>
+        <div class="top-logo">BOFT<span>.</span></div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">Sistema Contable Interno — Demo</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:1rem;">
+        <span style="font-size:0.75rem;color:var(--muted);">Last sync: — / — / —</span>
+        <div class="top-badge">Confidential</div>
+      </div>
+    </div>
+
+    <div id="toast" class="success-toast">
+      <span style="font-size:18px;color:var(--green);">✓</span>
+      <span class="toast-text" id="toastText">Done.</span>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="sec-dashboard">
+      <div class="section-label">Financial Overview</div>
+      <div class="section-title">Dashboard</div>
+      <div class="stats-grid">
+        <div class="stat-card income"><div class="stat-label">Total Income</div><div class="stat-num green">$2,500.00</div><div class="stat-sub">1 transaction</div></div>
+        <div class="stat-card expense"><div class="stat-label">Total Expenses</div><div class="stat-num red">-$24,381.01</div><div class="stat-sub">8 transactions</div></div>
+        <div class="stat-card net"><div class="stat-label">Net Profit</div><div class="stat-num red">-$21,881.01</div><div class="stat-sub">YTD 2026</div></div>
+        <div class="stat-card missing"><div class="stat-label">Missing Receipts</div><div class="stat-num warning">4</div><div class="stat-sub">Pending upload</div></div>
+      </div>
+      <div class="two-col">
+        <div class="panel">
+          <div class="section-label">Cash Position</div>
+          <div class="cash-row"><div class="cash-account"><div class="cash-dot bank"></div><span class="cash-name">Bank BOFT</span></div><span class="cash-amount neg">-$3,561.60</span></div>
+          <div class="cash-row"><div class="cash-account"><div class="cash-dot venmo"></div><span class="cash-name">Venmo BOFT</span></div><span class="cash-amount neg">-$17,763.00</span></div>
+          <div class="cash-row"><div class="cash-account"><div class="cash-dot cash"></div><span class="cash-name">Cash BOFT</span></div><span class="cash-amount neg">-$806.41</span></div>
+          <div class="cash-total-row"><span class="cash-total-label">Total Available</span><span class="cash-amount neg" style="font-size:1.2rem;">-$22,131.01</span></div>
+          <div style="margin-top:1.5rem;">
+            <div class="section-label">Expense Breakdown</div>
+            <div class="bar-wrap">
+              <div class="bar-label-row"><span class="bar-label">Lumber</span><span class="bar-val">$20,263</span></div>
+              <div class="bar-track"><div class="bar-fill" style="width:100%"></div></div>
+              <div class="bar-label-row"><span class="bar-label">Vehicle Maintenance</span><span class="bar-val">$3,516</span></div>
+              <div class="bar-track"><div class="bar-fill" style="width:17%"></div></div>
+              <div class="bar-label-row"><span class="bar-label">Tools</span><span class="bar-val">$321</span></div>
+              <div class="bar-track"><div class="bar-fill" style="width:6%"></div></div>
+              <div class="bar-label-row"><span class="bar-label">Workwear / PPE</span><span class="bar-val">$235</span></div>
+              <div class="bar-track"><div class="bar-fill" style="width:4%"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="section-label">Project Analysis</div>
+          <div class="project-row"><div><span class="project-name">Client</span><span class="project-tag active">Active</span></div><span class="project-net pos">+$2,500</span></div>
+          <div class="project-row"><div><span class="project-name">Mi papa</span><span class="project-tag closed">Closed</span></div><span class="project-net neg">-$20,263</span></div>
+          <div class="project-row"><div><span class="project-name">Mi casa</span><span class="project-tag active">Active</span></div><span class="project-net" style="color:var(--muted);">—</span></div>
+          <div style="margin-top:1.5rem;">
+            <div class="section-label">Recent Ledger</div>
+            <table class="ledger-table">
+              <thead><tr><th style="width:85px;">Type</th><th>Description</th><th style="text-align:right;width:75px;">Amount</th></tr></thead>
+              <tbody>
+                <tr><td><span class="type-badge income">Income</span></td><td>Deposit Deck</td><td style="text-align:right;color:var(--green);">+$2,500</td></tr>
+                <tr><td><span class="type-badge expense">Expense</span></td><td>Change Oil</td><td style="text-align:right;color:var(--red);">-$2,016</td></tr>
+                <tr><td><span class="type-badge expense">Expense</span></td><td>Drill Dewalt</td><td style="text-align:right;color:var(--red);">-$321</td></tr>
+                <tr><td><span class="type-badge payment">Payment</span></td><td>Framing Day</td><td style="text-align:right;color:var(--gold-light);">-$250</td></tr>
+                <tr><td><span class="type-badge expense">Expense</span></td><td>Botas</td><td style="text-align:right;color:var(--red);">-$235</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MISSING -->
+    <div id="sec-missing" style="margin-top:2rem;">
+      <div class="section-label">Compliance</div>
+      <div class="section-title">Missing Receipts</div>
+    </div>
+    <div class="missing-section">
+      <div class="missing-row"><div class="missing-info"><div class="missing-warn"></div><div><div class="missing-desc">Change oil — Bank BOFT</div><div class="missing-cat">Vehicle Maintenance · Mar 2026</div></div></div><div style="display:flex;align-items:center;gap:0.75rem;"><span class="missing-amount">$1,500</span><button class="add-receipt-btn" onclick="showToast('Receipt upload — coming soon with Opción 1')">+ Add Receipt</button></div></div>
+      <div class="missing-row"><div class="missing-info"><div class="missing-warn"></div><div><div class="missing-desc">10 2x6 — Venmo BOFT</div><div class="missing-cat">Lumber · Jan 2026</div></div></div><div style="display:flex;align-items:center;gap:0.75rem;"><span class="missing-amount">$20,263</span><button class="add-receipt-btn" onclick="showToast('Receipt upload — coming soon with Opción 1')">+ Add Receipt</button></div></div>
+      <div class="missing-row"><div class="missing-info"><div class="missing-warn"></div><div><div class="missing-desc">Change Oil — Bank BOFT</div><div class="missing-cat">Vehicle Maintenance · Dec 2026</div></div></div><div style="display:flex;align-items:center;gap:0.75rem;"><span class="missing-amount">$2,016</span><button class="add-receipt-btn" onclick="showToast('Receipt upload — coming soon with Opción 1')">+ Add Receipt</button></div></div>
+      <div class="missing-row"><div class="missing-info"><div class="missing-warn"></div><div><div class="missing-desc">Google Voice — Bank BOFT</div><div class="missing-cat">Software · May 2026</div></div></div><div style="display:flex;align-items:center;gap:0.75rem;"><span class="missing-amount">$10</span><button class="add-receipt-btn" onclick="showToast('Receipt upload — coming soon with Opción 1')">+ Add Receipt</button></div></div>
+    </div>
+
+    <!-- REPORTS -->
+    <div id="sec-reports" style="margin-top:2rem;">
+      <div class="section-label">Financial Reports</div>
+      <div class="section-title">Reports & Monthly Close</div>
+    </div>
+    <div class="reports-section">
+      <div class="reports-actions">
+        <button class="btn-action gold" onclick="showToast('Generating Financial Snapshot PDF...')">&#128202; Generate Snapshot</button>
+        <button class="btn-action outline" onclick="openConfirm()">&#128197; Close Month</button>
+      </div>
+      <div class="section-label" style="margin-bottom:1rem;">Saved Reports — Google Drive</div>
+      <div class="report-row"><div class="report-info"><div class="report-icon">PDF</div><div><div class="report-name">BOFT_Financial_Snapshot_2026-03-20</div><div class="report-meta">Generated · Mar 20, 2026 · 4:48 PM</div></div></div><div class="report-btns"><button class="btn-sm view">View</button><button class="btn-sm dl">Download</button></div></div>
+      <div class="report-row"><div class="report-info"><div class="report-icon">PDF</div><div><div class="report-name">BOFT_Financial_Snapshot_2026-02-28</div><div class="report-meta">Monthly Close · Feb 28, 2026</div></div></div><div class="report-btns"><button class="btn-sm view">View</button><button class="btn-sm dl">Download</button></div></div>
+      <div class="report-row"><div class="report-info"><div class="report-icon">PDF</div><div><div class="report-name">BOFT_Financial_Snapshot_2026-01-31</div><div class="report-meta">Monthly Close · Jan 31, 2026</div></div></div><div class="report-btns"><button class="btn-sm view">View</button><button class="btn-sm dl">Download</button></div></div>
+    </div>
+
+    <!-- SEARCH -->
+    <div id="sec-search" style="margin-top:2rem;">
+      <div class="section-label">Transaction Search</div>
+      <div class="section-title">Search Receipts & Transactions</div>
+    </div>
+    <div class="search-section">
+      <div class="search-bar">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search by description, vendor, payee, project..." oninput="runSearch()">
+        <button class="btn-search" onclick="runSearch()">Search</button>
+      </div>
+      <div class="filters-row">
+        <select class="filter-select" onchange="runSearch()"><option value="">All Types</option><option>Expense</option><option>Income</option><option>Payment</option></select>
+        <select class="filter-select" onchange="runSearch()"><option value="">All Accounts</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select>
+        <select class="filter-select" onchange="runSearch()"><option value="">All Categories</option><option>Lumber</option><option>Vehicle Maintenance</option><option>Tools</option><option>Workwear / PPE</option><option>Software</option><option>Subscriptions</option></select>
+        <select class="filter-select" onchange="runSearch()"><option value="">All Projects</option><option>Client</option><option>Mi papa</option><option>Mi casa</option></select>
+        <select class="filter-select" onchange="runSearch()"><option value="">All Months</option><option>Jan 2026</option><option>Feb 2026</option><option>Mar 2026</option><option>Apr 2026</option><option>May 2026</option></select>
+      </div>
+      <div class="search-results">
+        <div class="results-count" id="resultsCount">Showing 10 transactions</div>
+        <div id="resultsList"></div>
+      </div>
+    </div>
+
+    <!-- ENTRY -->
+    <div id="sec-entry" style="margin-top:2rem;">
+      <div class="section-label">Quick Entry</div>
+      <div class="section-title">New Transaction</div>
+    </div>
+    <div class="forms-grid">
+      <div class="form-card" onclick="openModal('expense')">
+        <div class="form-icon" style="font-size:18px;color:var(--red);">&#8595;</div>
+        <h4>Log Expense</h4>
+        <p>Materials, tools, fuel, vehicle, subscriptions and more.</p>
+        <span class="form-arrow">Open Form →</span>
+      </div>
+      <div class="form-card" onclick="openModal('income')">
+        <div class="form-icon" style="font-size:18px;color:var(--green);">&#8593;</div>
+        <h4>Log Income</h4>
+        <p>Client payments, deposits, owner injections and refunds.</p>
+        <span class="form-arrow">Open Form →</span>
+      </div>
+      <div class="form-card" onclick="openModal('payment')">
+        <div class="form-icon" style="font-size:18px;color:var(--gold-light);">&#128101;</div>
+        <h4>Log Payment</h4>
+        <p>Helper payments, subcontractors and owner reimbursements.</p>
+        <span class="form-arrow">Open Form →</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXPENSE -->
+<div id="modal-expense" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><div style="display:flex;align-items:center;gap:0.75rem;"><span class="modal-title">Log Expense</span><span class="modal-type expense">Expense</span></div><button class="modal-close" onclick="closeModal('expense')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="exp-date"></div>
+        <div><label class="field-label">Account <span>*</span></label><select class="field-input"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" placeholder="0.00" step="0.01"></div>
+        <div><label class="field-label">Category <span>*</span></label>
+          <select class="field-input"><option value="">Select...</option><optgroup label="Materials"><option>Materials</option><option>Lumber</option><option>Fasteners</option><option>Hardware</option><option>Consumables</option></optgroup><optgroup label="Tools"><option>Tools</option><option>Tool Repair</option><option>Equipment Rental</option></optgroup><optgroup label="Vehicle"><option>Fuel</option><option>Vehicle Maintenance</option><option>Vehicle Insurance</option><option>Vehicle Registration</option><option>Parking / Tolls</option></optgroup><optgroup label="Operations"><option>Workwear / PPE</option><option>Software</option><option>Subscriptions</option><option>Professional Services</option><option>Bank Fees</option><option>Licenses</option></optgroup><optgroup label="Marketing"><option>Website</option><option>Ads</option><option>Printing</option><option>Branding</option><option>Camera / Media Equipment</option></optgroup><optgroup label="Labor"><option>Labor Helpers</option><option>Subcontractor</option><option>Crew Food</option></optgroup><option>Misc</option></select>
+        </div>
+      </div>
+      <div class="field-group"><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" placeholder="e.g. Drill Dewalt, Gas truck..."></div>
+      <div class="field-row">
+        <div><label class="field-label">Vendor</label><input type="text" class="field-input" placeholder="Home Depot, Lowe's, Amazon..."></div>
+        <div><label class="field-label">Project</label><input type="text" class="field-input" placeholder="Project name (optional)"></div>
+      </div>
+      <div class="field-group"><label class="field-label">Receipt (Google Drive link)</label><input type="text" class="field-input" placeholder="https://drive.google.com/..."><div class="field-hint">Paste Drive link — direct upload coming soon</div></div>
+    </div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('expense')">Cancel</button><button class="btn-submit" onclick="submitForm('expense')">Submit Expense</button></div>
+  </div>
+</div>
+
+<!-- MODAL INCOME -->
+<div id="modal-income" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><div style="display:flex;align-items:center;gap:0.75rem;"><span class="modal-title">Log Income</span><span class="modal-type income">Income</span></div><button class="modal-close" onclick="closeModal('income')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="inc-date"></div>
+        <div><label class="field-label">Account <span>*</span></label><select class="field-input"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" placeholder="0.00" step="0.01"></div>
+        <div><label class="field-label">Income Type <span>*</span></label><select class="field-input"><option value="">Select...</option><option>Client Payment</option><option>Owner Injection</option><option>Refund</option><option>Other Income</option></select></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Project / Client</label><input type="text" class="field-input" placeholder="Client or project name"></div>
+        <div><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" placeholder="Deck deposit, Final payment..."></div>
+      </div>
+      <div class="field-group"><label class="field-label">Receipt / Proof</label><input type="text" class="field-input" placeholder="https://drive.google.com/..."><div class="field-hint">Screenshot, Venmo confirm, check photo</div></div>
+    </div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('income')">Cancel</button><button class="btn-submit" onclick="submitForm('income')">Submit Income</button></div>
+  </div>
+</div>
+
+<!-- MODAL PAYMENT -->
+<div id="modal-payment" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><div style="display:flex;align-items:center;gap:0.75rem;"><span class="modal-title">Log Payment</span><span class="modal-type payment">Payment</span></div><button class="modal-close" onclick="closeModal('payment')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="pay-date"></div>
+        <div><label class="field-label">Account <span>*</span></label><select class="field-input"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" placeholder="0.00" step="0.01"></div>
+        <div><label class="field-label">Payment Type <span>*</span></label><select class="field-input"><option value="">Select...</option><option>Helper Payment</option><option>Subcontractor Payment</option><option>Owner Reimbursement</option></select></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Payee <span>*</span></label><select class="field-input"><option value="">Select...</option><option>Juan</option><option>Carlos</option><option>Mike</option><option>Other</option></select></div>
+        <div><label class="field-label">Project</label><input type="text" class="field-input" placeholder="Project name (optional)"></div>
+      </div>
+      <div class="field-group"><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" placeholder="Framing day, Concrete help..."></div>
+      <div class="field-group"><label class="field-label">Receipt</label><input type="text" class="field-input" placeholder="https://drive.google.com/..."></div>
+    </div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('payment')">Cancel</button><button class="btn-submit" onclick="submitForm('payment')">Submit Payment</button></div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div id="confirm-overlay" class="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title">Close Month?</div>
+    <div class="confirm-desc">This will close <strong style="color:var(--gold-light);">April 2026</strong> and save a snapshot to MONTHLY_CLOSE. This cannot be undone.</div>
+    <div class="confirm-btns">
+      <button class="btn-action danger" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-action gold" onclick="confirmClose()">Confirm Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PASS='1234';
+
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
+  if(p===PASS){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+    runSearch();
+  } else {
+    document.getElementById('loginError').classList.add('show');
+    document.getElementById('loginPass').value='';
+  }
+}
+
+function doLogout(){
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+  document.getElementById('loginError').classList.remove('show');
+}
+
+const transactions=[
+  {type:'Income',desc:'Deposit Deck',cat:'Client Payment',account:'Venmo BOFT',project:'Client',amount:2500,date:'Dec 2026',receipt:true},
+  {type:'Expense',desc:'Change Oil — Jeffy Lube',cat:'Vehicle Maintenance',account:'Bank BOFT',project:'',amount:-2016,date:'Dec 2026',receipt:false},
+  {type:'Expense',desc:'Change oil — Larry H',cat:'Vehicle Maintenance',account:'Bank BOFT',project:'',amount:-1500,date:'Mar 2026',receipt:false},
+  {type:'Expense',desc:'Drill Dewalt',cat:'Tools',account:'Cash BOFT',project:'',amount:-321.02,date:'Feb 2026',receipt:true},
+  {type:'Payment',desc:'Framing Day',cat:'Helper Payment',account:'Cash BOFT',project:'Mi casa',amount:-250,date:'Mar 2026',receipt:true},
+  {type:'Expense',desc:'Botas',cat:'Workwear / PPE',account:'Cash BOFT',project:'',amount:-235.39,date:'Mar 2026',receipt:true},
+  {type:'Expense',desc:'10 2x6 — Lumber',cat:'Lumber',account:'Venmo BOFT',project:'Mi papa',amount:-20263,date:'Jan 2026',receipt:false},
+  {type:'Expense',desc:'Google Voice',cat:'Software',account:'Bank BOFT',project:'',amount:-10,date:'May 2026',receipt:false},
+  {type:'Expense',desc:'Aseguranza',cat:'Vehicle Insurance',account:'Bank BOFT',project:'',amount:-35.6,date:'Mar 2026',receipt:true},
+  {type:'Expense',desc:'SquareSpace Dominio',cat:'Subscriptions',account:'Cash BOFT',project:'',amount:-26.84,date:'Apr 2026',receipt:true},
+];
+
+function runSearch(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const filtered=transactions.filter(t=>!q||t.desc.toLowerCase().includes(q)||t.cat.toLowerCase().includes(q)||t.project.toLowerCase().includes(q));
+  document.getElementById('resultsCount').textContent='Showing '+filtered.length+' transaction'+(filtered.length!==1?'s':'');
+  document.getElementById('resultsList').innerHTML=filtered.map(t=>`
+    <div class="result-row">
+      <div class="result-left">
+        <span class="type-badge ${t.type.toLowerCase()}">${t.type}</span>
+        <div class="result-info">
+          <div class="result-desc">${t.desc}</div>
+          <div class="result-meta">${t.cat} · ${t.account} · ${t.date}${t.project?' · '+t.project:''}</div>
+        </div>
+      </div>
+      <div class="result-right">
+        <span class="result-amount ${t.amount<0?'neg':'pos'}">${t.amount<0?'-':'+'}&dollar;${Math.abs(t.amount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
+        ${t.receipt
+          ?'<button class="receipt-btn">View Receipt</button>'
+          :'<button class="add-receipt-btn" onclick="showToast(\'Receipt upload — Opción 1 coming\')">+ Add Receipt</button>'
+        }
+      </div>
+    </div>
+  `).join('');
+}
+
+function navTo(id,btn){
+  document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.nav-link').forEach(l=>l.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function showToast(msg){
+  document.getElementById('toastText').textContent=msg;
+  const t=document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+function openModal(type){
+  document.getElementById('modal-'+type).classList.add('open');
+  const d=document.querySelector('#modal-'+type+' input[type="date"]');
+  if(d) d.value=new Date().toISOString().split('T')[0];
+}
+function closeModal(type){document.getElementById('modal-'+type).classList.remove('open');}
+function submitForm(type){
+  closeModal(type);
+  const labels={expense:'Expense',income:'Income',payment:'Payment'};
+  showToast(labels[type]+' logged — syncing to Google Sheets...');
+}
+
+function openConfirm(){document.getElementById('confirm-overlay').classList.add('open');}
+function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('open');}
+function confirmClose(){closeConfirm();showToast('April 2026 closed — snapshot saved to Sheet.');}
+
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');});
+});
+</script>
+</body>
+</html>
