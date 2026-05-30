@@ -508,7 +508,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 // ============================================================
 const CLIENT_ID   = '139648063899-tq9arpo1817e20a1qtmm5dm0jl35u4sm.apps.googleusercontent.com';
 const ALLOWED_DOMAIN = 'boftbuild.com';
-const API_URL     = 'https://script.google.com/a/macros/boftbuild.com/s/AKfycbwrffzMiuAoz6jaNJpYXc6gZLF7WorXM_Z8-JViSNeWRVG8yc0685IKXFu_j4Mkfo38/exec';
+const API_URL     = 'https://script.google.com/a/macros/boftbuild.com/s/AKfycbxDvykM_ddk2Xp-e1E-pZXOueW34sREuXQzfF98i6pIYuvku5LXlsSUgqd7peBchR2o/exec';
 
 let ACCESS_TOKEN  = null;
 const PAGE_SIZE   = 10;
@@ -567,23 +567,18 @@ function doLogout() {
 }
 
 // ============================================================
-// API CALL
+// API CALL — Fix CORS usando token en URL
 // ============================================================
 async function apiGet(action, params = {}) {
-  const qs = new URLSearchParams({ action, ...params }).toString();
-  const res = await fetch(API_URL + '?' + qs, {
-    headers: { Authorization: 'Bearer ' + ACCESS_TOKEN }
-  });
+  const qs = new URLSearchParams({ action, token: ACCESS_TOKEN, ...params }).toString();
+  const res = await fetch(API_URL + '?' + qs);
   return res.json();
 }
 
 async function apiPost(payload) {
-  const res = await fetch(API_URL, {
+  const res = await fetch(API_URL + '?token=' + ACCESS_TOKEN, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer ' + ACCESS_TOKEN
-    },
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify(payload)
   });
   return res.json();
