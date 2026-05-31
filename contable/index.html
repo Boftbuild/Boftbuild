@@ -385,11 +385,11 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   <div class="modal">
     <div class="modal-header"><div style="display:flex;align-items:center;gap:0.75rem;"><span class="modal-title">Log Expense</span><span class="modal-type expense">Expense</span></div><button class="modal-close" onclick="closeModal('expense')">✕</button></div>
     <div class="modal-body">
-      <div class="field-row"><div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="exp-date"></div><div><label class="field-label">Account <span>*</span></label><select class="field-input"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select></div></div>
-      <div class="field-row"><div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" placeholder="0.00" step="0.01"></div><div><label class="field-label">Category <span>*</span></label><select class="field-input"><option value="">Select...</option><optgroup label="Materials"><option>Materials</option><option>Lumber</option><option>Fasteners</option><option>Hardware</option><option>Consumables</option></optgroup><optgroup label="Tools"><option>Tools</option><option>Tool Repair</option><option>Equipment Rental</option></optgroup><optgroup label="Vehicle"><option>Fuel</option><option>Vehicle Maintenance</option><option>Vehicle Insurance</option><option>Vehicle Registration</option><option>Parking / Tolls</option></optgroup><optgroup label="Operations"><option>Workwear / PPE</option><option>Software</option><option>Subscriptions</option><option>Professional Services</option><option>Bank Fees</option><option>Licenses</option></optgroup><optgroup label="Marketing"><option>Website</option><option>Ads</option><option>Printing</option><option>Branding</option><option>Camera / Media Equipment</option></optgroup><optgroup label="Labor"><option>Labor Helpers</option><option>Subcontractor</option><option>Crew Food</option></optgroup><option>Misc</option></select></div></div>
-      <div class="field-group"><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" placeholder="e.g. Drill Dewalt, Gas truck..."></div>
-      <div class="field-row"><div><label class="field-label">Vendor</label><input type="text" class="field-input" placeholder="Home Depot, Lowe's, Amazon..."></div><div><label class="field-label">Project</label><input type="text" class="field-input" placeholder="Project name (optional)"></div></div>
-      <div class="field-group"><label class="field-label">Receipt (Drive link)</label><input type="text" class="field-input" placeholder="https://drive.google.com/..."><div class="field-hint">Direct upload coming soon</div></div>
+      <div class="field-row"><div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="exp-date"></div><div><label class="field-label">Account <span>*</span></label><select class="field-input" id="exp-account"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select></div></div>
+      <div class="field-row"><div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" id="exp-amount" placeholder="0.00" step="0.01"></div><div><label class="field-label">Category <span>*</span></label><select class="field-input" id="exp-category"><option value="">Select...</option><optgroup label="Materials"><option>Materials</option><option>Lumber</option><option>Fasteners</option><option>Hardware</option><option>Consumables</option></optgroup><optgroup label="Tools"><option>Tools</option><option>Tool Repair</option><option>Equipment Rental</option></optgroup><optgroup label="Vehicle"><option>Fuel</option><option>Vehicle Maintenance</option><option>Vehicle Insurance</option><option>Vehicle Registration</option><option>Parking / Tolls</option></optgroup><optgroup label="Operations"><option>Workwear / PPE</option><option>Software</option><option>Subscriptions</option><option>Professional Services</option><option>Bank Fees</option><option>Licenses</option></optgroup><optgroup label="Marketing"><option>Website</option><option>Ads</option><option>Printing</option><option>Branding</option><option>Camera / Media Equipment</option></optgroup><optgroup label="Labor"><option>Labor Helpers</option><option>Subcontractor</option><option>Crew Food</option></optgroup><option>Misc</option></select></div></div>
+      <div class="field-group"><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" id="exp-description" placeholder="e.g. Drill Dewalt, Gas truck..."></div>
+      <div class="field-row"><div><label class="field-label">Vendor</label><input type="text" class="field-input" id="exp-vendor" placeholder="Home Depot, Lowe's, Amazon..."></div><div><label class="field-label">Project</label><input type="text" class="field-input" id="exp-project" placeholder="Project name (optional)"></div></div>
+      <div class="field-group"><label class="field-label">Receipt (Drive link)</label><input type="text" class="field-input" id="exp-receipt" placeholder="https://drive.google.com/..."><div class="field-hint">Direct upload coming soon</div></div>
     </div>
     <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('expense')">Cancel</button><button class="btn-submit" onclick="submitForm('expense')">Submit Expense</button></div>
   </div>
@@ -852,26 +852,25 @@ async function submitForm(type) {
   let payload = { action: 'add' + type.charAt(0).toUpperCase() + type.slice(1) };
 
   if (type === 'expense') {
-    const modal = document.getElementById('modal-expense');
-    const inputs = modal.querySelectorAll('.field-input');
     payload = {
       ...payload,
-      date:        inputs[0].value,
-      account:     inputs[1].value,
-      amount:      inputs[2].value,
-      category:    inputs[3].value,
-      description: inputs[4].value,
-      vendor:      inputs[5].value,
-      project:     inputs[6].value,
-      receipt:     inputs[7].value,
+      date:        document.getElementById('exp-date').value,
+      account:     document.getElementById('exp-account').value,
+      amount:      document.getElementById('exp-amount').value,
+      category:    document.getElementById('exp-category').value,
+      description: document.getElementById('exp-description').value,
+      vendor:      document.getElementById('exp-vendor').value,
+      project:     document.getElementById('exp-project').value,
+      receipt:     document.getElementById('exp-receipt').value,
     };
+    console.log('Expense payload:', payload);
   } else if (type === 'income') {
     payload = {
       ...payload,
       date:        document.getElementById('inc-date').value,
+      incomeType:  document.getElementById('inc-type').value,
       account:     document.getElementById('inc-account').value,
       amount:      document.getElementById('inc-amount').value,
-      incomeType:  document.getElementById('inc-type').value,
       project:     document.getElementById('inc-project').value,
       description: document.getElementById('inc-description').value,
       receipt:     document.getElementById('inc-receipt').value,
@@ -961,9 +960,15 @@ function showToast(msg) {
 }
 
 function openModal(type) {
-  document.getElementById('modal-' + type).classList.add('open');
-  const d = document.querySelector('#modal-' + type + ' input[type="date"]');
-  if (d) d.value = new Date().toISOString().split('T')[0];
+  const modal = document.getElementById('modal-' + type);
+  modal.classList.add('open');
+  // Limpiar todos los campos
+  modal.querySelectorAll('input:not([type="hidden"]), select').forEach(el => {
+    if (el.type === 'date') el.value = new Date().toISOString().split('T')[0];
+    else if (el.type === 'number') el.value = '';
+    else if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    else el.value = '';
+  });
 }
 function closeModal(type) { document.getElementById('modal-' + type).classList.remove('open'); }
 function openConfirm() { document.getElementById('confirm-overlay').classList.add('open'); }
