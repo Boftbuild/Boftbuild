@@ -196,7 +196,60 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .btn-submit{font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.65rem 1.8rem;cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
 .btn-cancel{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;}
-@media(max-width:700px){.stats-grid{grid-template-columns:1fr 1fr;}.two-col{grid-template-columns:1fr;}.forms-grid{grid-template-columns:1fr;}.filters-row{grid-template-columns:1fr 1fr;}.sticky-nav{padding:0 1rem;}.field-row{grid-template-columns:1fr;}}
+
+/* ── RECEIPT UPLOAD FIELD ── */
+.receipt-upload-zone{
+  border:1px dashed rgba(200,146,42,0.35);
+  background:rgba(200,146,42,0.04);
+  padding:0.9rem 1rem;
+  cursor:pointer;
+  transition:border-color 0.2s, background 0.2s;
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:0.75rem;
+}
+.receipt-upload-zone:hover{border-color:var(--gold);background:var(--gold-dim);}
+.receipt-upload-zone.has-file{border-color:var(--green);background:rgba(76,175,125,0.06);}
+.receipt-upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-icon{font-size:1.2rem;flex-shrink:0;}
+.upload-text{flex:1;min-width:0;}
+.upload-label{font-size:0.8rem;font-weight:600;color:var(--text);}
+.upload-sublabel{font-size:0.7rem;color:var(--muted);margin-top:0.1rem;}
+.upload-clear{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:0.2rem 0.4rem;flex-shrink:0;z-index:2;position:relative;}
+.upload-clear:hover{color:var(--red);}
+.receipt-preview{margin-top:0.5rem;display:none;}
+.receipt-preview img{max-width:100%;max-height:120px;object-fit:contain;border:1px solid var(--border);padding:4px;}
+.receipt-preview .pdf-badge{display:inline-flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:var(--red);border:1px solid rgba(224,85,85,0.3);background:rgba(224,85,85,0.07);padding:0.3rem 0.6rem;}
+.receipt-preview .file-size{font-size:0.7rem;color:var(--muted);margin-top:0.3rem;}
+
+/* ── EDIT RECEIPT SUB-MODAL ── */
+.sub-modal-overlay{display:none;position:fixed;inset:0;background:rgba(5,6,8,0.98);z-index:150;align-items:center;justify-content:center;padding:1rem;}
+.sub-modal-overlay.open{display:flex;}
+.sub-modal{background:var(--black2);border:1px solid var(--border);width:100%;max-width:460px;}
+.sub-modal-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border);}
+.sub-modal-title{font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:var(--gold-light);}
+.sub-modal-body{padding:1.25rem;}
+.receipt-action-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1.25rem;}
+.receipt-action-card{border:1px solid var(--border);padding:1rem;cursor:pointer;transition:all 0.2s;text-align:center;background:var(--black);}
+.receipt-action-card:hover{border-color:var(--gold);background:var(--gold-dim);}
+.receipt-action-card.selected{border-color:var(--neon);background:var(--neon-dim);}
+.receipt-action-icon{font-size:1.5rem;margin-bottom:0.4rem;}
+.receipt-action-label{font-size:0.78rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);}
+.receipt-action-desc{font-size:0.7rem;color:var(--muted);margin-top:0.2rem;}
+.sub-modal-footer{padding:0.75rem 1.25rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.btn-receipt-edit{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold-light);border:1px solid var(--border);background:var(--gold-dim);padding:0.3rem 0.9rem;cursor:pointer;transition:all 0.2s;}
+.btn-receipt-edit:hover{border-color:var(--gold);}
+
+@media(max-width:700px){
+  .stats-grid{grid-template-columns:1fr 1fr;}
+  .two-col{grid-template-columns:1fr;}
+  .forms-grid{grid-template-columns:1fr;}
+  .filters-row{grid-template-columns:1fr 1fr;}
+  .sticky-nav{padding:0 1rem;}
+  .field-row{grid-template-columns:1fr;}
+  .receipt-action-grid{grid-template-columns:1fr;}
+}
 </style>
 </head>
 <body>
@@ -260,6 +313,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <span class="toast-text" id="toastText">Done.</span>
     </div>
 
+    <!-- DASHBOARD -->
     <div id="sec-dashboard">
       <div class="section-label">Financial Overview</div>
       <div class="section-title">Dashboard</div>
@@ -278,9 +332,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
           <div class="cash-total-row"><span class="cash-total-label">Total Available</span><span class="cash-amount neg" id="cashTotal" style="font-size:1.2rem;">—</span></div>
           <div style="margin-top:1.5rem;">
             <div class="section-label">Expense Breakdown</div>
-            <div class="bar-wrap" id="expenseBreakdown">
-              <div style="color:var(--muted);font-size:0.82rem;">Loading...</div>
-            </div>
+            <div class="bar-wrap" id="expenseBreakdown"><div style="color:var(--muted);font-size:0.82rem;">Loading...</div></div>
           </div>
         </div>
         <div class="panel">
@@ -305,16 +357,16 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       </div>
     </div>
 
+    <!-- MISSING -->
     <div id="sec-missing" style="margin-top:2rem;">
       <div class="section-label">Compliance</div>
       <div class="section-title">Missing Receipts</div>
     </div>
     <div class="missing-section">
-      <div id="missingList">
-        <div style="padding:1rem;color:var(--muted);font-size:0.82rem;">Loading...</div>
-      </div>
+      <div id="missingList"><div style="padding:1rem;color:var(--muted);font-size:0.82rem;">Loading...</div></div>
     </div>
 
+    <!-- REPORTS -->
     <div id="sec-reports" style="margin-top:2rem;">
       <div class="section-label">Financial Reports</div>
       <div class="section-title">Reports & Monthly Close</div>
@@ -325,11 +377,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <button class="btn-action outline" onclick="openConfirm()">&#128197; Close Month</button>
       </div>
       <div class="section-label" style="margin-bottom:1rem;">Saved Reports — Google Drive</div>
-      <div id="reportsList">
-        <div style="padding:1rem;color:var(--muted);font-size:0.82rem;">Loading...</div>
-      </div>
+      <div id="reportsList"><div style="padding:1rem;color:var(--muted);font-size:0.82rem;">Loading...</div></div>
     </div>
 
+    <!-- SEARCH -->
     <div id="sec-search" style="margin-top:2rem;">
       <div class="section-label">Transaction Search</div>
       <div class="section-title">Search Receipts & Transactions</div>
@@ -353,6 +404,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       </div>
     </div>
 
+    <!-- NEW ENTRY -->
     <div id="sec-entry" style="margin-top:2rem;">
       <div class="section-label">Quick Entry</div>
       <div class="section-title">New Transaction</div>
@@ -380,49 +432,154 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   </div>
 </div>
 
-<!-- MODALS -->
+<!-- ══════════════════════════════════════════════════
+     MODAL — LOG EXPENSE
+══════════════════════════════════════════════════ -->
 <div id="modal-expense" class="modal-overlay">
   <div class="modal">
-    <div class="modal-header"><div style="display:flex;align-items:center;gap:0.75rem;"><span class="modal-title">Log Expense</span><span class="modal-type expense">Expense</span></div><button class="modal-close" onclick="closeModal('expense')">✕</button></div>
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:0.75rem;"><span class="modal-title">Log Expense</span><span class="modal-type expense">Expense</span></div>
+      <button class="modal-close" onclick="closeModal('expense')">✕</button>
+    </div>
     <div class="modal-body">
-      <div class="field-row"><div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="exp-date"></div><div><label class="field-label">Account <span>*</span></label><select class="field-input" id="exp-account"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select></div></div>
-      <div class="field-row"><div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" id="exp-amount" placeholder="0.00" step="0.01"></div><div><label class="field-label">Category <span>*</span></label><select class="field-input" id="exp-category"><option value="">Select...</option><optgroup label="Materials"><option>Materials</option><option>Lumber</option><option>Fasteners</option><option>Hardware</option><option>Consumables</option></optgroup><optgroup label="Tools"><option>Tools</option><option>Tool Repair</option><option>Equipment Rental</option></optgroup><optgroup label="Vehicle"><option>Fuel</option><option>Vehicle Maintenance</option><option>Vehicle Insurance</option><option>Vehicle Registration</option><option>Parking / Tolls</option></optgroup><optgroup label="Operations"><option>Workwear / PPE</option><option>Software</option><option>Subscriptions</option><option>Professional Services</option><option>Bank Fees</option><option>Licenses</option></optgroup><optgroup label="Marketing"><option>Website</option><option>Ads</option><option>Printing</option><option>Branding</option><option>Camera / Media Equipment</option></optgroup><optgroup label="Labor"><option>Labor Helpers</option><option>Subcontractor</option><option>Crew Food</option></optgroup><option>Misc</option></select></div></div>
+      <div class="field-row">
+        <div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="exp-date"></div>
+        <div><label class="field-label">Account <span>*</span></label>
+          <select class="field-input" id="exp-account"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" id="exp-amount" placeholder="0.00" step="0.01"></div>
+        <div><label class="field-label">Category <span>*</span></label>
+          <select class="field-input" id="exp-category">
+            <option value="">Select...</option>
+            <optgroup label="Materials"><option>Materials</option><option>Lumber</option><option>Fasteners</option><option>Hardware</option><option>Consumables</option></optgroup>
+            <optgroup label="Tools"><option>Tools</option><option>Tool Repair</option><option>Equipment Rental</option></optgroup>
+            <optgroup label="Vehicle"><option>Fuel</option><option>Vehicle Maintenance</option><option>Vehicle Insurance</option><option>Vehicle Registration</option><option>Parking / Tolls</option></optgroup>
+            <optgroup label="Operations"><option>Workwear / PPE</option><option>Software</option><option>Subscriptions</option><option>Professional Services</option><option>Bank Fees</option><option>Licenses</option></optgroup>
+            <optgroup label="Marketing"><option>Website</option><option>Ads</option><option>Printing</option><option>Branding</option><option>Camera / Media Equipment</option></optgroup>
+            <optgroup label="Labor"><option>Labor Helpers</option><option>Subcontractor</option><option>Crew Food</option></optgroup>
+            <option>Misc</option>
+          </select>
+        </div>
+      </div>
       <div class="field-group"><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" id="exp-description" placeholder="e.g. Drill Dewalt, Gas truck..."></div>
-      <div class="field-row"><div><label class="field-label">Vendor</label><input type="text" class="field-input" id="exp-vendor" placeholder="Home Depot, Lowe's, Amazon..."></div><div><label class="field-label">Project</label><input type="text" class="field-input" id="exp-project" placeholder="Project name (optional)"></div></div>
-      <div class="field-group"><label class="field-label">Receipt (Drive link)</label><input type="text" class="field-input" id="exp-receipt" placeholder="https://drive.google.com/..."><div class="field-hint">Direct upload coming soon</div></div>
+      <div class="field-row">
+        <div><label class="field-label">Vendor</label><input type="text" class="field-input" id="exp-vendor" placeholder="Home Depot, Lowe's, Amazon..."></div>
+        <div><label class="field-label">Project</label><input type="text" class="field-input" id="exp-project" placeholder="Project name (optional)"></div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Receipt</label>
+        <div class="receipt-upload-zone" id="exp-upload-zone">
+          <input type="file" id="exp-file" accept="image/*,.pdf" onchange="handleFileSelect('exp')">
+          <span class="upload-icon">📎</span>
+          <div class="upload-text">
+            <div class="upload-label" id="exp-upload-label">Tap to upload photo or PDF</div>
+            <div class="upload-sublabel">JPG, PNG, PDF — max 10MB</div>
+          </div>
+          <button class="upload-clear" id="exp-clear" onclick="clearFile('exp',event)" style="display:none;">✕</button>
+        </div>
+        <div class="receipt-preview" id="exp-preview"></div>
+      </div>
     </div>
     <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('expense')">Cancel</button><button class="btn-submit" onclick="submitForm('expense')">Submit Expense</button></div>
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════
+     MODAL — LOG INCOME
+══════════════════════════════════════════════════ -->
 <div id="modal-income" class="modal-overlay">
   <div class="modal">
-    <div class="modal-header"><div style="display:flex;align-items:center;gap:0.75rem;"><span class="modal-title">Log Income</span><span class="modal-type income">Income</span></div><button class="modal-close" onclick="closeModal('income')">✕</button></div>
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:0.75rem;"><span class="modal-title">Log Income</span><span class="modal-type income">Income</span></div>
+      <button class="modal-close" onclick="closeModal('income')">✕</button>
+    </div>
     <div class="modal-body">
-      <div class="field-row"><div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="inc-date"></div><div><label class="field-label">Account <span>*</span></label><select class="field-input" id="inc-account"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select></div></div>
-      <div class="field-row"><div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" id="inc-amount" placeholder="0.00" step="0.01"></div><div><label class="field-label">Income Type <span>*</span></label><select class="field-input" id="inc-type"><option value="">Select...</option><option>Client Payment</option><option>Owner Injection</option><option>Refund</option><option>Other Income</option></select></div></div>
-      <div class="field-row"><div><label class="field-label">Project / Client</label><input type="text" class="field-input" id="inc-project" placeholder="Client or project name"></div><div><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" id="inc-description" placeholder="Deck deposit, Final payment..."></div></div>
-      <div class="field-group"><label class="field-label">Receipt / Proof</label><input type="text" class="field-input" id="inc-receipt" placeholder="https://drive.google.com/..."></div>
+      <div class="field-row">
+        <div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="inc-date"></div>
+        <div><label class="field-label">Account <span>*</span></label>
+          <select class="field-input" id="inc-account"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" id="inc-amount" placeholder="0.00" step="0.01"></div>
+        <div><label class="field-label">Income Type <span>*</span></label>
+          <select class="field-input" id="inc-type"><option value="">Select...</option><option>Client Payment</option><option>Owner Injection</option><option>Refund</option><option>Other Income</option></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Project / Client</label><input type="text" class="field-input" id="inc-project" placeholder="Client or project name"></div>
+        <div><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" id="inc-description" placeholder="Deck deposit, Final payment..."></div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Receipt / Proof</label>
+        <div class="receipt-upload-zone" id="inc-upload-zone">
+          <input type="file" id="inc-file" accept="image/*,.pdf" onchange="handleFileSelect('inc')">
+          <span class="upload-icon">📎</span>
+          <div class="upload-text">
+            <div class="upload-label" id="inc-upload-label">Tap to upload photo or PDF</div>
+            <div class="upload-sublabel">JPG, PNG, PDF — max 10MB</div>
+          </div>
+          <button class="upload-clear" id="inc-clear" onclick="clearFile('inc',event)" style="display:none;">✕</button>
+        </div>
+        <div class="receipt-preview" id="inc-preview"></div>
+      </div>
     </div>
     <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('income')">Cancel</button><button class="btn-submit" onclick="submitForm('income')">Submit Income</button></div>
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════
+     MODAL — LOG PAYMENT
+══════════════════════════════════════════════════ -->
 <div id="modal-payment" class="modal-overlay">
   <div class="modal">
-    <div class="modal-header"><div style="display:flex;align-items:center;gap:0.75rem;"><span class="modal-title">Log Payment</span><span class="modal-type payment">Payment</span></div><button class="modal-close" onclick="closeModal('payment')">✕</button></div>
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:0.75rem;"><span class="modal-title">Log Payment</span><span class="modal-type payment">Payment</span></div>
+      <button class="modal-close" onclick="closeModal('payment')">✕</button>
+    </div>
     <div class="modal-body">
-      <div class="field-row"><div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="pay-date"></div><div><label class="field-label">Account <span>*</span></label><select class="field-input" id="pay-account"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select></div></div>
-      <div class="field-row"><div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" id="pay-amount" placeholder="0.00" step="0.01"></div><div><label class="field-label">Payment Type <span>*</span></label><select class="field-input" id="pay-type"><option value="">Select...</option><option>Helper Payment</option><option>Subcontractor Payment</option><option>Owner Reimbursement</option></select></div></div>
-      <div class="field-row"><div><label class="field-label">Payee <span>*</span></label><select class="field-input" id="pay-payee"><option value="">Select...</option><option>Juan</option><option>Carlos</option><option>Mike</option><option>Other</option></select></div><div><label class="field-label">Project</label><input type="text" class="field-input" id="pay-project" placeholder="Project name (optional)"></div></div>
+      <div class="field-row">
+        <div><label class="field-label">Date <span>*</span></label><input type="date" class="field-input" id="pay-date"></div>
+        <div><label class="field-label">Account <span>*</span></label>
+          <select class="field-input" id="pay-account"><option value="">Select...</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" id="pay-amount" placeholder="0.00" step="0.01"></div>
+        <div><label class="field-label">Payment Type <span>*</span></label>
+          <select class="field-input" id="pay-type"><option value="">Select...</option><option>Helper Payment</option><option>Subcontractor Payment</option><option>Owner Reimbursement</option></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Payee <span>*</span></label>
+          <select class="field-input" id="pay-payee"><option value="">Select...</option><option>Juan</option><option>Carlos</option><option>Mike</option><option>Other</option></select>
+        </div>
+        <div><label class="field-label">Project</label><input type="text" class="field-input" id="pay-project" placeholder="Project name (optional)"></div>
+      </div>
       <div class="field-group"><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" id="pay-description" placeholder="Framing day, Concrete help..."></div>
-      <div class="field-group"><label class="field-label">Receipt</label><input type="text" class="field-input" id="pay-receipt" placeholder="https://drive.google.com/..."></div>
+      <div class="field-group">
+        <label class="field-label">Receipt</label>
+        <div class="receipt-upload-zone" id="pay-upload-zone">
+          <input type="file" id="pay-file" accept="image/*,.pdf" onchange="handleFileSelect('pay')">
+          <span class="upload-icon">📎</span>
+          <div class="upload-text">
+            <div class="upload-label" id="pay-upload-label">Tap to upload photo or PDF</div>
+            <div class="upload-sublabel">JPG, PNG, PDF — max 10MB</div>
+          </div>
+          <button class="upload-clear" id="pay-clear" onclick="clearFile('pay',event)" style="display:none;">✕</button>
+        </div>
+        <div class="receipt-preview" id="pay-preview"></div>
+      </div>
     </div>
     <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('payment')">Cancel</button><button class="btn-submit" onclick="submitForm('payment')">Submit Payment</button></div>
   </div>
 </div>
 
-<!-- MODAL EDIT -->
+<!-- ══════════════════════════════════════════════════
+     MODAL — EDIT TRANSACTION
+══════════════════════════════════════════════════ -->
 <div id="modal-edit" class="modal-overlay">
   <div class="modal">
     <div class="modal-header">
@@ -463,14 +620,23 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div><label class="field-label">Project</label><input type="text" class="field-input" id="editProject" placeholder="Project name (optional)"></div>
         <div><label class="field-label">Vendor / Payee</label><input type="text" class="field-input" id="editVendor" placeholder="Vendor or payee"></div>
       </div>
+
+      <!-- Receipt actual + botón Edit Receipt -->
       <div class="field-group">
-        <label class="field-label">Receipt (Google Drive link)</label>
-        <input type="text" class="field-input" id="editReceipt" placeholder="https://drive.google.com/...">
-        <div class="field-hint">Paste Drive link to add or replace receipt</div>
+        <label class="field-label">Receipt</label>
+        <div id="editReceiptCurrent" style="display:none;margin-bottom:0.6rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+          <a id="editReceiptLink" href="" target="_blank" style="font-size:0.78rem;color:var(--neon);text-decoration:underline;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">View current receipt ↗</a>
+          <button class="btn-receipt-edit" onclick="openReceiptSubModal()">✏️ Edit Receipt</button>
+        </div>
+        <div id="editNoReceipt" style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+          <span style="font-size:0.78rem;color:var(--muted);">No receipt attached</span>
+          <button class="btn-receipt-edit" onclick="openReceiptSubModal()">+ Add Receipt</button>
+        </div>
+        <!-- Preview del nuevo archivo seleccionado en edit -->
+        <div class="receipt-preview" id="edit-preview" style="margin-top:0.5rem;"></div>
+        <div id="edit-new-file-info" style="display:none;margin-top:0.4rem;font-size:0.72rem;color:var(--green);">✓ New receipt selected — will upload on save</div>
       </div>
-      <div id="editReceiptPreview" style="display:none;margin-top:0.5rem;">
-        <a id="editReceiptLink" href="" target="_blank" style="font-size:0.78rem;color:var(--neon);text-decoration:underline;">View current receipt ↗</a>
-      </div>
+      <input type="hidden" id="editReceipt">
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('edit')">Cancel</button>
@@ -479,7 +645,51 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   </div>
 </div>
 
-<!-- MODAL DELETE CONFIRM -->
+<!-- ══════════════════════════════════════════════════
+     SUB-MODAL — EDIT RECEIPT (Replace / Add)
+══════════════════════════════════════════════════ -->
+<div id="sub-modal-receipt" class="sub-modal-overlay">
+  <div class="sub-modal">
+    <div class="sub-modal-header">
+      <span class="sub-modal-title">Edit Receipt</span>
+      <button class="modal-close" onclick="closeReceiptSubModal()">✕</button>
+    </div>
+    <div class="sub-modal-body">
+      <div class="receipt-action-grid">
+        <div class="receipt-action-card" id="card-replace" onclick="selectReceiptAction('replace')">
+          <div class="receipt-action-icon">🔄</div>
+          <div class="receipt-action-label">Replace</div>
+          <div class="receipt-action-desc">Upload a new file to replace the current receipt</div>
+        </div>
+        <div class="receipt-action-card" id="card-add" onclick="selectReceiptAction('add')">
+          <div class="receipt-action-icon">➕</div>
+          <div class="receipt-action-label">Add</div>
+          <div class="receipt-action-desc">Attach a receipt to this transaction for the first time</div>
+        </div>
+      </div>
+
+      <!-- Upload zone del sub-modal -->
+      <div id="sub-upload-area" style="display:none;">
+        <div class="receipt-upload-zone" id="edit-upload-zone">
+          <input type="file" id="edit-file" accept="image/*,.pdf" onchange="handleFileSelect('edit')">
+          <span class="upload-icon">📎</span>
+          <div class="upload-text">
+            <div class="upload-label" id="edit-upload-label">Tap to upload photo or PDF</div>
+            <div class="upload-sublabel">JPG, PNG, PDF — max 10MB</div>
+          </div>
+          <button class="upload-clear" id="edit-clear" onclick="clearFile('edit',event)" style="display:none;">✕</button>
+        </div>
+        <div class="receipt-preview" id="edit-sub-preview" style="margin-top:0.5rem;"></div>
+      </div>
+    </div>
+    <div class="sub-modal-footer">
+      <button class="btn-cancel" onclick="closeReceiptSubModal()">Cancel</button>
+      <button class="btn-submit" onclick="confirmReceiptAction()" id="btn-confirm-receipt" style="display:none;">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM -->
 <div id="modal-delete" class="confirm-overlay">
   <div class="confirm-box">
     <div class="confirm-title">Delete Transaction?</div>
@@ -491,6 +701,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   </div>
 </div>
 
+<!-- CLOSE MONTH CONFIRM -->
 <div id="confirm-overlay" class="confirm-overlay">
   <div class="confirm-box">
     <div class="confirm-title">Close Month?</div>
@@ -506,14 +717,18 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 // ============================================================
 // CONFIG
 // ============================================================
-const CLIENT_ID   = '139648063899-tq9arpo1817e20a1qtmm5dm0jl35u4sm.apps.googleusercontent.com';
+const CLIENT_ID      = '139648063899-tq9arpo1817e20a1qtmm5dm0jl35u4sm.apps.googleusercontent.com';
 const ALLOWED_DOMAIN = 'boftbuild.com';
-const API_URL = '/api/proxy';
+const API_URL        = '/api/proxy';
+const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
 
 let ACCESS_TOKEN  = null;
 const PAGE_SIZE   = 10;
 let currentPage   = 1;
 let allTransactions = [];
+
+// Almacena el File seleccionado por prefijo de modal (exp, inc, pay, edit)
+const selectedFiles = {};
 
 // ============================================================
 // GOOGLE AUTH
@@ -521,7 +736,7 @@ let allTransactions = [];
 function signInWithGoogle() {
   const client = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
-    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.readonly',
+    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive',
     callback: (response) => {
       if (response.access_token) {
         ACCESS_TOKEN = response.access_token;
@@ -567,7 +782,7 @@ function doLogout() {
 }
 
 // ============================================================
-// API CALL — via Vercel Proxy
+// API HELPERS
 // ============================================================
 async function apiGet(action, params = {}) {
   const qs = new URLSearchParams({ action, ...params }).toString();
@@ -580,13 +795,166 @@ async function apiGet(action, params = {}) {
 async function apiPost(payload) {
   const res = await fetch(API_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer ' + ACCESS_TOKEN
-    },
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ACCESS_TOKEN },
     body: JSON.stringify(payload)
   });
   return res.json();
+}
+
+// ============================================================
+// FILE HANDLING — Upload zone
+// ============================================================
+function handleFileSelect(prefix) {
+  const input = document.getElementById(prefix + '-file');
+  const file  = input ? input.files[0] : null;
+  if (!file) return;
+
+  if (file.size > MAX_FILE_BYTES) {
+    showToast('File too large — max 10MB');
+    input.value = '';
+    return;
+  }
+
+  selectedFiles[prefix] = file;
+
+  // Actualizar label
+  const label = document.getElementById(prefix + '-upload-label');
+  if (label) label.textContent = file.name;
+
+  // Mostrar zona activa
+  const zone = document.getElementById(prefix + '-upload-zone');
+  if (zone) zone.classList.add('has-file');
+
+  // Mostrar botón de limpiar
+  const clear = document.getElementById(prefix + '-clear');
+  if (clear) clear.style.display = 'block';
+
+  // Preview
+  showFilePreview(prefix, file);
+}
+
+function showFilePreview(prefix, file) {
+  // Para el sub-modal de edit usamos 'edit-sub-preview'
+  const previewId = prefix === 'edit' ? 'edit-sub-preview' : prefix + '-preview';
+  const preview = document.getElementById(previewId);
+  if (!preview) return;
+
+  preview.style.display = 'block';
+
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      preview.innerHTML = `<img src="${e.target.result}" alt="Receipt preview"><div class="file-size">${formatBytes(file.size)}</div>`;
+    };
+    reader.readAsDataURL(file);
+  } else if (file.type === 'application/pdf') {
+    preview.innerHTML = `<div class="pdf-badge">📄 ${file.name}</div><div class="file-size">${formatBytes(file.size)}</div>`;
+  }
+}
+
+function clearFile(prefix, event) {
+  if (event) { event.preventDefault(); event.stopPropagation(); }
+  delete selectedFiles[prefix];
+
+  const input = document.getElementById(prefix + '-file');
+  if (input) input.value = '';
+
+  const label = document.getElementById(prefix + '-upload-label');
+  if (label) label.textContent = 'Tap to upload photo or PDF';
+
+  const zone = document.getElementById(prefix + '-upload-zone');
+  if (zone) zone.classList.remove('has-file');
+
+  const clear = document.getElementById(prefix + '-clear');
+  if (clear) clear.style.display = 'none';
+
+  const previewId = prefix === 'edit' ? 'edit-sub-preview' : prefix + '-preview';
+  const preview = document.getElementById(previewId);
+  if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// Convierte File a base64 string (sin prefijo data:...)
+async function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = e => resolve(e.target.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Agrega datos del archivo al payload si hay uno seleccionado
+async function attachFileToPayload(payload, prefix) {
+  const file = selectedFiles[prefix];
+  if (!file) return payload;
+  try {
+    payload.fileBase64 = await fileToBase64(file);
+    payload.fileName   = file.name;
+    payload.mimeType   = file.type || 'application/octet-stream';
+  } catch(e) {
+    console.error('Error reading file:', e);
+  }
+  return payload;
+}
+
+// ============================================================
+// RECEIPT SUB-MODAL (Edit modal)
+// ============================================================
+let receiptAction = null; // 'replace' | 'add'
+
+function openReceiptSubModal() {
+  receiptAction = null;
+  clearFile('edit', null);
+  document.getElementById('card-replace').classList.remove('selected');
+  document.getElementById('card-add').classList.remove('selected');
+  document.getElementById('sub-upload-area').style.display = 'none';
+  document.getElementById('btn-confirm-receipt').style.display = 'none';
+  document.getElementById('sub-modal-receipt').classList.add('open');
+}
+
+function closeReceiptSubModal() {
+  document.getElementById('sub-modal-receipt').classList.remove('open');
+}
+
+function selectReceiptAction(action) {
+  receiptAction = action;
+  document.getElementById('card-replace').classList.toggle('selected', action === 'replace');
+  document.getElementById('card-add').classList.toggle('selected', action === 'add');
+  document.getElementById('sub-upload-area').style.display = 'block';
+  document.getElementById('btn-confirm-receipt').style.display = 'block';
+}
+
+function confirmReceiptAction() {
+  const file = selectedFiles['edit'];
+  if (!file) {
+    showToast('Please select a file first');
+    return;
+  }
+  // Mostrar el nombre del archivo en el modal de edición
+  document.getElementById('edit-new-file-info').style.display = 'block';
+
+  // Preview en el modal de edición (no en el sub-modal)
+  const preview = document.getElementById('edit-preview');
+  if (preview) {
+    preview.style.display = 'block';
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        preview.innerHTML = `<img src="${e.target.result}" alt="Receipt preview" style="max-width:100%;max-height:100px;object-fit:contain;border:1px solid var(--border);padding:4px;"><div class="file-size">${file.name} · ${formatBytes(file.size)}</div>`;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      preview.innerHTML = `<div class="pdf-badge">📄 ${file.name}</div><div class="file-size">${formatBytes(file.size)}</div>`;
+    }
+  }
+
+  closeReceiptSubModal();
 }
 
 // ============================================================
@@ -596,35 +964,25 @@ async function loadDashboard() {
   try {
     showToast('Loading dashboard...');
     const data = await apiGet('dashboard');
-
-    // Stats
-    document.getElementById('statIncome').textContent   = fmt(data.income);
-    document.getElementById('statExpense').textContent  = fmt(data.expenses);
-    document.getElementById('statNet').textContent      = fmt(data.net);
-    document.getElementById('statMissing').textContent  = data.missingCount;
-
-    // Cash position
-    document.getElementById('cashBank').textContent  = fmt(data.cashPosition.bank);
-    document.getElementById('cashVenmo').textContent = fmt(data.cashPosition.venmo);
-    document.getElementById('cashCash').textContent  = fmt(data.cashPosition.cash);
-    document.getElementById('cashTotal').textContent = fmt(data.cashPosition.total);
-
-    // Color net
+    document.getElementById('statIncome').textContent  = fmt(data.income);
+    document.getElementById('statExpense').textContent = fmt(data.expenses);
+    document.getElementById('statNet').textContent     = fmt(data.net);
+    document.getElementById('statMissing').textContent = data.missingCount;
+    document.getElementById('cashBank').textContent    = fmt(data.cashPosition.bank);
+    document.getElementById('cashVenmo').textContent   = fmt(data.cashPosition.venmo);
+    document.getElementById('cashCash').textContent    = fmt(data.cashPosition.cash);
+    document.getElementById('cashTotal').textContent   = fmt(data.cashPosition.total);
     const netEl = document.getElementById('statNet');
     netEl.className = 'stat-num ' + (data.net >= 0 ? 'green' : 'red');
-
-    // Expense breakdown bars
     const maxAmt = data.topCategories[0]?.amount || 1;
     document.getElementById('expenseBreakdown').innerHTML = data.topCategories.map(c => `
       <div class="bar-label-row"><span class="bar-label">${c.name}</span><span class="bar-val">${fmt(c.amount)}</span></div>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.round((c.amount/maxAmt)*100)}%"></div></div>
     `).join('');
-
-    // Sync time
     document.getElementById('lastSync').textContent = 'Last sync: ' + new Date().toLocaleTimeString();
     showToast('Dashboard updated ✓');
   } catch(e) {
-    showToast('Error loading dashboard — check connection');
+    showToast('Error loading dashboard');
     console.error(e);
   }
 }
@@ -700,13 +1058,12 @@ async function loadTransactions() {
 }
 
 function runSearch() {
-  const q = document.getElementById('searchInput').value.toLowerCase().trim();
   currentPage = 1;
-  renderResults(q);
+  renderResults();
 }
 
-function renderResults(q = '') {
-  const query = q || document.getElementById('searchInput').value.toLowerCase().trim();
+function renderResults() {
+  const query = document.getElementById('searchInput').value.toLowerCase().trim();
   let filtered = allTransactions;
   if (query) {
     filtered = filtered.filter(t =>
@@ -751,43 +1108,45 @@ function showMore() { currentPage++; renderResults(); }
 // ============================================================
 // EDIT & DELETE
 // ============================================================
-let currentEditRow = null;
+let currentEditRow   = null;
 let currentDeleteRow = null;
 
 function openEditModal(t) {
   currentEditRow = t;
-  document.getElementById('editRowId').value      = t.id;
-  document.getElementById('editDate').value        = t.date;
-  document.getElementById('editAmount').value      = Math.abs(t.amount);
-  document.getElementById('editDescription').value = t.description;
-  document.getElementById('editProject').value     = t.project || '';
-  document.getElementById('editVendor').value      = t.vendor || '';
-  document.getElementById('editReceipt').value     = t.receipt || '';
+
+  document.getElementById('editRowId').value       = t.id;
+  document.getElementById('editDate').value         = t.date;
+  document.getElementById('editAmount').value       = Math.abs(t.amount);
+  document.getElementById('editDescription').value  = t.description;
+  document.getElementById('editProject').value      = t.project || '';
+  document.getElementById('editVendor').value       = t.vendor  || '';
+  document.getElementById('editReceipt').value      = t.receipt || '';
   document.getElementById('editModalType').textContent = t.type;
 
-  // Set account
+  // Account
   const accEl = document.getElementById('editAccount');
   for (let o of accEl.options) { if (o.value === t.account) { o.selected = true; break; } }
-
-  // Set category
+  // Category
   const catEl = document.getElementById('editCategory');
   for (let o of catEl.options) { if (o.value === t.category) { o.selected = true; break; } }
 
-  // Receipt preview
+  // Receipt UI
   const hasReceipt = t.receipt && t.receipt.length > 5;
-  const preview = document.getElementById('editReceiptPreview');
-  if (hasReceipt) {
-    preview.style.display = 'block';
-    document.getElementById('editReceiptLink').href = t.receipt;
-  } else {
-    preview.style.display = 'none';
-  }
+  document.getElementById('editReceiptCurrent').style.display = hasReceipt ? 'flex' : 'none';
+  document.getElementById('editNoReceipt').style.display      = hasReceipt ? 'none' : 'flex';
+  if (hasReceipt) document.getElementById('editReceiptLink').href = t.receipt;
+
+  // Limpiar estado de upload previo
+  clearFile('edit', null);
+  document.getElementById('edit-new-file-info').style.display = 'none';
+  const editPreview = document.getElementById('edit-preview');
+  if (editPreview) { editPreview.style.display = 'none'; editPreview.innerHTML = ''; }
 
   document.getElementById('modal-edit').classList.add('open');
 }
 
 async function saveEdit() {
-  const payload = {
+  let payload = {
     action:      'editTransaction',
     id:          document.getElementById('editRowId').value,
     date:        document.getElementById('editDate').value,
@@ -801,59 +1160,57 @@ async function saveEdit() {
     type:        currentEditRow.type,
   };
 
+  // Adjuntar archivo si hay uno nuevo seleccionado
+  payload = await attachFileToPayload(payload, 'edit');
+
   closeModal('edit');
-  showToast('Saving changes...');
+  if (payload.fileBase64) {
+    showToast('Uploading receipt to Drive...');
+  } else {
+    showToast('Saving changes...');
+  }
 
   try {
     const result = await apiPost(payload);
     if (result.success) {
       showToast('✓ Transaction updated');
-      loadDashboard();
-      loadTransactions();
-      loadMissingReceipts();
+      loadDashboard(); loadTransactions(); loadMissingReceipts();
     } else {
       showToast('Error: ' + result.message);
     }
-  } catch(e) {
-    showToast('Connection error — try again');
-  }
+  } catch(e) { showToast('Connection error — try again'); }
 }
 
 function openDeleteModal(t) {
   currentDeleteRow = t;
   document.getElementById('deleteDesc').textContent =
-    'Delete "' + t.description + '" (' + (t.date || '') + ' · $' + Math.abs(t.amount).toFixed(2) + ')? This cannot be undone.';
+    'Delete "' + t.description + '" (' + (t.date||'') + ' · $' + Math.abs(t.amount).toFixed(2) + ')? This cannot be undone.';
   document.getElementById('modal-delete').classList.add('open');
 }
 
 async function confirmDelete() {
   document.getElementById('modal-delete').classList.remove('open');
   showToast('Deleting transaction...');
-
   try {
     const result = await apiPost({ action: 'deleteTransaction', id: currentDeleteRow.id, type: currentDeleteRow.type });
     if (result.success) {
       showToast('✓ Transaction deleted');
-      loadDashboard();
-      loadTransactions();
-      loadMissingReceipts();
-    } else {
-      showToast('Error: ' + result.message);
-    }
-  } catch(e) {
-    showToast('Connection error — try again');
-  }
+      loadDashboard(); loadTransactions(); loadMissingReceipts();
+    } else { showToast('Error: ' + result.message); }
+  } catch(e) { showToast('Connection error — try again'); }
 }
 
 // ============================================================
-// SUBMIT FORMS
+// SUBMIT FORMS (con upload de archivo)
 // ============================================================
 async function submitForm(type) {
+  const prefixMap = { expense: 'exp', income: 'inc', payment: 'pay' };
+  const prefix    = prefixMap[type];
+
   let payload = { action: 'add' + type.charAt(0).toUpperCase() + type.slice(1) };
 
   if (type === 'expense') {
-    payload = {
-      ...payload,
+    payload = { ...payload,
       date:        document.getElementById('exp-date').value,
       account:     document.getElementById('exp-account').value,
       amount:      document.getElementById('exp-amount').value,
@@ -861,24 +1218,18 @@ async function submitForm(type) {
       description: document.getElementById('exp-description').value,
       vendor:      document.getElementById('exp-vendor').value,
       project:     document.getElementById('exp-project').value,
-      receipt:     document.getElementById('exp-receipt').value,
     };
-    console.log('Expense payload:', payload);
   } else if (type === 'income') {
-    payload = {
-      ...payload,
+    payload = { ...payload,
       date:        document.getElementById('inc-date').value,
       incomeType:  document.getElementById('inc-type').value,
       account:     document.getElementById('inc-account').value,
       amount:      document.getElementById('inc-amount').value,
       project:     document.getElementById('inc-project').value,
       description: document.getElementById('inc-description').value,
-      receipt:     document.getElementById('inc-receipt').value,
     };
-    console.log('Income payload:', payload);
   } else if (type === 'payment') {
-    payload = {
-      ...payload,
+    payload = { ...payload,
       date:        document.getElementById('pay-date').value,
       account:     document.getElementById('pay-account').value,
       amount:      document.getElementById('pay-amount').value,
@@ -886,23 +1237,26 @@ async function submitForm(type) {
       payee:       document.getElementById('pay-payee').value,
       project:     document.getElementById('pay-project').value,
       description: document.getElementById('pay-description').value,
-      receipt:     document.getElementById('pay-receipt').value,
     };
-    console.log('Payment payload:', payload);
   }
 
+  // Adjuntar archivo si fue seleccionado
+  payload = await attachFileToPayload(payload, prefix);
+
   closeModal(type);
-  showToast('Saving ' + type + ' to Google Sheets...');
+
+  if (payload.fileBase64) {
+    showToast('Uploading receipt & saving to Sheets...');
+  } else {
+    showToast('Saving ' + type + ' to Google Sheets...');
+  }
 
   try {
     const result = await apiPost(payload);
     if (result.success) {
       showToast('✓ ' + result.message);
-      loadDashboard();
-      loadTransactions();
-    } else {
-      showToast('Error: ' + result.message);
-    }
+      loadDashboard(); loadTransactions();
+    } else { showToast('Error: ' + result.message); }
   } catch(e) {
     showToast('Connection error — try again');
     console.error(e);
@@ -910,24 +1264,17 @@ async function submitForm(type) {
 }
 
 // ============================================================
-// GENERATE SNAPSHOT
+// SNAPSHOT & CLOSE MONTH
 // ============================================================
 async function generateSnapshot() {
   showToast('Generating Financial Snapshot PDF...');
   try {
     const result = await apiPost({ action: 'snapshot' });
-    if (result.success) {
-      showToast('✓ ' + result.fileName + ' saved to Drive');
-      loadReports();
-    } else {
-      showToast('Error: ' + result.message);
-    }
+    if (result.success) { showToast('✓ ' + result.fileName + ' saved to Drive'); loadReports(); }
+    else showToast('Error: ' + result.message);
   } catch(e) { showToast('Connection error'); }
 }
 
-// ============================================================
-// CLOSE MONTH
-// ============================================================
 async function confirmClose() {
   closeConfirm();
   showToast('Closing month...');
@@ -962,19 +1309,30 @@ function showToast(msg) {
 function openModal(type) {
   const modal = document.getElementById('modal-' + type);
   modal.classList.add('open');
-  // Limpiar todos los campos
   modal.querySelectorAll('input:not([type="hidden"]), select').forEach(el => {
     if (el.type === 'date') el.value = new Date().toISOString().split('T')[0];
     else if (el.type === 'number') el.value = '';
     else if (el.tagName === 'SELECT') el.selectedIndex = 0;
     else el.value = '';
   });
+  // Limpiar upload zones al abrir modal
+  const prefixMap = { expense: 'exp', income: 'inc', payment: 'pay' };
+  const prefix = prefixMap[type];
+  if (prefix) clearFile(prefix, null);
 }
-function closeModal(type) { document.getElementById('modal-' + type).classList.remove('open'); }
-function openConfirm() { document.getElementById('confirm-overlay').classList.add('open'); }
+
+function closeModal(type) {
+  document.getElementById('modal-' + type).classList.remove('open');
+}
+
+function openConfirm()  { document.getElementById('confirm-overlay').classList.add('open'); }
 function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); }
 
+// Cerrar modales al hacer click fuera
 document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+document.querySelectorAll('.sub-modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
 </script>
