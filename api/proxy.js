@@ -1,6 +1,6 @@
 export const config = { runtime: 'edge' };
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz_Hoq7HfBNLwW9rw07bWqn8roUAPPhavxokjQ_j_YrlPvoedzlTZufYsJ2tHv-kX9R/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxD-rLi_B9K4NR2Ud-UywZupvTo3DET6X-8aj88VntZV_3yYO8KRRcbE8yjJGfdn3el/exec';
 
 export default async function handler(req) {
   const headers = {
