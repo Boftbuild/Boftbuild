@@ -689,6 +689,19 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════
+     MODAL — VIEW RECEIPTS (múltiples)
+══════════════════════════════════════════════════ -->
+<div id="modal-receipts" class="sub-modal-overlay">
+  <div class="sub-modal" style="max-width:500px;">
+    <div class="sub-modal-header">
+      <span class="sub-modal-title">Receipts</span>
+      <button class="modal-close" onclick="document.getElementById('modal-receipts').classList.remove('open')">✕</button>
+    </div>
+    <div class="sub-modal-body" id="receipts-list" style="max-height:70vh;overflow-y:auto;"></div>
+  </div>
+</div>
+
 <!-- DELETE CONFIRM -->
 <div id="modal-delete" class="confirm-overlay">
   <div class="confirm-box">
@@ -907,6 +920,7 @@ async function attachFileToPayload(payload, prefix) {
 // RECEIPT SUB-MODAL (Edit modal)
 // ============================================================
 let receiptAction = null; // 'replace' | 'add'
+let receiptMode   = 'replace'; // se pasa al payload en saveEdit
 
 function openReceiptSubModal() {
   receiptAction = null;
@@ -932,14 +946,15 @@ function selectReceiptAction(action) {
 
 function confirmReceiptAction() {
   const file = selectedFiles['edit'];
-  if (!file) {
-    showToast('Please select a file first');
-    return;
-  }
-  // Mostrar el nombre del archivo en el modal de edición
-  document.getElementById('edit-new-file-info').style.display = 'block';
+  if (!file) { showToast('Please select a file first'); return; }
 
-  // Preview en el modal de edición (no en el sub-modal)
+  // Guardar el modo elegido para usarlo en saveEdit
+  receiptMode = receiptAction; // 'replace' o 'add'
+
+  document.getElementById('edit-new-file-info').style.display = 'block';
+  document.getElementById('edit-new-file-info').textContent =
+    (receiptMode === 'add' ? '+ Adding receipt' : '🔄 Replacing receipt') + ' — will upload on save';
+
   const preview = document.getElementById('edit-preview');
   if (preview) {
     preview.style.display = 'block';
@@ -953,7 +968,6 @@ function confirmReceiptAction() {
       preview.innerHTML = `<div class="pdf-badge">📄 ${file.name}</div><div class="file-size">${formatBytes(file.size)}</div>`;
     }
   }
-
   closeReceiptSubModal();
 }
 
@@ -1094,7 +1108,7 @@ function renderRow(t) {
     <div class="result-right">
       <span class="result-amount ${amt<0?'neg':'pos'}">${amt<0?'-':'+'}$${Math.abs(amt).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
       ${hasReceipt
-        ? `<button class="receipt-btn" onclick="window.open('${t.receipt}','_blank')">View Receipt</button>`
+        ? `<button class="receipt-btn" onclick='viewReceipts(${tJson})'>View Receipt${t.receipt.split(',').length > 1 ? ' (' + t.receipt.split(',').length + ')' : ''}</button>`
         : `<button class="add-receipt-btn" onclick='openEditModal(${tJson})'>+ Add Receipt</button>`
       }
       <button class="btn-edit" onclick='openEditModal(${tJson})' title="Edit">✏️</button>
@@ -1104,6 +1118,32 @@ function renderRow(t) {
 }
 
 function showMore() { currentPage++; renderResults(); }
+
+// ============================================================
+// VIEW RECEIPTS MODAL (múltiples)
+// ============================================================
+function viewReceipts(t) {
+  const urls = (t.receipt || '').split(',').map(u => u.trim()).filter(Boolean);
+  if (urls.length === 1) { window.open(urls[0], '_blank'); return; }
+
+  const list = document.getElementById('receipts-list');
+  list.innerHTML = urls.map((url, i) => {
+    // Detectar si es imagen por extensión
+    const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(url);
+    return `
+      <div style="padding:0.85rem 0;border-bottom:1px solid rgba(200,146,42,0.1);display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+        <div style="display:flex;align-items:center;gap:0.6rem;min-width:0;flex:1;">
+          <span style="font-size:1.1rem;">${isImg ? '🖼️' : '📄'}</span>
+          <span style="font-size:0.82rem;color:var(--muted);">Receipt ${i + 1}</span>
+        </div>
+        <div style="display:flex;gap:0.5rem;flex-shrink:0;">
+          <button class="btn-sm view" onclick="window.open('${url}','_blank')">View ↗</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('modal-receipts').classList.add('open');
+}
 
 // ============================================================
 // EDIT & DELETE
@@ -1138,6 +1178,7 @@ function openEditModal(t) {
 
   // Limpiar estado de upload previo
   clearFile('edit', null);
+  receiptMode = 'replace'; // reset
   document.getElementById('edit-new-file-info').style.display = 'none';
   const editPreview = document.getElementById('edit-preview');
   if (editPreview) { editPreview.style.display = 'none'; editPreview.innerHTML = ''; }
@@ -1158,6 +1199,7 @@ async function saveEdit() {
     vendor:      document.getElementById('editVendor').value,
     receipt:     document.getElementById('editReceipt').value,
     type:        currentEditRow.type,
+    receiptMode: receiptMode, // 'replace' | 'add'
   };
 
   // Adjuntar archivo si hay uno nuevo seleccionado
@@ -1334,7 +1376,6 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 });
 document.querySelectorAll('.sub-modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
-});
-</script>
+});</script>
 </body>
 </html>
