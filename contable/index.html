@@ -738,7 +738,8 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
 let ACCESS_TOKEN  = null;
 const PAGE_SIZE   = 10;
 let currentPage   = 1;
-let allTransactions = [];
+let allTransactions  = [];
+let visibleTransactions = []; // array actual renderizado — acceso por índice desde onclick
 
 // Almacena el File seleccionado por prefijo de modal (exp, inc, pay, edit)
 const selectedFiles = {};
@@ -1089,6 +1090,7 @@ function renderResults() {
     );
   }
   const visible = filtered.slice(0, currentPage * PAGE_SIZE);
+  visibleTransactions = visible; // guardar para acceso por índice
   document.getElementById('resultsCount').textContent = 'Showing ' + visible.length + ' of ' + filtered.length + ' transactions';
   document.getElementById('resultsList').innerHTML = visible.map((t, i) => renderRow(t, i)).join('');
   document.getElementById('showMoreBtn').style.display = visible.length < filtered.length ? 'block' : 'none';
@@ -1123,13 +1125,14 @@ function showMore() { currentPage++; renderResults(); }
 // ============================================================
 // VIEW RECEIPTS MODAL (múltiples)
 // ============================================================
-function viewReceipts(t) {
+function viewReceipts(idx) {
+  const t = visibleTransactions[idx];
+  if (!t) return;
   const urls = (t.receipt || '').split(',').map(u => u.trim()).filter(Boolean);
   if (urls.length === 1) { window.open(urls[0], '_blank'); return; }
 
   const list = document.getElementById('receipts-list');
   list.innerHTML = urls.map((url, i) => {
-    // Detectar si es imagen por extensión
     const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(url);
     return `
       <div style="padding:0.85rem 0;border-bottom:1px solid rgba(200,146,42,0.1);display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
@@ -1152,7 +1155,9 @@ function viewReceipts(t) {
 let currentEditRow   = null;
 let currentDeleteRow = null;
 
-function openEditModal(t) {
+function openEditModal(idxOrT) {
+  const t = (typeof idxOrT === 'number') ? visibleTransactions[idxOrT] : idxOrT;
+  if (!t) return;
   currentEditRow = t;
 
   document.getElementById('editRowId').value       = t.id;
@@ -1228,7 +1233,9 @@ async function saveEdit() {
   } catch(e) { showToast('Connection error — try again'); }
 }
 
-function openDeleteModal(t) {
+function openDeleteModal(idxOrT) {
+  const t = (typeof idxOrT === 'number') ? visibleTransactions[idxOrT] : idxOrT;
+  if (!t) return;
   currentDeleteRow = t;
   document.getElementById('deleteDesc').textContent =
     'Delete "' + t.description + '" (' + (t.date||'') + ' · $' + Math.abs(t.amount).toFixed(2) + ')? This cannot be undone.';
