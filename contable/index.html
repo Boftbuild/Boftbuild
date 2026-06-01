@@ -621,20 +621,15 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div><label class="field-label">Vendor / Payee</label><input type="text" class="field-input" id="editVendor" placeholder="Vendor or payee"></div>
       </div>
 
-      <!-- Receipt actual + botón Edit Receipt -->
+      <!-- Receipt — mini lista + Add -->
       <div class="field-group">
-        <label class="field-label">Receipt</label>
-        <div id="editReceiptCurrent" style="display:none;margin-bottom:0.6rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
-          <a id="editReceiptLink" href="" target="_blank" style="font-size:0.78rem;color:var(--neon);text-decoration:underline;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">View current receipt ↗</a>
-          <button class="btn-receipt-edit" onclick="openReceiptSubModal()">✏️ Edit Receipt</button>
-        </div>
-        <div id="editNoReceipt" style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
-          <span style="font-size:0.78rem;color:var(--muted);">No receipt attached</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+          <label class="field-label" style="margin-bottom:0;">Receipt</label>
           <button class="btn-receipt-edit" onclick="openReceiptSubModal()">+ Add Receipt</button>
         </div>
-        <!-- Preview del nuevo archivo seleccionado en edit -->
+        <div id="editReceiptList"></div>
         <div class="receipt-preview" id="edit-preview" style="margin-top:0.5rem;"></div>
-        <div id="edit-new-file-info" style="display:none;margin-top:0.4rem;font-size:0.72rem;color:var(--green);">✓ New receipt selected — will upload on save</div>
+        <div id="edit-new-file-info" style="display:none;margin-top:0.4rem;font-size:0.72rem;color:var(--green);">+ Adding receipt — will upload on save</div>
       </div>
       <input type="hidden" id="editReceipt">
     </div>
@@ -646,45 +641,29 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 </div>
 
 <!-- ══════════════════════════════════════════════════
-     SUB-MODAL — EDIT RECEIPT (Replace / Add)
+     SUB-MODAL — ADD RECEIPT
 ══════════════════════════════════════════════════ -->
 <div id="sub-modal-receipt" class="sub-modal-overlay">
   <div class="sub-modal">
     <div class="sub-modal-header">
-      <span class="sub-modal-title">Edit Receipt</span>
+      <span class="sub-modal-title">Add Receipt</span>
       <button class="modal-close" onclick="closeReceiptSubModal()">✕</button>
     </div>
     <div class="sub-modal-body">
-      <div class="receipt-action-grid">
-        <div class="receipt-action-card" id="card-replace" onclick="selectReceiptAction('replace')">
-          <div class="receipt-action-icon">🔄</div>
-          <div class="receipt-action-label">Replace</div>
-          <div class="receipt-action-desc">Upload a new file to replace the current receipt</div>
+      <div class="receipt-upload-zone" id="edit-upload-zone">
+        <input type="file" id="edit-file" accept="image/*,.pdf" onchange="handleFileSelect('edit')">
+        <span class="upload-icon">📎</span>
+        <div class="upload-text">
+          <div class="upload-label" id="edit-upload-label">Tap to upload photo or PDF</div>
+          <div class="upload-sublabel">JPG, PNG, PDF — max 10MB</div>
         </div>
-        <div class="receipt-action-card" id="card-add" onclick="selectReceiptAction('add')">
-          <div class="receipt-action-icon">➕</div>
-          <div class="receipt-action-label">Add</div>
-          <div class="receipt-action-desc">Attach a receipt to this transaction for the first time</div>
-        </div>
+        <button class="upload-clear" id="edit-clear" onclick="clearFile('edit',event)" style="display:none;">✕</button>
       </div>
-
-      <!-- Upload zone del sub-modal -->
-      <div id="sub-upload-area" style="display:none;">
-        <div class="receipt-upload-zone" id="edit-upload-zone">
-          <input type="file" id="edit-file" accept="image/*,.pdf" onchange="handleFileSelect('edit')">
-          <span class="upload-icon">📎</span>
-          <div class="upload-text">
-            <div class="upload-label" id="edit-upload-label">Tap to upload photo or PDF</div>
-            <div class="upload-sublabel">JPG, PNG, PDF — max 10MB</div>
-          </div>
-          <button class="upload-clear" id="edit-clear" onclick="clearFile('edit',event)" style="display:none;">✕</button>
-        </div>
-        <div class="receipt-preview" id="edit-sub-preview" style="margin-top:0.5rem;"></div>
-      </div>
+      <div class="receipt-preview" id="edit-sub-preview" style="margin-top:0.5rem;"></div>
     </div>
     <div class="sub-modal-footer">
       <button class="btn-cancel" onclick="closeReceiptSubModal()">Cancel</button>
-      <button class="btn-submit" onclick="confirmReceiptAction()" id="btn-confirm-receipt" style="display:none;">Confirm</button>
+      <button class="btn-submit" onclick="confirmReceiptAction()" id="btn-confirm-receipt">Confirm</button>
     </div>
   </div>
 </div>
@@ -699,6 +678,18 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <button class="modal-close" onclick="document.getElementById('modal-receipts').classList.remove('open')">✕</button>
     </div>
     <div class="sub-modal-body" id="receipts-list" style="max-height:70vh;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- CONFIRM REMOVE RECEIPT -->
+<div id="modal-remove-receipt" class="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title">Remove Receipt?</div>
+    <div class="confirm-desc">This receipt will be removed from this transaction and the file will be sent to the Drive trash. You can recover it from there if needed.</div>
+    <div class="confirm-btns">
+      <button class="btn-action danger" onclick="document.getElementById('modal-remove-receipt').classList.remove('open')">Cancel</button>
+      <button class="btn-action gold" onclick="doRemoveReceipt()">Remove</button>
+    </div>
   </div>
 </div>
 
@@ -924,12 +915,7 @@ let receiptAction = null; // 'replace' | 'add'
 let receiptMode   = 'replace'; // se pasa al payload en saveEdit
 
 function openReceiptSubModal() {
-  receiptAction = null;
   clearFile('edit', null);
-  document.getElementById('card-replace').classList.remove('selected');
-  document.getElementById('card-add').classList.remove('selected');
-  document.getElementById('sub-upload-area').style.display = 'none';
-  document.getElementById('btn-confirm-receipt').style.display = 'none';
   document.getElementById('sub-modal-receipt').classList.add('open');
 }
 
@@ -949,13 +935,10 @@ function confirmReceiptAction() {
   const file = selectedFiles['edit'];
   if (!file) { showToast('Please select a file first'); return; }
 
-  // Guardar el modo en variable global Y en el DOM como backup
-  receiptMode = receiptAction; // 'replace' o 'add'
-  document.getElementById('modal-edit').dataset.receiptMode = receiptMode;
-
+  // Siempre es add
+  receiptMode = 'add';
+  document.getElementById('modal-edit').dataset.receiptMode = 'add';
   document.getElementById('edit-new-file-info').style.display = 'block';
-  document.getElementById('edit-new-file-info').textContent =
-    (receiptMode === 'add' ? '+ Adding receipt' : '🔄 Replacing receipt') + ' — will upload on save';
 
   const preview = document.getElementById('edit-preview');
   if (preview) {
@@ -1123,6 +1106,75 @@ function renderRow(t, idx) {
 function showMore() { currentPage++; renderResults(); }
 
 // ============================================================
+// RECEIPT LIST en modal edit
+// ============================================================
+function renderReceiptList(receiptsStr) {
+  const urls = (receiptsStr || '').split(',').map(u => u.trim()).filter(Boolean);
+  const list = document.getElementById('editReceiptList');
+  if (!list) return;
+  if (urls.length === 0) {
+    list.innerHTML = '<div style="font-size:0.78rem;color:var(--muted);padding:0.4rem 0;">No receipts attached</div>';
+    return;
+  }
+  list.innerHTML = urls.map((url, i) => {
+    const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(url);
+    const name = 'Receipt ' + (i + 1);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid rgba(200,146,42,0.08);gap:0.5rem;">
+      <div style="display:flex;align-items:center;gap:0.5rem;min-width:0;flex:1;">
+        <span style="font-size:1rem;">${isImg ? '🖼️' : '📄'}</span>
+        <span style="font-size:0.78rem;color:var(--muted);">${name}</span>
+      </div>
+      <div style="display:flex;gap:0.4rem;flex-shrink:0;">
+        <button class="btn-sm view" onclick="window.open('${url}','_blank')">View ↗</button>
+        <button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="confirmRemoveReceipt(${i})">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let removeReceiptIdx = null;
+
+function confirmRemoveReceipt(idx) {
+  removeReceiptIdx = idx;
+  document.getElementById('modal-remove-receipt').classList.add('open');
+}
+
+async function doRemoveReceipt() {
+  document.getElementById('modal-remove-receipt').classList.remove('open');
+
+  const current = document.getElementById('editReceipt').value;
+  const urls = current.split(',').map(u => u.trim()).filter(Boolean);
+  const urlToRemove = urls[removeReceiptIdx];
+
+  if (!urlToRemove) return;
+
+  // Quitar del hidden input y re-renderizar inmediatamente
+  urls.splice(removeReceiptIdx, 1);
+  const newVal = urls.join(',');
+  document.getElementById('editReceipt').value = newVal;
+  renderReceiptList(newVal);
+
+  // Llamar al backend para borrar del Sheet y mandar a papelera en Drive
+  showToast('Removing receipt from Drive...');
+  try {
+    const result = await apiPost({
+      action:     'removeReceipt',
+      id:         document.getElementById('editRowId').value,
+      receiptUrl: urlToRemove,
+    });
+    if (result.success) {
+      showToast('✓ Receipt removed and sent to Drive trash');
+      // Actualizar el currentEditRow con el nuevo valor
+      if (currentEditRow) currentEditRow.receipt = newVal;
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) {
+    showToast('Connection error — try again');
+  }
+}
+
+// ============================================================
 // VIEW RECEIPTS MODAL (múltiples)
 // ============================================================
 function viewReceipts(idx) {
@@ -1176,11 +1228,8 @@ function openEditModal(idxOrT) {
   const catEl = document.getElementById('editCategory');
   for (let o of catEl.options) { if (o.value === t.category) { o.selected = true; break; } }
 
-  // Receipt UI
-  const hasReceipt = t.receipt && t.receipt.length > 5;
-  document.getElementById('editReceiptCurrent').style.display = hasReceipt ? 'flex' : 'none';
-  document.getElementById('editNoReceipt').style.display      = hasReceipt ? 'none' : 'flex';
-  if (hasReceipt) document.getElementById('editReceiptLink').href = t.receipt;
+  // Receipt UI — mini lista
+  renderReceiptList(t.receipt || '');
 
   // Limpiar estado de upload previo
   clearFile('edit', null);
