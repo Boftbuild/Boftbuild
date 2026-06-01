@@ -948,8 +948,9 @@ function confirmReceiptAction() {
   const file = selectedFiles['edit'];
   if (!file) { showToast('Please select a file first'); return; }
 
-  // Guardar el modo elegido para usarlo en saveEdit
+  // Guardar el modo en variable global Y en el DOM como backup
   receiptMode = receiptAction; // 'replace' o 'add'
+  document.getElementById('modal-edit').dataset.receiptMode = receiptMode;
 
   document.getElementById('edit-new-file-info').style.display = 'block';
   document.getElementById('edit-new-file-info').textContent =
@@ -1089,14 +1090,14 @@ function renderResults() {
   }
   const visible = filtered.slice(0, currentPage * PAGE_SIZE);
   document.getElementById('resultsCount').textContent = 'Showing ' + visible.length + ' of ' + filtered.length + ' transactions';
-  document.getElementById('resultsList').innerHTML = visible.map(renderRow).join('');
+  document.getElementById('resultsList').innerHTML = visible.map((t, i) => renderRow(t, i)).join('');
   document.getElementById('showMoreBtn').style.display = visible.length < filtered.length ? 'block' : 'none';
 }
 
-function renderRow(t) {
+function renderRow(t, idx) {
   const hasReceipt = t.receipt && t.receipt.length > 5;
   const amt = Number(t.amount);
-  const tJson = JSON.stringify(t).replace(/'/g, '&#39;');
+  const receiptCount = hasReceipt ? t.receipt.split(',').filter(u => u.trim()).length : 0;
   return `<div class="result-row">
     <div class="result-left">
       <span class="type-badge ${(t.type||'').toLowerCase()}">${t.type}</span>
@@ -1108,11 +1109,11 @@ function renderRow(t) {
     <div class="result-right">
       <span class="result-amount ${amt<0?'neg':'pos'}">${amt<0?'-':'+'}$${Math.abs(amt).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
       ${hasReceipt
-        ? `<button class="receipt-btn" onclick='viewReceipts(${tJson})'>View Receipt${t.receipt.split(',').length > 1 ? ' (' + t.receipt.split(',').length + ')' : ''}</button>`
-        : `<button class="add-receipt-btn" onclick='openEditModal(${tJson})'>+ Add Receipt</button>`
+        ? `<button class="receipt-btn" onclick="viewReceipts(${idx})">View Receipt${receiptCount > 1 ? ' (' + receiptCount + ')' : ''}</button>`
+        : `<button class="add-receipt-btn" onclick="openEditModal(${idx})">+ Add Receipt</button>`
       }
-      <button class="btn-edit" onclick='openEditModal(${tJson})' title="Edit">✏️</button>
-      <button class="btn-delete" onclick='openDeleteModal(${tJson})' title="Delete">🗑</button>
+      <button class="btn-edit" onclick="openEditModal(${idx})" title="Edit">✏️</button>
+      <button class="btn-delete" onclick="openDeleteModal(${idx})" title="Delete">🗑</button>
     </div>
   </div>`;
 }
@@ -1179,6 +1180,7 @@ function openEditModal(t) {
   // Limpiar estado de upload previo
   clearFile('edit', null);
   receiptMode = 'replace'; // reset
+  document.getElementById('modal-edit').dataset.receiptMode = 'replace';
   document.getElementById('edit-new-file-info').style.display = 'none';
   const editPreview = document.getElementById('edit-preview');
   if (editPreview) { editPreview.style.display = 'none'; editPreview.innerHTML = ''; }
@@ -1187,6 +1189,9 @@ function openEditModal(t) {
 }
 
 async function saveEdit() {
+  // Leer receiptMode del DOM — más confiable que la variable global
+  const actualReceiptMode = document.getElementById('modal-edit').dataset.receiptMode || receiptMode || 'replace';
+
   let payload = {
     action:      'editTransaction',
     id:          document.getElementById('editRowId').value,
@@ -1199,7 +1204,7 @@ async function saveEdit() {
     vendor:      document.getElementById('editVendor').value,
     receipt:     document.getElementById('editReceipt').value,
     type:        currentEditRow.type,
-    receiptMode: receiptMode, // 'replace' | 'add'
+    receiptMode: actualReceiptMode,
   };
 
   // Adjuntar archivo si hay uno nuevo seleccionado
