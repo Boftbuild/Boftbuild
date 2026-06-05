@@ -921,7 +921,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 <div id="confirm-overlay" class="confirm-overlay">
   <div class="confirm-box">
     <div class="confirm-title">Close Month?</div>
-    <div class="confirm-desc">This will close <strong style="color:var(--gold-light);">April 2026</strong> and save a snapshot to MONTHLY_CLOSE. This cannot be undone.</div>
+    <div class="confirm-desc" id="closeMonthDesc">This will close <strong style="color:var(--gold-light);" id="closeMonthName">the previous month</strong> and save a snapshot to MONTHLY_CLOSE. This cannot be undone.</div>
     <div class="confirm-btns">
       <button class="btn-action danger" onclick="closeConfirm()">Cancel</button>
       <button class="btn-action gold" onclick="confirmClose()">Confirm Close</button>
@@ -2147,7 +2147,14 @@ function closeModal(type) {
   document.getElementById('modal-' + type).classList.remove('open');
 }
 
-function openConfirm()  { document.getElementById('confirm-overlay').classList.add('open'); }
+function openConfirm() {
+  // Calcular mes anterior dinámicamente
+  const now = new Date();
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const monthName = lastMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  document.getElementById('closeMonthName').textContent = monthName;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
 function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); }
 
 // Cerrar modales al hacer click fuera
