@@ -337,20 +337,12 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         </div>
         <div class="panel">
           <div class="section-label">Project Analysis</div>
-          <div class="project-row"><div><span class="project-name">Client</span><span class="project-tag active">Active</span></div><span class="project-net pos">+$2,500</span></div>
-          <div class="project-row"><div><span class="project-name">Mi papa</span><span class="project-tag closed">Closed</span></div><span class="project-net neg">-$20,263</span></div>
-          <div class="project-row"><div><span class="project-name">Mi casa</span><span class="project-tag active">Active</span></div><span class="project-net" style="color:var(--muted);">—</span></div>
+          <div id="projectAnalysis"><div style="color:var(--muted);font-size:0.82rem;">Loading...</div></div>
           <div style="margin-top:1.5rem;">
             <div class="section-label">Recent Ledger</div>
             <table class="ledger-table">
               <thead><tr><th style="width:85px;">Type</th><th>Description</th><th style="text-align:right;width:75px;">Amount</th></tr></thead>
-              <tbody>
-                <tr><td><span class="type-badge income">Income</span></td><td>Deposit Deck</td><td style="text-align:right;color:var(--green);">+$2,500</td></tr>
-                <tr><td><span class="type-badge expense">Expense</span></td><td>Change Oil</td><td style="text-align:right;color:var(--red);">-$2,016</td></tr>
-                <tr><td><span class="type-badge expense">Expense</span></td><td>Drill Dewalt</td><td style="text-align:right;color:var(--red);">-$321</td></tr>
-                <tr><td><span class="type-badge payment">Payment</span></td><td>Framing Day</td><td style="text-align:right;color:var(--gold-light);">-$250</td></tr>
-                <tr><td><span class="type-badge expense">Expense</span></td><td>Botas</td><td style="text-align:right;color:var(--red);">-$235</td></tr>
-              </tbody>
+              <tbody id="recentLedger"><tr><td colspan="3" style="color:var(--muted);font-size:0.82rem;">Loading...</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -978,6 +970,37 @@ async function loadDashboard() {
       <div class="bar-label-row"><span class="bar-label">${c.name}</span><span class="bar-val">${fmt(c.amount)}</span></div>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.round((c.amount/maxAmt)*100)}%"></div></div>
     `).join('');
+    // Project Analysis
+    const pa = document.getElementById('projectAnalysis');
+    if (data.projectAnalysis && data.projectAnalysis.length > 0) {
+      pa.innerHTML = data.projectAnalysis.map(p => {
+        const netClass = p.net > 0 ? 'pos' : p.net < 0 ? 'neg' : '';
+        const netColor = p.net > 0 ? 'var(--green)' : p.net < 0 ? 'var(--red)' : 'var(--muted)';
+        return `<div class="project-row">
+          <div><span class="project-name">${p.name}</span></div>
+          <span class="project-net" style="color:${netColor};">${p.net >= 0 ? '+' : ''}${fmt(p.net)}</span>
+        </div>`;
+      }).join('');
+    } else {
+      pa.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">No projects yet</div>';
+    }
+
+    // Recent Ledger
+    const rl = document.getElementById('recentLedger');
+    if (data.recentLedger && data.recentLedger.length > 0) {
+      rl.innerHTML = data.recentLedger.map(r => {
+        const typeClass = (r.type||'').toLowerCase();
+        const amt = Number(r.amount);
+        const amtColor = amt >= 0 ? 'var(--green)' : r.type === 'Payment' ? 'var(--gold-light)' : 'var(--red)';
+        const amtStr = (amt >= 0 ? '+' : '') + fmt(amt);
+        return `<tr>
+          <td><span class="type-badge ${typeClass}">${r.type}</span></td>
+          <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.description}</td>
+          <td style="text-align:right;color:${amtColor};">${amtStr}</td>
+        </tr>`;
+      }).join('');
+    }
+
     document.getElementById('lastSync').textContent = 'Last sync: ' + new Date().toLocaleTimeString();
     showToast('Dashboard updated ✓');
   } catch(e) {
