@@ -391,11 +391,11 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <button class="btn-search" onclick="runSearch()">Search</button>
       </div>
       <div class="filters-row">
-        <select class="filter-select" onchange="runSearch()"><option value="">All Types</option><option>Expense</option><option>Income</option><option>Payment</option></select>
-        <select class="filter-select" onchange="runSearch()"><option value="">All Accounts</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select>
-        <select class="filter-select" onchange="runSearch()"><option value="">All Categories</option><option>Lumber</option><option>Vehicle Maintenance</option><option>Tools</option><option>Workwear / PPE</option><option>Software</option></select>
-        <select class="filter-select" onchange="runSearch()"><option value="">All Projects</option><option>Client</option><option>Mi papa</option><option>Mi casa</option></select>
-        <select class="filter-select" onchange="runSearch()"><option value="">All Months</option><option>Jan 2026</option><option>Feb 2026</option><option>Mar 2026</option><option>Apr 2026</option><option>May 2026</option></select>
+        <select id="filterType" class="filter-select" onchange="runSearch()"><option value="">All Types</option><option>Expense</option><option>Income</option><option>Payment</option></select>
+        <select id="filterAccount" class="filter-select" onchange="runSearch()"><option value="">All Accounts</option><option>Bank BOFT</option><option>Venmo BOFT</option><option>Cash BOFT</option></select>
+        <select id="filterCategory" class="filter-select" onchange="runSearch()"><option value="">All Categories</option><option>Lumber</option><option>Vehicle Maintenance</option><option>Tools</option><option>Workwear / PPE</option><option>Software</option><option>Fuel</option><option>Materials</option><option>Fasteners</option><option>Hardware</option><option>Consumables</option><option>Tool Repair</option><option>Equipment Rental</option><option>Vehicle Insurance</option><option>Vehicle Registration</option><option>Parking / Tolls</option><option>Subscriptions</option><option>Professional Services</option><option>Bank Fees</option><option>Licenses</option><option>Website</option><option>Ads</option><option>Printing</option><option>Branding</option><option>Camera / Media Equipment</option><option>Labor Helpers</option><option>Subcontractor</option><option>Crew Food</option><option>Misc</option><option>Client Payment</option><option>Owner Injection</option><option>Refund</option><option>Other Income</option><option>Helper Payment</option><option>Subcontractor Payment</option><option>Owner Reimbursement</option></select>
+        <select id="filterProject" class="filter-select" onchange="runSearch()"><option value="">All Projects</option><option>Client</option><option>Mi papa</option><option>Mi casa</option><option>Deck Panfilo</option></select>
+        <select id="filterMonth" class="filter-select" onchange="runSearch()"><option value="">All Months</option><option value="2026-01">Jan 2026</option><option value="2026-02">Feb 2026</option><option value="2026-03">Mar 2026</option><option value="2026-04">Apr 2026</option><option value="2026-05">May 2026</option><option value="2026-06">Jun 2026</option><option value="2026-07">Jul 2026</option><option value="2026-08">Aug 2026</option><option value="2026-09">Sep 2026</option><option value="2026-10">Oct 2026</option><option value="2026-11">Nov 2026</option><option value="2026-12">Dec 2026</option></select>
       </div>
       <div class="search-results">
         <div class="results-count" id="resultsCount"></div>
@@ -1068,18 +1068,32 @@ function runSearch() {
 }
 
 function renderResults() {
-  const query = document.getElementById('searchInput').value.toLowerCase().trim();
+  const query   = document.getElementById('searchInput').value.toLowerCase().trim();
+  const fType    = document.getElementById('filterType')?.value    || '';
+  const fAccount = document.getElementById('filterAccount')?.value || '';
+  const fCat     = document.getElementById('filterCategory')?.value|| '';
+  const fProject = document.getElementById('filterProject')?.value || '';
+  const fMonth   = document.getElementById('filterMonth')?.value   || '';
+
   let filtered = allTransactions;
+
   if (query) {
     filtered = filtered.filter(t =>
       (t.description||'').toLowerCase().includes(query) ||
       (t.category||'').toLowerCase().includes(query) ||
       (t.project||'').toLowerCase().includes(query) ||
-      (t.account||'').toLowerCase().includes(query)
+      (t.account||'').toLowerCase().includes(query) ||
+      (t.vendor||'').toLowerCase().includes(query)
     );
   }
+  if (fType)    filtered = filtered.filter(t => (t.type||'').toLowerCase() === fType.toLowerCase());
+  if (fAccount) filtered = filtered.filter(t => (t.account||'').toLowerCase() === fAccount.toLowerCase());
+  if (fCat)     filtered = filtered.filter(t => (t.category||'').toLowerCase() === fCat.toLowerCase());
+  if (fProject) filtered = filtered.filter(t => (t.project||'').toLowerCase().includes(fProject.toLowerCase()));
+  if (fMonth)   filtered = filtered.filter(t => (t.date||'').startsWith(fMonth));
+
   const visible = filtered.slice(0, currentPage * PAGE_SIZE);
-  visibleTransactions = visible; // guardar para acceso por índice
+  visibleTransactions = visible;
   document.getElementById('resultsCount').textContent = 'Showing ' + visible.length + ' of ' + filtered.length + ' transactions';
   document.getElementById('resultsList').innerHTML = visible.map((t, i) => renderRow(t, i)).join('');
   document.getElementById('showMoreBtn').style.display = visible.length < filtered.length ? 'block' : 'none';
