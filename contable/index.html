@@ -287,6 +287,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <button class="nav-link" onclick="navTo('sec-reports',this)">Reports</button>
       <button class="nav-link" onclick="navTo('sec-search',this)">Search</button>
       <button class="nav-link" onclick="navTo('sec-entry',this)">New Entry</button>
+      <button class="nav-link" onclick="navTo('sec-workers',this);loadWorkersSection()">Workers</button>
     </div>
     <div class="nav-right">
       <img class="nav-avatar" id="navAvatar" src="" alt="">
@@ -420,6 +421,77 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <p>Helper payments, subcontractors and owner reimbursements.</p>
         <span class="form-arrow">Open Form →</span>
       </div>
+    </div>
+    <!-- WORKERS -->
+    <div id="sec-workers" style="margin-top:2rem;">
+      <div class="section-label">Team Directory</div>
+      <div class="section-title">Workers</div>
+    </div>
+    <div style="background:var(--black2);padding:1.5rem;margin-top:2px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+        <div style="font-size:0.82rem;color:var(--muted);" id="workersCount">—</div>
+        <button class="btn-action gold" onclick="openAddWorkerModal()">+ Add Worker</button>
+      </div>
+      <div id="workersList">
+        <div style="color:var(--muted);font-size:0.82rem;">Click Workers in the nav to load.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     MODAL — EDIT WORKER
+══════════════════════════════════════════════════ -->
+<div id="modal-edit-worker" class="sub-modal-overlay">
+  <div class="sub-modal" style="max-width:520px;">
+    <div class="sub-modal-header">
+      <span class="sub-modal-title" id="editWorkerTitle">Edit Worker</span>
+      <button class="modal-close" onclick="closeEditWorkerModal()">✕</button>
+    </div>
+    <div class="sub-modal-body">
+      <input type="hidden" id="editWorkerId">
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border);">
+        <span style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold-light);" id="editWorkerIdBadge"></span>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Full Name <span>*</span></label><input type="text" class="field-input" id="ew-name" placeholder="John Smith"></div>
+        <div><label class="field-label">Type <span>*</span></label>
+          <select class="field-input" id="ew-type">
+            <option value="">Select...</option>
+            <option>Helper</option>
+            <option>Subcontractor</option>
+            <option>Employee</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Phone</label><input type="text" class="field-input" id="ew-phone" placeholder="801-xxx-xxxx"></div>
+        <div><label class="field-label">Address</label><input type="text" class="field-input" id="ew-address" placeholder="City, State"></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Rate ($)</label><input type="number" class="field-input" id="ew-rate" placeholder="0.00" step="0.01"></div>
+        <div><label class="field-label">Rate Type</label>
+          <select class="field-input" id="ew-ratetype">
+            <option value="">Select...</option>
+            <option>Hour</option>
+            <option>Day</option>
+            <option>Job</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group"><label class="field-label">Notes</label><input type="text" class="field-input" id="ew-notes" placeholder="Any additional info..."></div>
+      <div class="field-group">
+        <label class="field-label">Status</label>
+        <select class="field-input" id="ew-active">
+          <option value="Yes">Active</option>
+          <option value="No">Inactive</option>
+        </select>
+      </div>
+    </div>
+    <div class="sub-modal-footer">
+      <button class="btn-cancel" onclick="closeEditWorkerModal()">Cancel</button>
+      <button class="btn-submit" onclick="saveWorkerEdit()">Save Changes</button>
     </div>
   </div>
 </div>
@@ -1753,6 +1825,141 @@ function populateProjectDropdown() {
     opt.textContent = p;
     sel.appendChild(opt);
   });
+}
+
+// ============================================================
+// WORKERS SECTION — Directorio completo
+// ============================================================
+let allWorkersData = []; // incluye inactivos
+
+async function loadWorkersSection() {
+  try {
+    const data = await apiGet('workers');
+    // Cargar TODOS los workers (activos e inactivos) — getWorkers_ solo retorna activos
+    // para el directorio usamos el cache y lo complementamos
+    workersCache = data.workers || [];
+    allWorkersData = data.workers || [];
+    renderWorkersList();
+  } catch(e) { console.error('Workers section error:', e); }
+}
+
+function renderWorkersList() {
+  const list = document.getElementById('workersList');
+  const count = document.getElementById('workersCount');
+  if (!allWorkersData.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:0.88rem;padding:1rem 0;">No workers yet. Add one with the button above.</div>';
+    count.textContent = '0 workers';
+    return;
+  }
+
+  // Calcular total pagado por worker desde allTransactions
+  const paidMap = {};
+  allTransactions.forEach(t => {
+    if (t.type === 'Payment' && t.payee) {
+      paidMap[t.payee] = (paidMap[t.payee] || 0) + Math.abs(t.amount);
+    }
+  });
+
+  count.textContent = allWorkersData.length + ' worker' + (allWorkersData.length !== 1 ? 's' : '');
+
+  list.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);padding:0.5rem 0.75rem;text-align:left;">ID</th>
+          <th style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);padding:0.5rem 0.75rem;text-align:left;">Name</th>
+          <th style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);padding:0.5rem 0.75rem;text-align:left;">Type</th>
+          <th style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);padding:0.5rem 0.75rem;text-align:left;">Phone</th>
+          <th style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);padding:0.5rem 0.75rem;text-align:left;">Rate</th>
+          <th style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);padding:0.5rem 0.75rem;text-align:right;">Total Paid YTD</th>
+          <th style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);padding:0.5rem 0.75rem;text-align:center;">Status</th>
+          <th style="padding:0.5rem 0.75rem;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${allWorkersData.map((w, i) => {
+          const paid = paidMap[w.name] || 0;
+          const isActive = w.active !== 'No';
+          return `<tr style="border-bottom:1px solid rgba(200,146,42,0.08);${!isActive?'opacity:0.5':''}">
+            <td style="padding:0.75rem;color:var(--neon);font-size:0.78rem;font-weight:700;">${w.id}</td>
+            <td style="padding:0.75rem;font-weight:600;color:var(--text);">${w.name}</td>
+            <td style="padding:0.75rem;">
+              <span style="font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.15rem 0.5rem;border:1px solid;color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);">${w.type||'—'}</span>
+            </td>
+            <td style="padding:0.75rem;color:var(--muted);font-size:0.82rem;">${w.phone||'—'}</td>
+            <td style="padding:0.75rem;color:var(--muted);font-size:0.82rem;">${w.rate ? '$'+Number(w.rate).toFixed(2)+'/'+w.rateType : '—'}</td>
+            <td style="padding:0.75rem;text-align:right;font-family:'Cinzel',serif;color:${paid>0?'var(--gold-light)':'var(--muted)'};">${paid > 0 ? fmt(paid) : '—'}</td>
+            <td style="padding:0.75rem;text-align:center;">
+              <span style="font-size:0.65rem;font-weight:700;padding:0.15rem 0.5rem;border:1px solid;${isActive?'color:var(--green);border-color:rgba(76,175,125,0.3);background:rgba(76,175,125,0.08);':'color:var(--muted);border-color:rgba(122,117,112,0.3);'}">${isActive?'Active':'Inactive'}</span>
+            </td>
+            <td style="padding:0.75rem;text-align:right;">
+              <button class="btn-edit" onclick="openEditWorkerModal(${i})" title="Edit">✏️</button>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+function openAddWorkerModal() {
+  // Reusar el sub-modal de Add New Person
+  document.getElementById('sub-modal-worker').classList.add('open');
+}
+
+function openEditWorkerModal(idx) {
+  const w = allWorkersData[idx];
+  if (!w) return;
+
+  document.getElementById('editWorkerId').value    = w.id;
+  document.getElementById('editWorkerIdBadge').textContent = w.id;
+  document.getElementById('editWorkerTitle').textContent = 'Edit — ' + w.name;
+  document.getElementById('ew-name').value         = w.name || '';
+  document.getElementById('ew-phone').value        = w.phone || '';
+  document.getElementById('ew-address').value      = w.address || '';
+  document.getElementById('ew-rate').value         = w.rate || '';
+  document.getElementById('ew-notes').value        = w.notes || '';
+
+  const typeEl = document.getElementById('ew-type');
+  for (let o of typeEl.options) { if (o.value === w.type) { o.selected = true; break; } }
+
+  const rateEl = document.getElementById('ew-ratetype');
+  for (let o of rateEl.options) { if (o.value === w.rateType) { o.selected = true; break; } }
+
+  document.getElementById('ew-active').value = w.active || 'Yes';
+  document.getElementById('modal-edit-worker').classList.add('open');
+}
+
+function closeEditWorkerModal() {
+  document.getElementById('modal-edit-worker').classList.remove('open');
+}
+
+async function saveWorkerEdit() {
+  const id = document.getElementById('editWorkerId').value;
+  if (!id) return;
+
+  showToast('Saving worker...');
+  try {
+    const result = await apiPost({
+      action:   'editWorker',
+      id,
+      name:     document.getElementById('ew-name').value.trim(),
+      type:     document.getElementById('ew-type').value,
+      phone:    document.getElementById('ew-phone').value.trim(),
+      address:  document.getElementById('ew-address').value.trim(),
+      rate:     document.getElementById('ew-rate').value,
+      rateType: document.getElementById('ew-ratetype').value,
+      notes:    document.getElementById('ew-notes').value.trim(),
+      active:   document.getElementById('ew-active').value,
+    });
+    if (result.success) {
+      showToast('✓ Worker updated');
+      closeEditWorkerModal();
+      loadWorkersSection();
+      loadWorkers(); // actualizar cache
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
 }
 
 // ============================================================
