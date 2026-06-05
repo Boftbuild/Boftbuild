@@ -366,9 +366,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     </div>
     <div class="reports-section">
       <div class="reports-actions">
-        <button class="btn-action gold" onclick="generateMonthlyReport()">&#128202; Monthly Report</button>
-        <button class="btn-action outline" onclick="openConfirm()">&#128197; Monthly Report</button>
-        <button class="btn-action outline" onclick="generateSnapshot()" style="font-size:0.68rem;">Financial Snapshot</button>
+        <button class="btn-action gold" onclick="generateMonthlyReportSmart()">&#128202; Generate Report</button>
       </div>
       <div class="section-label" style="margin-bottom:1rem;">Saved Reports — Google Drive</div>
       <div id="reportsList"><div style="padding:1rem;color:var(--muted);font-size:0.82rem;">Loading...</div></div>
@@ -874,6 +872,18 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   </div>
 </div>
 
+<!-- CONFIRM REPLACE REPORT -->
+<div id="modal-replace-report" class="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title">Replace Existing Report?</div>
+    <div class="confirm-desc" id="replaceReportDesc">A report for this month already exists. Generating a new one will delete the current report and replace it with an updated version.</div>
+    <div class="confirm-btns">
+      <button class="btn-action danger" onclick="document.getElementById('modal-replace-report').classList.remove('open')">Cancel</button>
+      <button class="btn-action gold" onclick="doReplaceReport()">Replace & Update</button>
+    </div>
+  </div>
+</div>
+
 <!-- CONFIRM DELETE REPORT -->
 <div id="modal-delete-report" class="confirm-overlay">
   <div class="confirm-box">
@@ -1288,6 +1298,7 @@ async function loadReports() {
       list.innerHTML = '<div style="padding:1rem;color:var(--muted);font-size:0.88rem;">No reports generated yet.</div>';
       return;
     }
+    window.allReportsCache = data.reports; // cache para detectar existentes
     list.innerHTML = data.reports.map(r => `
       <div class="report-row">
         <div class="report-info">
@@ -2033,6 +2044,76 @@ async function saveWorkerEdit() {
       showToast('Error: ' + result.message);
     }
   } catch(e) { showToast('Connection error'); }
+}
+
+// ============================================================
+// GENERATE REPORT — SMART (detecta si ya existe)
+// ============================================================
+let existingReportId   = null; // ID del reporte existente del mes actual
+let existingReportName = null;
+
+async function generateMonthlyReportSmart() {
+  // Detectar si ya hay reporte del mes actual (BOFT_Report_YYYY-MM)
+  const now = new Date();
+  const monthKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
+  // Buscar en los reportes cargados
+  const reports = document.querySelectorAll('#reportsList .report-name');
+  existingReportId   = null;
+  existingReportName = null;
+
+  // Buscar en allReportsCache
+  if (window.allReportsCache) {
+    const found = window.allReportsCache.find(r => r.name.includes('BOFT_Report_' + monthKey));
+    if (found) {
+      existingReportId   = found.id;
+      existingReportName = found.name;
+    }
+  }
+
+  if (existingReportId) {
+    document.getElementById('replaceReportDesc').textContent =
+      '"' + existingReportName + '" already exists for this month. Replace it with an updated version?';
+    document.getElementById('modal-replace-report').classList.add('open');
+  } else {
+    await runGenerateReport();
+  }
+}
+
+async function doReplaceReport() {
+  document.getElementById('modal-replace-report').classList.remove('open');
+  // Borrar el existente primero
+  if (existingReportId) {
+    try { await apiPost({ action: 'deleteReport', fileId: existingReportId }); } catch(e) {}
+  }
+  await runGenerateReport();
+}
+
+async function runGenerateReport() {
+  showToast('Generating report...');
+  try {
+    const result = await apiPost({ action: 'monthlyReport' });
+    if (!result.success) { showToast('Error: ' + result.message); return; }
+
+    currentReportPdf = result.pdfBase64;
+
+    const s = result.summary;
+    document.getElementById('reportPreviewTitle').textContent = result.monthName + ' Report';
+    document.getElementById('reportPreviewPeriod').textContent = result.periodLabel;
+    document.getElementById('reportPreviewSummary').innerHTML = [
+      { label: 'Income',     value: fmt(s.income),   color: 'var(--green)' },
+      { label: 'Expenses',   value: fmt(s.expenses),  color: 'var(--red)'   },
+      { label: 'Payments',   value: fmt(s.payments),  color: 'var(--red)'   },
+      { label: 'Net Profit', value: fmt(s.net),       color: s.net >= 0 ? 'var(--green)' : 'var(--red)' },
+    ].map(c => `
+      <div style="background:var(--black);border:1px solid var(--border);padding:0.75rem;text-align:center;">
+        <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">${c.label}</div>
+        <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:${c.color};">${c.value}</div>
+      </div>`).join('');
+
+    document.getElementById('modal-report-preview').classList.add('open');
+    showToast('Report ready — save or discard');
+  } catch(e) { showToast('Connection error'); console.error(e); }
 }
 
 // ============================================================
