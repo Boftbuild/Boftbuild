@@ -698,11 +698,14 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div class="field-row">
           <div>
             <label class="field-label">Pay To</label>
-            <input type="text" class="field-input" id="editPayee" placeholder="Payee name">
+            <select class="field-input" id="editPayee" onchange="onEditPayeeChange()">
+              <option value="">Select...</option>
+            </select>
+            <input type="hidden" id="editPayeeText" value="">
           </div>
           <div>
             <label class="field-label">Payment Method</label>
-            <select class="field-input" id="editPayMethod" onchange="onEditPayMethodChange()">
+            <select class="field-input" id="editPayMethod">
               <option value="">Select...</option>
               <option>Cash</option>
               <option>Check</option>
@@ -712,6 +715,15 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
               <option>Other</option>
             </select>
           </div>
+        </div>
+        <div class="field-row">
+          <div>
+            <label class="field-label">Project</label>
+            <select class="field-input" id="editPayProject">
+              <option value="">Project Name (optional)</option>
+            </select>
+          </div>
+          <div></div>
         </div>
       </div>
 
@@ -1133,7 +1145,7 @@ async function loadMissingReceipts() {
           <div>
             <div class="missing-desc" style="display:flex;align-items:center;gap:0.5rem;">
               <span class="type-badge ${typeClass}">${m.type||'—'}</span>
-              ${m.description} — ${m.account}
+              ${m.description}${m.type === 'Payment' && m.payee ? ' → ' + m.payee : ''} — ${m.account}
             </div>
             <div class="missing-cat">${m.category} · ${m.date}${m.project?' · '+m.project:''}</div>
           </div>
@@ -1233,8 +1245,8 @@ function renderRow(t, idx) {
     <div class="result-left">
       <span class="type-badge ${(t.type||'').toLowerCase()}">${t.type}</span>
       <div class="result-info">
-        <div class="result-desc">${t.description}</div>
-        <div class="result-meta">${t.category} · ${t.account} · ${t.date}${t.project?' · '+t.project:''}</div>
+        <div class="result-desc">${t.description}${t.type === 'Payment' && t.payee ? ' <span style="color:var(--neon);font-size:0.78rem;">→ ' + t.payee + '</span>' : ''}</div>
+        <div class="result-meta">${t.category} · ${t.account} · ${t.date}${t.project?' · '+t.project:''}${t.paymentMethod?' · '+t.paymentMethod:''}</div>
       </div>
     </div>
     <div class="result-right">
@@ -1378,22 +1390,32 @@ function openEditModal(idxOrT) {
   const isPayment = t.type === 'Payment';
   document.getElementById('editPaymentFields').style.display = isPayment ? 'block' : 'none';
   const payeeBadge = document.getElementById('editPayeeBadge');
-  if (isPayment && t.payee) {
-    payeeBadge.textContent = t.payee;
-    payeeBadge.style.display = 'inline-block';
-    document.getElementById('editPayee').value = t.payee || '';
+  if (isPayment) {
+    // Cargar workers si no están en cache
+    if (workersCache.length === 0) { loadWorkers().then(() => populateEditPayeeDropdown(t.payee || '')); }
+    else { populateEditPayeeDropdown(t.payee || ''); }
+    // Cargar proyectos si no están en cache
+    if (projectsCache.length === 0 && allTransactions.length > 0) loadProjects();
+    // Poblar dropdown de proyectos
+    populateEditProjectDropdown(t.project || '');
+    // Payment method
+    const payMethodEl = document.getElementById('editPayMethod');
+    const payMethodVal = t.paymentMethod || '';
+    let found = false;
+    for (let o of payMethodEl.options) {
+      if (o.value === payMethodVal) { o.selected = true; found = true; break; }
+    }
+    if (!found) payMethodEl.selectedIndex = 0;
+    // Badge con nombre del payee
+    if (t.payee) {
+      payeeBadge.textContent = t.payee;
+      payeeBadge.style.display = 'inline-block';
+    } else {
+      payeeBadge.style.display = 'none';
+    }
   } else {
     payeeBadge.style.display = 'none';
-    document.getElementById('editPayee').value = '';
   }
-  // Payment method — puede venir en vendor field o en un campo futuro
-  const payMethodEl = document.getElementById('editPayMethod');
-  const payMethodVal = t.paymentMethod || t.vendor || '';
-  let found = false;
-  for (let o of payMethodEl.options) {
-    if (o.value === payMethodVal) { o.selected = true; found = true; break; }
-  }
-  if (!found) payMethodEl.selectedIndex = 0;
 
   // Receipt UI — mini lista
   renderReceiptList(t.receipt || '');
@@ -1414,6 +1436,18 @@ async function saveEdit() {
   const actualReceiptMode = document.getElementById('modal-edit').dataset.receiptMode || receiptMode || 'replace';
 
   const isEditPayment = currentEditRow.type === 'Payment';
+  // Para payment: obtener nombre del worker del dropdown
+  let editPayeeName = '';
+  if (isEditPayment) {
+    const editPayeeEl = document.getElementById('editPayee');
+    const selOpt = editPayeeEl.options[editPayeeEl.selectedIndex];
+    editPayeeName = selOpt?.dataset?.name || selOpt?.textContent || editPayeeEl.value || '';
+    if (editPayeeName === 'Select...') editPayeeName = '';
+  }
+  const editProjectVal = isEditPayment
+    ? document.getElementById('editPayProject').value
+    : document.getElementById('editProject').value;
+
   let payload = {
     action:        'editTransaction',
     id:            document.getElementById('editRowId').value,
@@ -1422,9 +1456,9 @@ async function saveEdit() {
     amount:        document.getElementById('editAmount').value,
     category:      document.getElementById('editCategory').value,
     description:   document.getElementById('editDescription').value,
-    project:       document.getElementById('editProject').value,
-    vendor:        isEditPayment ? document.getElementById('editPayee').value : document.getElementById('editVendor').value,
-    payee:         isEditPayment ? document.getElementById('editPayee').value : '',
+    project:       editProjectVal,
+    vendor:        isEditPayment ? editPayeeName : document.getElementById('editVendor').value,
+    payee:         editPayeeName,
     paymentMethod: isEditPayment ? document.getElementById('editPayMethod').value : '',
     receipt:       document.getElementById('editReceipt').value,
     type:          currentEditRow.type,
@@ -1583,6 +1617,58 @@ function onPayeeChange() {
   } else {
     const opt = sel.options[sel.selectedIndex];
     document.getElementById('pay-worker-id').value = sel.value;
+  }
+}
+
+function populateEditPayeeDropdown(currentPayee) {
+  const sel = document.getElementById('editPayee');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Select...</option>';
+  workersCache.forEach(w => {
+    const opt = document.createElement('option');
+    opt.value = w.id;
+    opt.textContent = w.name + (w.type ? ' (' + w.type + ')' : '');
+    opt.dataset.name = w.name;
+    if (w.name === currentPayee) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  // Si el payee no está en workers, agregar como opción manual
+  if (currentPayee && !workersCache.find(w => w.name === currentPayee)) {
+    const opt = document.createElement('option');
+    opt.value = currentPayee;
+    opt.textContent = currentPayee;
+    opt.dataset.name = currentPayee;
+    opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+function populateEditProjectDropdown(currentProject) {
+  const sel = document.getElementById('editPayProject');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Project Name (optional)</option>';
+  projectsCache.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p;
+    opt.textContent = p;
+    if (p === currentProject) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  // Si no hay proyectos en cache, cargarlos
+  if (projectsCache.length === 0 && allTransactions.length > 0) loadProjects();
+}
+
+function onEditPayeeChange() {
+  const sel = document.getElementById('editPayee');
+  const opt = sel.options[sel.selectedIndex];
+  const name = opt?.dataset?.name || opt?.textContent || '';
+  // Actualizar badge
+  const badge = document.getElementById('editPayeeBadge');
+  if (name && name !== 'Select...') {
+    badge.textContent = name;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
   }
 }
 
