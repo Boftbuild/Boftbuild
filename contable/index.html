@@ -654,9 +654,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 <div id="modal-edit" class="modal-overlay">
   <div class="modal">
     <div class="modal-header">
-      <div style="display:flex;align-items:center;gap:0.75rem;">
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
         <span class="modal-title">Edit Transaction</span>
         <span class="modal-type" id="editModalType" style="color:var(--gold-light);border:1px solid var(--border);background:var(--gold-dim);">—</span>
+        <span id="editPayeeBadge" style="display:none;font-size:0.72rem;color:var(--neon);border:1px solid var(--border-neon);background:var(--neon-dim);padding:0.2rem 0.6rem;">—</span>
       </div>
       <button class="modal-close" onclick="closeModal('edit')">✕</button>
     </div>
@@ -690,6 +691,28 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <div class="field-row">
         <div><label class="field-label">Project</label><input type="text" class="field-input" id="editProject" placeholder="Project name (optional)"></div>
         <div><label class="field-label">Vendor / Payee</label><input type="text" class="field-input" id="editVendor" placeholder="Vendor or payee"></div>
+      </div>
+
+      <!-- Campos extra para Payment -->
+      <div id="editPaymentFields" style="display:none;">
+        <div class="field-row">
+          <div>
+            <label class="field-label">Pay To</label>
+            <input type="text" class="field-input" id="editPayee" placeholder="Payee name">
+          </div>
+          <div>
+            <label class="field-label">Payment Method</label>
+            <select class="field-input" id="editPayMethod" onchange="onEditPayMethodChange()">
+              <option value="">Select...</option>
+              <option>Cash</option>
+              <option>Check</option>
+              <option>Transfer</option>
+              <option>Zelle</option>
+              <option>Venmo</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <!-- Receipt — mini lista + Add -->
@@ -1351,6 +1374,27 @@ function openEditModal(idxOrT) {
   const catEl = document.getElementById('editCategory');
   for (let o of catEl.options) { if (o.value === t.category) { o.selected = true; break; } }
 
+  // Campos extra para Payment
+  const isPayment = t.type === 'Payment';
+  document.getElementById('editPaymentFields').style.display = isPayment ? 'block' : 'none';
+  const payeeBadge = document.getElementById('editPayeeBadge');
+  if (isPayment && t.payee) {
+    payeeBadge.textContent = t.payee;
+    payeeBadge.style.display = 'inline-block';
+    document.getElementById('editPayee').value = t.payee || '';
+  } else {
+    payeeBadge.style.display = 'none';
+    document.getElementById('editPayee').value = '';
+  }
+  // Payment method — puede venir en vendor field o en un campo futuro
+  const payMethodEl = document.getElementById('editPayMethod');
+  const payMethodVal = t.paymentMethod || t.vendor || '';
+  let found = false;
+  for (let o of payMethodEl.options) {
+    if (o.value === payMethodVal) { o.selected = true; found = true; break; }
+  }
+  if (!found) payMethodEl.selectedIndex = 0;
+
   // Receipt UI — mini lista
   renderReceiptList(t.receipt || '');
 
@@ -1369,19 +1413,22 @@ async function saveEdit() {
   // Leer receiptMode del DOM — más confiable que la variable global
   const actualReceiptMode = document.getElementById('modal-edit').dataset.receiptMode || receiptMode || 'replace';
 
+  const isEditPayment = currentEditRow.type === 'Payment';
   let payload = {
-    action:      'editTransaction',
-    id:          document.getElementById('editRowId').value,
-    date:        document.getElementById('editDate').value,
-    account:     document.getElementById('editAccount').value,
-    amount:      document.getElementById('editAmount').value,
-    category:    document.getElementById('editCategory').value,
-    description: document.getElementById('editDescription').value,
-    project:     document.getElementById('editProject').value,
-    vendor:      document.getElementById('editVendor').value,
-    receipt:     document.getElementById('editReceipt').value,
-    type:        currentEditRow.type,
-    receiptMode: actualReceiptMode,
+    action:        'editTransaction',
+    id:            document.getElementById('editRowId').value,
+    date:          document.getElementById('editDate').value,
+    account:       document.getElementById('editAccount').value,
+    amount:        document.getElementById('editAmount').value,
+    category:      document.getElementById('editCategory').value,
+    description:   document.getElementById('editDescription').value,
+    project:       document.getElementById('editProject').value,
+    vendor:        isEditPayment ? document.getElementById('editPayee').value : document.getElementById('editVendor').value,
+    payee:         isEditPayment ? document.getElementById('editPayee').value : '',
+    paymentMethod: isEditPayment ? document.getElementById('editPayMethod').value : '',
+    receipt:       document.getElementById('editReceipt').value,
+    type:          currentEditRow.type,
+    receiptMode:   actualReceiptMode,
   };
 
   // Adjuntar archivo si hay uno nuevo seleccionado
@@ -1537,6 +1584,10 @@ function onPayeeChange() {
     const opt = sel.options[sel.selectedIndex];
     document.getElementById('pay-worker-id').value = sel.value;
   }
+}
+
+function onEditPayMethodChange() {
+  // No hay sub-opción en edit — el método es directo (Cash, Check, Zelle, Venmo, etc.)
 }
 
 function onPayMethodChange() {
