@@ -997,21 +997,27 @@ async function loadMissingReceipts() {
       list.innerHTML = '<div style="padding:1rem;color:var(--green);font-size:0.88rem;">✓ No missing receipts!</div>';
       return;
     }
-    list.innerHTML = data.missing.map(m => `
-      <div class="missing-row">
+    // Guardar en array global para acceso por índice
+    window.missingTransactions = data.missing;
+    list.innerHTML = data.missing.map((m, i) => {
+      const typeClass = (m.type||'').toLowerCase();
+      return `<div class="missing-row">
         <div class="missing-info">
           <div class="missing-warn"></div>
           <div>
-            <div class="missing-desc">${m.description} — ${m.account}</div>
-            <div class="missing-cat">${m.category} · ${m.date}</div>
+            <div class="missing-desc" style="display:flex;align-items:center;gap:0.5rem;">
+              <span class="type-badge ${typeClass}">${m.type||'—'}</span>
+              ${m.description} — ${m.account}
+            </div>
+            <div class="missing-cat">${m.category} · ${m.date}${m.project?' · '+m.project:''}</div>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:0.75rem;">
           <span class="missing-amount">${fmt(Math.abs(m.amount))}</span>
-          <button class="add-receipt-btn">+ Add Receipt</button>
+          <button class="add-receipt-btn" onclick="openEditModal(window.missingTransactions[${i}])">+ Add Receipt</button>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   } catch(e) { console.error('Missing receipts error:', e); }
 }
 
