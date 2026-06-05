@@ -366,8 +366,9 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     </div>
     <div class="reports-section">
       <div class="reports-actions">
-        <button class="btn-action gold" onclick="generateSnapshot()">&#128202; Generate Snapshot</button>
+        <button class="btn-action gold" onclick="generateMonthlyReport()">&#128202; Monthly Report</button>
         <button class="btn-action outline" onclick="openConfirm()">&#128197; Close Month</button>
+        <button class="btn-action outline" onclick="generateSnapshot()" style="font-size:0.68rem;">Financial Snapshot</button>
       </div>
       <div class="section-label" style="margin-bottom:1rem;">Saved Reports — Google Drive</div>
       <div id="reportsList"><div style="padding:1rem;color:var(--muted);font-size:0.82rem;">Loading...</div></div>
@@ -881,6 +882,25 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="confirm-btns">
       <button class="btn-action danger" onclick="document.getElementById('modal-remove-receipt').classList.remove('open')">Cancel</button>
       <button class="btn-action gold" onclick="doRemoveReceipt()">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL — MONTHLY REPORT PREVIEW -->
+<div id="modal-report-preview" class="confirm-overlay" style="z-index:300;">
+  <div class="confirm-box" style="max-width:520px;width:95%;text-align:left;">
+    <div class="confirm-title" style="text-align:center;" id="reportPreviewTitle">Monthly Report</div>
+    <div style="text-align:center;margin-bottom:1rem;">
+      <span style="font-size:0.75rem;color:var(--muted);" id="reportPreviewPeriod"></span>
+    </div>
+    <!-- Mini summary -->
+    <div id="reportPreviewSummary" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:1.25rem;"></div>
+    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:1.25rem;text-align:center;">
+      Review the summary above. Save to Drive to keep this report, or discard.
+    </div>
+    <div class="confirm-btns">
+      <button class="btn-action danger" onclick="discardReport()">Discard</button>
+      <button class="btn-action gold" onclick="saveReport()">💾 Save to Drive</button>
     </div>
   </div>
 </div>
@@ -1996,6 +2016,61 @@ async function saveWorkerEdit() {
       closeEditWorkerModal();
       loadWorkersSection();
       loadWorkers(); // actualizar cache
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
+}
+
+// ============================================================
+// MONTHLY REPORT
+// ============================================================
+let currentReportPdf = null; // base64 del PDF generado
+
+async function generateMonthlyReport() {
+  showToast('Generating Monthly Report...');
+  try {
+    const result = await apiPost({ action: 'monthlyReport' });
+    if (!result.success) { showToast('Error: ' + result.message); return; }
+
+    currentReportPdf = result.pdfBase64;
+
+    // Mostrar summary en el modal
+    const s = result.summary;
+    document.getElementById('reportPreviewTitle').textContent = result.monthName + ' Report';
+    document.getElementById('reportPreviewPeriod').textContent = result.periodLabel;
+    document.getElementById('reportPreviewSummary').innerHTML = [
+      { label: 'Income',   value: fmt(s.income),   color: 'var(--green)' },
+      { label: 'Expenses', value: fmt(s.expenses),  color: 'var(--red)'   },
+      { label: 'Payments', value: fmt(s.payments),  color: 'var(--red)'   },
+      { label: 'Net Profit', value: fmt(s.net),     color: s.net >= 0 ? 'var(--green)' : 'var(--red)' },
+    ].map(c => `
+      <div style="background:var(--black);border:1px solid var(--border);padding:0.75rem;text-align:center;">
+        <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">${c.label}</div>
+        <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:${c.color};">${c.value}</div>
+      </div>`).join('');
+
+    document.getElementById('modal-report-preview').classList.add('open');
+    showToast('Report ready — review and save');
+  } catch(e) { showToast('Connection error'); console.error(e); }
+}
+
+function discardReport() {
+  currentReportPdf = null;
+  document.getElementById('modal-report-preview').classList.remove('open');
+  showToast('Report discarded');
+}
+
+async function saveReport() {
+  if (!currentReportPdf) return;
+  document.getElementById('modal-report-preview').classList.remove('open');
+  showToast('Saving report to Drive...');
+  try {
+    const result = await apiPost({ action: 'saveMonthlyReport', pdfBase64: currentReportPdf });
+    if (result.success) {
+      showToast('✓ ' + result.fileName + ' saved to Drive');
+      currentReportPdf = null;
+      loadReports();
     } else {
       showToast('Error: ' + result.message);
     }
