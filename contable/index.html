@@ -490,8 +490,23 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       </div>
     </div>
     <div class="sub-modal-footer">
-      <button class="btn-cancel" onclick="closeEditWorkerModal()">Cancel</button>
-      <button class="btn-submit" onclick="saveWorkerEdit()">Save Changes</button>
+      <button class="btn-action danger" onclick="confirmDeleteWorker()" style="clip-path:none;font-size:0.72rem;">🗑 Delete Worker</button>
+      <div style="display:flex;gap:0.75rem;">
+        <button class="btn-cancel" onclick="closeEditWorkerModal()">Cancel</button>
+        <button class="btn-submit" onclick="saveWorkerEdit()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE WORKER -->
+<div id="modal-delete-worker" class="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title">Delete Worker?</div>
+    <div class="confirm-desc" id="deleteWorkerDesc">This will permanently remove this worker from the directory.</div>
+    <div class="confirm-btns">
+      <button class="btn-action danger" onclick="document.getElementById('modal-delete-worker').classList.remove('open')">Cancel</button>
+      <button class="btn-action gold" onclick="doDeleteWorker()">Delete</button>
     </div>
   </div>
 </div>
@@ -1931,6 +1946,31 @@ function openEditWorkerModal(idx) {
 
 function closeEditWorkerModal() {
   document.getElementById('modal-edit-worker').classList.remove('open');
+}
+
+function confirmDeleteWorker() {
+  const name = document.getElementById('ew-name').value || 'this worker';
+  const id   = document.getElementById('editWorkerId').value;
+  document.getElementById('deleteWorkerDesc').textContent =
+    'Delete "' + name + '" (' + id + ') from the directory? This cannot be undone.';
+  document.getElementById('modal-delete-worker').classList.add('open');
+}
+
+async function doDeleteWorker() {
+  document.getElementById('modal-delete-worker').classList.remove('open');
+  const id = document.getElementById('editWorkerId').value;
+  showToast('Deleting worker...');
+  try {
+    const result = await apiPost({ action: 'deleteWorker', id });
+    if (result.success) {
+      showToast('✓ Worker deleted');
+      closeEditWorkerModal();
+      loadWorkersSection();
+      loadWorkers();
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
 }
 
 async function saveWorkerEdit() {
