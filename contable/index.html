@@ -1244,7 +1244,7 @@ function renderRow(t, idx) {
     <div class="result-left">
       <span class="type-badge ${(t.type||'').toLowerCase()}">${t.type}</span>
       <div class="result-info">
-        <div class="result-desc">${t.description}${t.type === 'Payment' && t.payee ? ' <span style="color:var(--neon);font-size:0.78rem;">→ ' + t.payee + '</span>' : ''}</div>
+        <div class="result-desc">${t.type === 'Payment' && t.payee ? t.payee + ' <span style="color:var(--muted);font-size:0.82rem;">→ ' + t.description + '</span>' : t.description}</div>
         <div class="result-meta">${t.category} · ${t.account} · ${t.date}${t.project?' · '+t.project:''}${t.paymentMethod?' · '+t.paymentMethod:''}</div>
       </div>
     </div>
