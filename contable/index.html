@@ -367,7 +367,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="reports-section">
       <div class="reports-actions">
         <button class="btn-action gold" onclick="generateMonthlyReport()">&#128202; Monthly Report</button>
-        <button class="btn-action outline" onclick="openConfirm()">&#128197; Close Month</button>
+        <button class="btn-action outline" onclick="openConfirm()">&#128197; Monthly Report</button>
         <button class="btn-action outline" onclick="generateSnapshot()" style="font-size:0.68rem;">Financial Snapshot</button>
       </div>
       <div class="section-label" style="margin-bottom:1rem;">Saved Reports — Google Drive</div>
@@ -874,6 +874,18 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   </div>
 </div>
 
+<!-- CONFIRM DELETE REPORT -->
+<div id="modal-delete-report" class="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title">Delete Report?</div>
+    <div class="confirm-desc" id="deleteReportDesc">This will permanently delete this report from Google Drive.</div>
+    <div class="confirm-btns">
+      <button class="btn-action danger" onclick="document.getElementById('modal-delete-report').classList.remove('open')">Cancel</button>
+      <button class="btn-action gold" onclick="doDeleteReport()">Delete</button>
+    </div>
+  </div>
+</div>
+
 <!-- CONFIRM REMOVE RECEIPT -->
 <div id="modal-remove-receipt" class="confirm-overlay">
   <div class="confirm-box">
@@ -920,7 +932,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 <!-- CLOSE MONTH CONFIRM -->
 <div id="confirm-overlay" class="confirm-overlay">
   <div class="confirm-box">
-    <div class="confirm-title">Close Month?</div>
+    <div class="confirm-title">Monthly Report?</div>
     <div class="confirm-desc" id="closeMonthDesc">This will close <strong style="color:var(--gold-light);" id="closeMonthName">the previous month</strong> and save a snapshot to MONTHLY_CLOSE. This cannot be undone.</div>
     <div class="confirm-btns">
       <button class="btn-action danger" onclick="closeConfirm()">Cancel</button>
@@ -1288,6 +1300,7 @@ async function loadReports() {
         <div class="report-btns">
           <button class="btn-sm view" onclick="window.open('${r.url}','_blank')">View</button>
           <button class="btn-sm dl" onclick="window.open('${r.url}','_blank')">Download</button>
+          <button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="confirmDeleteReport('${r.id}','${r.name}')">🗑</button>
         </div>
       </div>
     `).join('');
@@ -2023,6 +2036,33 @@ async function saveWorkerEdit() {
 }
 
 // ============================================================
+// DELETE REPORT
+// ============================================================
+let deleteReportId = null;
+
+function confirmDeleteReport(fileId, fileName) {
+  deleteReportId = fileId;
+  document.getElementById('deleteReportDesc').textContent =
+    'Delete "' + fileName + '" from Google Drive? This cannot be undone.';
+  document.getElementById('modal-delete-report').classList.add('open');
+}
+
+async function doDeleteReport() {
+  document.getElementById('modal-delete-report').classList.remove('open');
+  if (!deleteReportId) return;
+  showToast('Deleting report...');
+  try {
+    const result = await apiPost({ action: 'deleteReport', fileId: deleteReportId });
+    if (result.success) {
+      showToast('✓ Report deleted');
+      loadReports();
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
+}
+
+// ============================================================
 // MONTHLY REPORT
 // ============================================================
 let currentReportPdf = null; // base64 del PDF generado
@@ -2148,11 +2188,11 @@ function closeModal(type) {
 }
 
 function openConfirm() {
-  // Calcular mes anterior dinámicamente
   const now = new Date();
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const monthName = lastMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' });
-  document.getElementById('closeMonthName').textContent = monthName;
+  const el = document.getElementById('closeMonthName');
+  if (el) el.textContent = monthName;
   document.getElementById('confirm-overlay').classList.add('open');
 }
 function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); }
