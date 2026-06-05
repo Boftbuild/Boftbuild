@@ -540,15 +540,49 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       </div>
       <div class="field-row">
         <div><label class="field-label">Amount ($) <span>*</span></label><input type="number" class="field-input" id="pay-amount" placeholder="0.00" step="0.01"></div>
-        <div><label class="field-label">Payment Type <span>*</span></label>
+        <div><label class="field-label">Payment Category <span>*</span></label>
           <select class="field-input" id="pay-type"><option value="">Select...</option><option>Helper Payment</option><option>Subcontractor Payment</option><option>Owner Reimbursement</option></select>
         </div>
       </div>
+      <!-- Pay To + Add New Worker -->
       <div class="field-row">
-        <div><label class="field-label">Payee <span>*</span></label>
-          <select class="field-input" id="pay-payee"><option value="">Select...</option><option>Juan</option><option>Carlos</option><option>Mike</option><option>Other</option></select>
+        <div>
+          <label class="field-label">Pay To <span>*</span></label>
+          <div style="display:flex;gap:0.5rem;">
+            <select class="field-input" id="pay-payee" style="flex:1;" onchange="onPayeeChange()">
+              <option value="">Select...</option>
+              <option value="__add__">+ Add New Person</option>
+            </select>
+          </div>
+          <input type="hidden" id="pay-worker-id" value="">
         </div>
-        <div><label class="field-label">Project</label><input type="text" class="field-input" id="pay-project" placeholder="Project name (optional)"></div>
+        <div>
+          <label class="field-label">Project</label>
+          <select class="field-input" id="pay-project">
+            <option value="">Project Name (optional)</option>
+          </select>
+        </div>
+      </div>
+      <!-- Payment Method -->
+      <div class="field-row">
+        <div>
+          <label class="field-label">Payment Method <span>*</span></label>
+          <select class="field-input" id="pay-method" onchange="onPayMethodChange()">
+            <option value="">Select...</option>
+            <option>Cash</option>
+            <option>Check</option>
+            <option>Transfer</option>
+          </select>
+        </div>
+        <div id="pay-transfer-wrap" style="display:none;">
+          <label class="field-label">Transfer Via <span>*</span></label>
+          <select class="field-input" id="pay-transfer-via">
+            <option value="">Select...</option>
+            <option>Zelle</option>
+            <option>Venmo</option>
+            <option>Other</option>
+          </select>
+        </div>
       </div>
       <div class="field-group"><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" id="pay-description" placeholder="Framing day, Concrete help..."></div>
       <div class="field-group">
@@ -566,6 +600,51 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       </div>
     </div>
     <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('payment')">Cancel</button><button class="btn-submit" onclick="submitForm('payment')">Submit Payment</button></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SUB-MODAL — ADD NEW WORKER
+══════════════════════════════════════════════════ -->
+<div id="sub-modal-worker" class="sub-modal-overlay">
+  <div class="sub-modal" style="max-width:500px;">
+    <div class="sub-modal-header">
+      <span class="sub-modal-title">Add New Person</span>
+      <button class="modal-close" onclick="closeWorkerSubModal()">✕</button>
+    </div>
+    <div class="sub-modal-body">
+      <div class="field-row">
+        <div><label class="field-label">Full Name <span>*</span></label><input type="text" class="field-input" id="worker-name" placeholder="John Smith"></div>
+        <div><label class="field-label">Type <span>*</span></label>
+          <select class="field-input" id="worker-type">
+            <option value="">Select...</option>
+            <option>Helper</option>
+            <option>Subcontractor</option>
+            <option>Employee</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Phone</label><input type="text" class="field-input" id="worker-phone" placeholder="801-xxx-xxxx"></div>
+        <div><label class="field-label">Address</label><input type="text" class="field-input" id="worker-address" placeholder="City, State"></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Rate ($)</label><input type="number" class="field-input" id="worker-rate" placeholder="0.00" step="0.01"></div>
+        <div><label class="field-label">Rate Type</label>
+          <select class="field-input" id="worker-ratetype">
+            <option value="">Select...</option>
+            <option>Hour</option>
+            <option>Day</option>
+            <option>Job</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group"><label class="field-label">Notes</label><input type="text" class="field-input" id="worker-notes" placeholder="Any additional info..."></div>
+    </div>
+    <div class="sub-modal-footer">
+      <button class="btn-cancel" onclick="closeWorkerSubModal()">Cancel</button>
+      <button class="btn-submit" onclick="saveNewWorker()">Save & Select</button>
+    </div>
   </div>
 </div>
 
@@ -768,6 +847,7 @@ function loginSuccess(user) {
   loadMissingReceipts();
   loadReports();
   loadTransactions();
+  loadWorkers();
 }
 
 function doLogout() {
@@ -1375,14 +1455,21 @@ async function submitForm(type) {
       description: document.getElementById('inc-description').value,
     };
   } else if (type === 'payment') {
+    const method = document.getElementById('pay-method').value;
+    const via    = document.getElementById('pay-transfer-via').value;
+    const payMethod = method === 'Transfer' && via ? via : method;
+    const payeeEl = document.getElementById('pay-payee');
+    const payeeName = payeeEl.options[payeeEl.selectedIndex]?.dataset?.name || payeeEl.options[payeeEl.selectedIndex]?.textContent || '';
     payload = { ...payload,
-      date:        document.getElementById('pay-date').value,
-      account:     document.getElementById('pay-account').value,
-      amount:      document.getElementById('pay-amount').value,
-      paymentType: document.getElementById('pay-type').value,
-      payee:       document.getElementById('pay-payee').value,
-      project:     document.getElementById('pay-project').value,
-      description: document.getElementById('pay-description').value,
+      date:          document.getElementById('pay-date').value,
+      account:       document.getElementById('pay-account').value,
+      amount:        document.getElementById('pay-amount').value,
+      paymentType:   document.getElementById('pay-type').value,
+      payee:         payeeName,
+      workerId:      document.getElementById('pay-worker-id').value,
+      project:       document.getElementById('pay-project').value,
+      description:   document.getElementById('pay-description').value,
+      paymentMethod: payMethod,
     };
   }
 
@@ -1407,6 +1494,122 @@ async function submitForm(type) {
     showToast('Connection error — try again');
     console.error(e);
   }
+}
+
+// ============================================================
+// WORKERS — Directorio
+// ============================================================
+let workersCache = [];
+let projectsCache = [];
+
+async function loadWorkers() {
+  try {
+    const data = await apiGet('workers');
+    workersCache = data.workers || [];
+    populatePayeeDropdown();
+  } catch(e) { console.error('Workers error:', e); }
+}
+
+function populatePayeeDropdown() {
+  const sel = document.getElementById('pay-payee');
+  if (!sel) return;
+  // Guardar opción Add New
+  sel.innerHTML = '<option value="">Select...</option>';
+  workersCache.forEach(w => {
+    const opt = document.createElement('option');
+    opt.value = w.id;
+    opt.textContent = w.name + (w.type ? ' (' + w.type + ')' : '');
+    opt.dataset.name = w.name;
+    sel.appendChild(opt);
+  });
+  const addOpt = document.createElement('option');
+  addOpt.value = '__add__';
+  addOpt.textContent = '+ Add New Person';
+  sel.appendChild(addOpt);
+}
+
+function onPayeeChange() {
+  const sel = document.getElementById('pay-payee');
+  if (sel.value === '__add__') {
+    sel.value = '';
+    document.getElementById('sub-modal-worker').classList.add('open');
+  } else {
+    const opt = sel.options[sel.selectedIndex];
+    document.getElementById('pay-worker-id').value = sel.value;
+  }
+}
+
+function onPayMethodChange() {
+  const method = document.getElementById('pay-method').value;
+  document.getElementById('pay-transfer-wrap').style.display = method === 'Transfer' ? 'block' : 'none';
+  if (method !== 'Transfer') document.getElementById('pay-transfer-via').value = '';
+}
+
+function closeWorkerSubModal() {
+  document.getElementById('sub-modal-worker').classList.remove('open');
+  // Limpiar campos
+  ['worker-name','worker-phone','worker-address','worker-rate','worker-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('worker-type').selectedIndex = 0;
+  document.getElementById('worker-ratetype').selectedIndex = 0;
+}
+
+async function saveNewWorker() {
+  const name = document.getElementById('worker-name').value.trim();
+  const type = document.getElementById('worker-type').value;
+  if (!name) { showToast('Name is required'); return; }
+
+  showToast('Saving worker...');
+  try {
+    const result = await apiPost({
+      action:   'addWorker',
+      name,
+      type,
+      phone:    document.getElementById('worker-phone').value.trim(),
+      address:  document.getElementById('worker-address').value.trim(),
+      rate:     document.getElementById('worker-rate').value,
+      rateType: document.getElementById('worker-ratetype').value,
+      notes:    document.getElementById('worker-notes').value.trim(),
+    });
+    if (result.success) {
+      showToast('✓ ' + result.name + ' added (' + result.id + ')');
+      // Agregar al cache y al dropdown
+      const newWorker = { id: result.id, name: result.name, type };
+      workersCache.push(newWorker);
+      populatePayeeDropdown();
+      // Seleccionar el nuevo worker
+      document.getElementById('pay-payee').value = result.id;
+      document.getElementById('pay-worker-id').value = result.id;
+      closeWorkerSubModal();
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
+}
+
+async function loadProjects() {
+  // Extraer proyectos únicos del ledger cargado
+  const projects = [...new Set(
+    allTransactions
+      .map(t => t.project)
+      .filter(p => p && p.trim())
+  )].sort();
+  projectsCache = projects;
+  populateProjectDropdown();
+}
+
+function populateProjectDropdown() {
+  const sel = document.getElementById('pay-project');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Project Name (optional)</option>';
+  projectsCache.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p;
+    opt.textContent = p;
+    sel.appendChild(opt);
+  });
 }
 
 // ============================================================
@@ -1465,6 +1668,14 @@ function openModal(type) {
   const prefixMap = { expense: 'exp', income: 'inc', payment: 'pay' };
   const prefix = prefixMap[type];
   if (prefix) clearFile(prefix, null);
+
+  // Si es payment, cargar workers y proyectos
+  if (type === 'payment') {
+    document.getElementById('pay-worker-id').value = '';
+    document.getElementById('pay-transfer-wrap').style.display = 'none';
+    if (workersCache.length === 0) loadWorkers(); else populatePayeeDropdown();
+    if (allTransactions.length > 0) loadProjects();
+  }
 }
 
 function closeModal(type) {
