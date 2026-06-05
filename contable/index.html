@@ -657,7 +657,6 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
         <span class="modal-title">Edit Transaction</span>
         <span class="modal-type" id="editModalType" style="color:var(--gold-light);border:1px solid var(--border);background:var(--gold-dim);">—</span>
-        <span id="editPayeeBadge" style="display:none;font-size:0.72rem;color:var(--neon);border:1px solid var(--border-neon);background:var(--neon-dim);padding:0.2rem 0.6rem;">—</span>
       </div>
       <button class="modal-close" onclick="closeModal('edit')">✕</button>
     </div>
@@ -688,7 +687,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         </div>
       </div>
       <div class="field-group"><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" id="editDescription" placeholder="Description"></div>
-      <div class="field-row">
+      <div class="field-row" id="editVendorRow">
         <div><label class="field-label">Project</label><input type="text" class="field-input" id="editProject" placeholder="Project name (optional)"></div>
         <div><label class="field-label">Vendor / Payee</label><input type="text" class="field-input" id="editVendor" placeholder="Vendor or payee"></div>
       </div>
@@ -1382,14 +1381,40 @@ function openEditModal(idxOrT) {
   // Account
   const accEl = document.getElementById('editAccount');
   for (let o of accEl.options) { if (o.value === t.account) { o.selected = true; break; } }
-  // Category
+
+  // Category — filtrar opciones según tipo de transacción
   const catEl = document.getElementById('editCategory');
+  if (t.type === 'Payment') {
+    // Solo mostrar opciones de Payment
+    for (let o of catEl.options) {
+      const isPaymentOpt = ['Helper Payment','Subcontractor Payment','Owner Reimbursement'].includes(o.value);
+      o.style.display = (isPaymentOpt || o.value === '') ? '' : 'none';
+    }
+    // Ocultar optgroups que no sean Payment
+    for (let og of catEl.querySelectorAll('optgroup')) {
+      og.style.display = og.label === 'Payment' ? '' : 'none';
+    }
+  } else if (t.type === 'Income') {
+    for (let o of catEl.options) {
+      const isIncomeOpt = ['Client Payment','Owner Injection','Refund','Other Income'].includes(o.value);
+      o.style.display = (isIncomeOpt || o.value === '') ? '' : 'none';
+    }
+    for (let og of catEl.querySelectorAll('optgroup')) {
+      og.style.display = og.label === 'Income' ? '' : 'none';
+    }
+  } else {
+    // Expense — mostrar todo excepto Income y Payment optgroups
+    for (let o of catEl.options) { o.style.display = ''; }
+    for (let og of catEl.querySelectorAll('optgroup')) {
+      og.style.display = ['Income','Payment'].includes(og.label) ? 'none' : '';
+    }
+  }
   for (let o of catEl.options) { if (o.value === t.category) { o.selected = true; break; } }
 
   // Campos extra para Payment
   const isPayment = t.type === 'Payment';
   document.getElementById('editPaymentFields').style.display = isPayment ? 'block' : 'none';
-  const payeeBadge = document.getElementById('editPayeeBadge');
+  document.getElementById('editVendorRow').style.display = isPayment ? 'none' : 'grid';
   if (isPayment) {
     // Cargar workers si no están en cache
     if (workersCache.length === 0) { loadWorkers().then(() => populateEditPayeeDropdown(t.payee || '')); }
@@ -1406,15 +1431,6 @@ function openEditModal(idxOrT) {
       if (o.value === payMethodVal) { o.selected = true; found = true; break; }
     }
     if (!found) payMethodEl.selectedIndex = 0;
-    // Badge con nombre del payee
-    if (t.payee) {
-      payeeBadge.textContent = t.payee;
-      payeeBadge.style.display = 'inline-block';
-    } else {
-      payeeBadge.style.display = 'none';
-    }
-  } else {
-    payeeBadge.style.display = 'none';
   }
 
   // Receipt UI — mini lista
@@ -1659,17 +1675,7 @@ function populateEditProjectDropdown(currentProject) {
 }
 
 function onEditPayeeChange() {
-  const sel = document.getElementById('editPayee');
-  const opt = sel.options[sel.selectedIndex];
-  const name = opt?.dataset?.name || opt?.textContent || '';
-  // Actualizar badge
-  const badge = document.getElementById('editPayeeBadge');
-  if (name && name !== 'Select...') {
-    badge.textContent = name;
-    badge.style.display = 'inline-block';
-  } else {
-    badge.style.display = 'none';
-  }
+  // noop — badge removido
 }
 
 function onEditPayMethodChange() {
