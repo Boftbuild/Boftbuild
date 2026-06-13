@@ -649,9 +649,9 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
           <input type="hidden" id="pay-worker-id" value="">
         </div>
         <div>
-          <label class="field-label">Project</label>
+          <label class="field-label">Project <span>*</span></label>
           <select class="field-input" id="pay-project">
-            <option value="">Project Name (optional)</option>
+            <option value="">Select project...</option>
           </select>
         </div>
       </div>
@@ -1096,6 +1096,15 @@ function validatePayment() {
     errEl.textContent = 'Select who to pay';
     errEl.classList.add('show');
   }
+  const projectEl = document.getElementById('pay-project');
+  const projectOk = projectEl && projectEl.value && projectEl.value !== '';
+  if (!projectOk) {
+    projectEl.classList.add('error');
+    let errEl = projectEl.parentNode.querySelector('.field-error');
+    if (!errEl) { errEl = document.createElement('div'); errEl.className = 'field-error'; projectEl.parentNode.appendChild(errEl); }
+    errEl.textContent = 'Select a project';
+    errEl.classList.add('show');
+  }
   const checks = [
     validateField('pay-date',        'Date is required'),
     validateField('pay-account',     'Select an account'),
@@ -1103,6 +1112,7 @@ function validatePayment() {
     validateField('pay-type',        'Select payment category'),
     validateField('pay-method',      'Select payment method'),
     payeeOk,
+    projectOk,
     validateField('pay-description', 'Description is required'),
   ];
   if (!checks.every(Boolean)) {
