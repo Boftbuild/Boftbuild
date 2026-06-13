@@ -744,8 +744,7 @@ function renderActivityFeed() {
 
   // Notas del campo notes (líneas con timestamp si tienen formato "YYYY-MM-DD: texto")
   const notesRaw = currentProject.notes || '';
-  notesRaw.split('
-').forEach(line => {
+  notesRaw.split('\n').forEach(line => {
     const match = line.match(/^(\d{4}-\d{2}-\d{2}):\s*(.+)/);
     if (match) {
       items.push({ date: match[1], type: 'note', title: match[2], sub: 'Note', amount: null });
