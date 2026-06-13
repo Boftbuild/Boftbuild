@@ -367,6 +367,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="reports-section">
       <div class="reports-actions">
         <button class="btn-action gold" onclick="generateMonthlyReportSmart()">&#128202; Generate Report</button>
+        <button class="btn-action outline" onclick="openManualReportModal()">&#128337; Manual Report</button>
       </div>
       <div class="section-label" style="margin-bottom:1rem;">Saved Reports — Google Drive</div>
       <div id="reportsList"><div style="padding:1rem;color:var(--muted);font-size:0.82rem;">Loading...</div></div>
@@ -869,6 +870,45 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <button class="modal-close" onclick="document.getElementById('modal-receipts').classList.remove('open')">✕</button>
     </div>
     <div class="sub-modal-body" id="receipts-list" style="max-height:70vh;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- MODAL — MANUAL REPORT -->
+<div id="modal-manual-report" class="confirm-overlay">
+  <div class="confirm-box" style="max-width:380px;">
+    <div class="confirm-title">Manual Report</div>
+    <div style="font-size:0.82rem;color:var(--muted);margin-bottom:1.25rem;">Select the month and year to generate a full report for that period.</div>
+    <div class="field-row" style="margin-bottom:1rem;">
+      <div>
+        <label class="field-label">Month</label>
+        <select class="field-input" id="manualMonth">
+          <option value="1">January</option>
+          <option value="2">February</option>
+          <option value="3">March</option>
+          <option value="4">April</option>
+          <option value="5">May</option>
+          <option value="6">June</option>
+          <option value="7">July</option>
+          <option value="8">August</option>
+          <option value="9">September</option>
+          <option value="10">October</option>
+          <option value="11">November</option>
+          <option value="12">December</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Year</label>
+        <select class="field-input" id="manualYear">
+          <option value="2025">2025</option>
+          <option value="2026" selected>2026</option>
+          <option value="2027">2027</option>
+        </select>
+      </div>
+    </div>
+    <div class="confirm-btns">
+      <button class="btn-action danger" onclick="document.getElementById('modal-manual-report').classList.remove('open')">Cancel</button>
+      <button class="btn-action gold" onclick="runManualReport()">Generate</button>
+    </div>
   </div>
 </div>
 
@@ -2117,6 +2157,47 @@ async function runGenerateReport() {
 }
 
 // ============================================================
+// MANUAL REPORT
+// ============================================================
+function openManualReportModal() {
+  // Preseleccionar mes anterior
+  const now = new Date();
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  document.getElementById('manualMonth').value = lastMonth.getMonth() + 1;
+  document.getElementById('manualYear').value  = lastMonth.getFullYear();
+  document.getElementById('modal-manual-report').classList.add('open');
+}
+
+async function runManualReport() {
+  const month = parseInt(document.getElementById('manualMonth').value);
+  const year  = parseInt(document.getElementById('manualYear').value);
+  document.getElementById('modal-manual-report').classList.remove('open');
+  showToast('Generating manual report...');
+  try {
+    const result = await apiPost({ action: 'manualReport', month, year });
+    if (!result.success) { showToast('Error: ' + result.message); return; }
+
+    currentReportPdf = result.pdfBase64;
+    currentReportFileName = result.fileName || null;
+    const s = result.summary;
+    document.getElementById('reportPreviewTitle').textContent = result.monthName + ' Report';
+    document.getElementById('reportPreviewPeriod').textContent = result.periodLabel;
+    document.getElementById('reportPreviewSummary').innerHTML = [
+      { label: 'Income',     value: fmt(s.income),   color: 'var(--green)' },
+      { label: 'Expenses',   value: fmt(s.expenses),  color: 'var(--red)'   },
+      { label: 'Payments',   value: fmt(s.payments),  color: 'var(--red)'   },
+      { label: 'Net Profit', value: fmt(s.net),       color: s.net >= 0 ? 'var(--green)' : 'var(--red)' },
+    ].map(c => `
+      <div style="background:var(--black);border:1px solid var(--border);padding:0.75rem;text-align:center;">
+        <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">${c.label}</div>
+        <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:${c.color};">${c.value}</div>
+      </div>`).join('');
+    document.getElementById('modal-report-preview').classList.add('open');
+    showToast('Report ready — save or discard');
+  } catch(e) { showToast('Connection error'); console.error(e); }
+}
+
+// ============================================================
 // DELETE REPORT
 // ============================================================
 let deleteReportId = null;
@@ -2146,7 +2227,8 @@ async function doDeleteReport() {
 // ============================================================
 // MONTHLY REPORT
 // ============================================================
-let currentReportPdf = null; // base64 del PDF generado
+let currentReportPdf      = null; // base64 del PDF generado
+let currentReportFileName = null; // nombre del archivo
 
 async function generateMonthlyReport() {
   showToast('Generating Monthly Report...');
@@ -2187,7 +2269,7 @@ async function saveReport() {
   document.getElementById('modal-report-preview').classList.remove('open');
   showToast('Saving report to Drive...');
   try {
-    const result = await apiPost({ action: 'saveMonthlyReport', pdfBase64: currentReportPdf });
+    const result = await apiPost({ action: 'saveMonthlyReport', pdfBase64: currentReportPdf, fileName: currentReportFileName || null });
     if (result.success) {
       showToast('✓ ' + result.fileName + ' saved to Drive');
       currentReportPdf = null;
