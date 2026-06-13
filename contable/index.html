@@ -2143,13 +2143,9 @@ async function loadProjects() {
     console.log('Projects data:', data);
     const fromSheet = (data.projects || [])
       .map(p => p.name)
+      .filter(Boolean)
       .sort();
-    // Combinar con proyectos del ledger
-    const fromLedger = [...new Set(
-      allTransactions.map(t => t.project).filter(p => p && p.trim())
-    )];
-    const all = [...new Set([...fromSheet, ...fromLedger])].sort();
-    projectsCache = all.length > 0 ? all : fromLedger;
+    projectsCache = fromSheet;
     console.log('projectsCache:', projectsCache);
     populateProjectDropdown();
   } catch(e) {
