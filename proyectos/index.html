@@ -282,7 +282,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 <body>
 
 <!-- LOGIN -->
-<div class="login-screen" id="loginScreen">
+<div class="login-screen" id="loginScreen" style="display:none;">
   <svg class="login-hex" width="600" height="600" viewBox="0 0 600 600" fill="none">
     <polygon points="300,20 555,155 555,445 300,580 45,445 45,155" stroke="#00b4ff" stroke-width="1"/>
     <polygon points="300,60 520,175 520,425 300,540 80,425 80,175" stroke="#c8922a" stroke-width="0.5"/>
@@ -309,8 +309,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   <nav class="sticky-nav">
     <div class="nav-logo-sm">BOFT<span>.</span></div>
     <div class="nav-links-sm">
+      <a class="nav-link" href="/hub">Hub</a>
       <a class="nav-link" href="/contable">Contable</a>
       <span class="nav-link active">Projects</span>
+      <a class="nav-link" href="/finder">Finder</a>
     </div>
     <div class="nav-right">
       <img class="nav-avatar" id="navAvatar" src="" alt="">
@@ -553,67 +555,18 @@ let currentFilter  = 'all';
 // ============================================================
 // GOOGLE AUTH
 // ============================================================
-let gsiClient = null;
-
-function initGoogleClient() {
-  if (typeof google === 'undefined' || !google.accounts) {
-    setTimeout(initGoogleClient, 200);
-    return;
-  }
-  gsiClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive',
-    callback: (response) => {
-      if (response.access_token) {
-        ACCESS_TOKEN = response.access_token;
-        const expiresAt = Date.now() + 3500 * 1000;
-        sessionStorage.setItem('boft_token', ACCESS_TOKEN);
-        sessionStorage.setItem('boft_token_exp', expiresAt);
-        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: 'Bearer ' + ACCESS_TOKEN }
-        })
-        .then(r => r.json())
-        .then(user => {
-          if (user.email.split('@')[1] === ALLOWED_DOMAIN) {
-            sessionStorage.setItem('boft_user', JSON.stringify(user));
-            loginSuccess(user);
-          } else {
-            document.getElementById('loginError').classList.add('show');
-            ACCESS_TOKEN = null;
-            sessionStorage.clear();
-          }
-        });
-      }
-    }
-  });
-}
-
-function signInWithGoogle() {
-  if (!gsiClient) {
-    document.getElementById('loginError').textContent = 'Loading Google Sign In... please try again in a moment.';
-    document.getElementById('loginError').classList.add('show');
-    initGoogleClient();
-    return;
-  }
-  document.getElementById('loginError').classList.remove('show');
-  gsiClient.requestAccessToken();
-}
-
-// Intentar restaurar sesión desde sessionStorage al cargar la página
+// ── AUTH: lee token del Hub, no tiene login propio ──
 function tryRestoreSession() {
   const token   = sessionStorage.getItem('boft_token');
   const exp     = parseInt(sessionStorage.getItem('boft_token_exp') || '0');
   const userStr = sessionStorage.getItem('boft_user');
   if (token && exp > Date.now() && userStr) {
     ACCESS_TOKEN = token;
-    const user = JSON.parse(userStr);
-    loginSuccess(user);
+    loginSuccess(JSON.parse(userStr));
     return true;
   }
-  // Limpiar si expiró
-  sessionStorage.removeItem('boft_token');
-  sessionStorage.removeItem('boft_token_exp');
-  sessionStorage.removeItem('boft_user');
+  sessionStorage.clear();
+  window.location.href = '/hub';
   return false;
 }
 
@@ -631,9 +584,7 @@ function loginSuccess(user) {
 function doLogout() {
   ACCESS_TOKEN = null;
   sessionStorage.clear();
-  google.accounts.id.disableAutoSelect();
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('loginScreen').style.display = 'flex';
+  window.location.href = '/hub';
 }
 
 // ============================================================
@@ -1467,11 +1418,7 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
 
-// Inicializar Google client y restaurar sesión al cargar
-window.addEventListener('load', () => {
-  initGoogleClient();
-  tryRestoreSession();
-});
+window.addEventListener('load', () => { tryRestoreSession(); });
 </script>
 </body>
 </html>
