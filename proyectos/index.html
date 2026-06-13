@@ -487,18 +487,15 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <div class="field-group"><label class="field-label">Scope of Work</label><textarea class="field-input" id="ep-scope" rows="3" placeholder="Describe what will be done..." style="resize:vertical;"></textarea></div>
       <div class="field-group">
         <label class="field-label">Documentation</label>
-        <div id="ep-doc-current" style="margin-bottom:0.5rem;display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--black);border:1px solid var(--border);padding:0.5rem 0.75rem;">
-            <a id="ep-doc-link" href="#" target="_blank" style="color:var(--neon);font-size:0.82rem;">📄 View current document ↗</a>
-            <button type="button" onclick="removeEditDoc()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.78rem;">✕ Remove</button>
-          </div>
-        </div>
+        <!-- Lista de docs existentes -->
+        <div id="ep-doc-current" style="margin-bottom:0.75rem;"></div>
+        <!-- Upload nuevo -->
         <div class="receipt-upload-zone" id="ep-doc-zone">
-          <input type="file" id="ep-doc-file" accept=".pdf,image/*,.doc,.docx" onchange="onEpDocSelect()">
+          <input type="file" id="ep-doc-file" accept=".pdf,image/*,.doc,.docx" multiple onchange="onEpDocSelect()">
           <span class="upload-icon">📎</span>
           <div class="upload-text">
-            <div class="upload-label" id="ep-doc-label">Tap to upload new document</div>
-            <div class="upload-sublabel">PDF, JPG, PNG, DOC — max 10MB</div>
+            <div class="upload-label" id="ep-doc-label">Tap to add document(s)</div>
+            <div class="upload-sublabel">PDF, JPG, PNG, DOC — max 10MB each</div>
           </div>
           <button class="upload-clear" id="ep-doc-clear" onclick="clearEpDoc(event)" style="display:none;">✕</button>
         </div>
@@ -917,9 +914,10 @@ function clearNpDoc(e) {
 
 function onEpDocSelect() {
   const input = document.getElementById('ep-doc-file');
-  const file  = input.files[0];
-  if (!file) return;
-  document.getElementById('ep-doc-label').textContent = file.name;
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  const label = files.length === 1 ? files[0].name : files.length + ' files selected';
+  document.getElementById('ep-doc-label').textContent = label;
   document.getElementById('ep-doc-zone').classList.add('has-file');
   document.getElementById('ep-doc-clear').style.display = 'block';
 }
@@ -1265,16 +1263,8 @@ async function saveEditProject() {
   closeModal('edit-project');
   showToast('Saving...');
 
-  // Leer nuevo archivo de doc si hay
-  let epDocBase64 = '', epDocName = '', epDocMime = '';
-  const epDocFile = document.getElementById('ep-doc-file').files[0];
-  if (epDocFile) {
-    epDocBase64 = await fileToBase64(epDocFile);
-    epDocName   = epDocFile.name;
-    epDocMime   = epDocFile.type;
-  }
-  // Si marcó eliminar y no hay nuevo, limpiar URL
-  const removeDoc = window._removeDoc && !epDocFile;
+  // Leer nuevos archivos de doc si hay (múltiples)
+  const epDocFiles = Array.from(document.getElementById('ep-doc-file').files);
   window._removeDoc = false;
 
   try {
@@ -1291,15 +1281,57 @@ async function saveEditProject() {
       status:          document.getElementById('ep-status').value,
       objective:       document.getElementById('ep-scope').value.trim(),
       contractFileUrl: window._updatedDocUrls !== undefined ? window._updatedDocUrls : (currentProject.contractFileUrl || ''),
-      docBase64:       epDocBase64,
-      docFileName:     epDocName,
-      docMimeType:     epDocMime,
       folderId:        currentProject.driveFolderId || '',
     });
     if (result.success) {
+      // Subir nuevos documentos si los hay
+      if (epDocFiles.length > 0 && currentProject.driveFolderId) {
+        showToast('Uploading ' + epDocFiles.length + ' document(s)...');
+        let existingUrls = result.contractFileUrl || currentProject.contractFileUrl || '';
+        for (const file of epDocFiles) {
+          try {
+            const base64 = await fileToBase64(file);
+            const uploadResult = await apiPost({
+              action: 'uploadContractFile',
+              folderId: currentProject.driveFolderId,
+              fileBase64: base64,
+              fileName: file.name,
+              mimeType: file.type,
+              projectId: id,
+              // Mantener campos del proyecto
+              name: document.getElementById('ep-name').value.trim(),
+              client: document.getElementById('ep-client').value.trim(),
+              address: document.getElementById('ep-address').value.trim(),
+              city: document.getElementById('ep-city').value.trim(),
+              startDate: document.getElementById('ep-start').value,
+              endDate: document.getElementById('ep-end').value,
+              contractValue: document.getElementById('ep-value').value,
+              status: document.getElementById('ep-status').value,
+              objective: document.getElementById('ep-scope').value.trim(),
+              existingUrls,
+            });
+            if (uploadResult.success) {
+              existingUrls = existingUrls ? existingUrls + ',' + uploadResult.fileUrl : uploadResult.fileUrl;
+            }
+          } catch(e) { console.error(e); }
+        }
+        // Guardar todas las URLs en el sheet
+        await apiPost({
+          action: 'editProject', id,
+          contractFileUrl: existingUrls,
+          name: document.getElementById('ep-name').value.trim(),
+          client: document.getElementById('ep-client').value.trim(),
+          address: document.getElementById('ep-address').value.trim(),
+          city: document.getElementById('ep-city').value.trim(),
+          startDate: document.getElementById('ep-start').value,
+          endDate: document.getElementById('ep-end').value,
+          contractValue: document.getElementById('ep-value').value,
+          status: document.getElementById('ep-status').value,
+          objective: document.getElementById('ep-scope').value.trim(),
+        });
+      }
       showToast('✓ Project updated');
       await loadProjects();
-      // Refrescar currentProject
       currentProject = allProjects.find(p => p.id === id);
       openProject(id);
     } else {
