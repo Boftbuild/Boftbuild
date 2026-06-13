@@ -238,6 +238,17 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .add-note-input:focus{border-color:rgba(0,180,255,0.5);}
 .btn-add-note{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.55rem 1rem;cursor:pointer;}
 
+/* INLINE EDIT */
+.inline-edit-field{cursor:pointer;padding:0.4rem 0.5rem;border:1px solid transparent;transition:border-color 0.2s;border-radius:2px;min-height:2rem;}
+.inline-edit-field:hover{border-color:var(--border);background:var(--black);}
+.inline-edit-field.empty{color:var(--muted);font-style:italic;}
+.inline-edit-textarea{width:100%;background:var(--black);border:1px solid var(--border-neon);color:var(--text);padding:0.5rem;font-family:'Rajdhani',sans-serif;font-size:0.88rem;outline:none;resize:vertical;min-height:80px;line-height:1.5;}
+.inline-edit-actions{display:flex;gap:0.5rem;margin-top:0.4rem;}
+.btn-inline-save{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.3rem 0.75rem;cursor:pointer;}
+.btn-inline-cancel{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;}
+.contract-file-row{display:flex;align-items:center;gap:0.75rem;margin-top:0.5rem;}
+.btn-upload-contract{font-family:'Rajdhani',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-light);border:1px solid var(--border);background:var(--gold-dim);padding:0.28rem 0.75rem;cursor:pointer;}
+
 /* EMPTY PANEL */
 .panel-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:300px;color:var(--muted);text-align:center;padding:2rem;position:relative;overflow:hidden;}
 .panel-empty-icon{font-size:2rem;margin-bottom:1rem;opacity:0.3;position:relative;z-index:1;}
@@ -689,6 +700,38 @@ async function openProject(id) {
         </div>
       </div>
 
+      <!-- SCOPE & CONTRACT -->
+      <div class="timeline-section">
+        <div class="timeline-section-label" style="display:flex;justify-content:space-between;">
+          <span>Scope & Contract</span>
+        </div>
+
+        <div style="margin-bottom:0.75rem;">
+          <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">Objective</div>
+          <div id="objectiveDisplay" class="inline-edit-field empty" onclick="startEditObjective()">
+            Click to add project objective...
+          </div>
+          <div id="objectiveEdit" style="display:none;">
+            <textarea class="inline-edit-textarea" id="objectiveTextarea" placeholder="Describe the scope of work..."></textarea>
+            <div class="inline-edit-actions">
+              <button class="btn-inline-save" onclick="saveObjective()">Save</button>
+              <button class="btn-inline-cancel" onclick="cancelEditObjective()">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">Contract</div>
+          <div class="contract-file-row">
+            <div id="contractFileLink" style="font-size:0.85rem;flex:1;">
+              <span style="color:var(--muted);font-size:0.82rem;">No contract uploaded</span>
+            </div>
+            <button class="btn-upload-contract" onclick="document.getElementById('upload-contract').click()">📄 Upload PDF</button>
+            <input type="file" id="upload-contract" accept=".pdf,image/*" style="display:none;" onchange="uploadContract()">
+          </div>
+        </div>
+      </div>
+
       <!-- ACTIVITY FEED -->
       <div class="timeline-section">
         <div class="timeline-section-label">Activity Feed</div>
@@ -721,6 +764,8 @@ async function openProject(id) {
 
   // Cargar datos
   await loadTimelineData();
+  renderObjective();
+  renderContractFile();
 }
 
 async function loadTimelineData() {
@@ -815,6 +860,100 @@ function renderActivityFeed() {
       ${amtStr}
     </div>`;
   }).join('');
+}
+
+// ============================================================
+// OBJECTIVE INLINE EDIT
+// ============================================================
+function startEditObjective() {
+  const display  = document.getElementById('objectiveDisplay');
+  const editWrap = document.getElementById('objectiveEdit');
+  const textarea = document.getElementById('objectiveTextarea');
+  textarea.value = currentProject.objective || '';
+  display.style.display  = 'none';
+  editWrap.style.display = 'block';
+  textarea.focus();
+}
+
+function cancelEditObjective() {
+  document.getElementById('objectiveDisplay').style.display = 'block';
+  document.getElementById('objectiveEdit').style.display   = 'none';
+}
+
+async function saveObjective() {
+  const val = document.getElementById('objectiveTextarea').value.trim();
+  try {
+    const result = await apiPost({
+      action: 'editProject', id: currentProject.id,
+      objective: val,
+      name: currentProject.name, client: currentProject.client,
+      address: currentProject.address, city: currentProject.city,
+      startDate: currentProject.startDate, endDate: currentProject.endDate,
+      contractValue: currentProject.contractValue, status: currentProject.status,
+      notes: currentProject.notes || '',
+      contractFileUrl: currentProject.contractFileUrl || '',
+    });
+    if (result.success) {
+      currentProject.objective = val;
+      renderObjective();
+      cancelEditObjective();
+      showToast('✓ Objective saved');
+    }
+  } catch(e) { showToast('Connection error'); }
+}
+
+function renderObjective() {
+  const display = document.getElementById('objectiveDisplay');
+  if (!display) return;
+  if (currentProject.objective) {
+    display.textContent = currentProject.objective;
+    display.classList.remove('empty');
+  } else {
+    display.textContent = 'Click to add project objective...';
+    display.classList.add('empty');
+  }
+}
+
+function renderContractFile() {
+  const el = document.getElementById('contractFileLink');
+  if (!el) return;
+  if (currentProject.contractFileUrl) {
+    el.innerHTML = `<a href="${currentProject.contractFileUrl}" target="_blank" style="color:var(--neon);font-size:0.85rem;">📄 View Contract ↗</a>`;
+  } else {
+    el.innerHTML = '<span style="color:var(--muted);font-size:0.82rem;">No contract uploaded</span>';
+  }
+}
+
+async function uploadContract() {
+  const input = document.getElementById('upload-contract');
+  const file  = input.files[0];
+  if (!file || !currentProject) return;
+  showToast('Uploading contract...');
+  try {
+    const base64 = await fileToBase64(file);
+    const result = await apiPost({
+      action:   'uploadContractFile',
+      folderId: currentProject.driveFolderId,
+      fileBase64: base64,
+      fileName:   file.name,
+      mimeType:   file.type,
+      projectId:  currentProject.id,
+      name: currentProject.name, client: currentProject.client,
+      address: currentProject.address, city: currentProject.city,
+      startDate: currentProject.startDate, endDate: currentProject.endDate,
+      contractValue: currentProject.contractValue, status: currentProject.status,
+      notes: currentProject.notes || '',
+      objective: currentProject.objective || '',
+    });
+    if (result.success) {
+      currentProject.contractFileUrl = result.fileUrl;
+      renderContractFile();
+      showToast('✓ Contract uploaded');
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
+  input.value = '';
 }
 
 async function addQuickNote() {
