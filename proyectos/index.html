@@ -781,8 +781,7 @@ async function addQuickNote() {
   if (!text || !currentProject) return;
 
   const today = new Date().toISOString().split('T')[0];
-  const newNote = (currentProject.notes ? currentProject.notes + '
-' : '') + today + ': ' + text;
+  const newNote = (currentProject.notes ? currentProject.notes + '\n' : '') + today + ': ' + text;
 
   try {
     const result = await apiPost({
