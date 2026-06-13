@@ -181,6 +181,66 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .empty-state .empty-icon{font-size:2.5rem;margin-bottom:1rem;opacity:0.4;}
 .empty-state p{font-size:0.88rem;line-height:1.6;}
 
+/* SPLIT LAYOUT */
+.split-layout{display:grid;grid-template-columns:340px 1fr;gap:2px;background:var(--border);min-height:calc(100vh - var(--nav-h) - 8rem);}
+.split-left{background:var(--black2);overflow-y:auto;max-height:calc(100vh - var(--nav-h) - 8rem);}
+.split-right{background:var(--black2);overflow-y:auto;max-height:calc(100vh - var(--nav-h) - 8rem);}
+.project-list-item{padding:1.1rem 1.25rem;cursor:pointer;border-bottom:1px solid rgba(200,146,42,0.08);position:relative;transition:background 0.2s;}
+.project-list-item::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;}
+.project-list-item.active-status::before{background:var(--green);}
+.project-list-item.completed-status::before{background:var(--muted);}
+.project-list-item.on-hold-status::before{background:var(--gold);}
+.project-list-item:hover{background:var(--black3);}
+.project-list-item.selected{background:var(--black3);border-left:3px solid var(--gold);}
+.pli-name{font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:var(--gold-light);margin-bottom:0.2rem;}
+.pli-client{font-size:0.78rem;color:var(--muted);}
+.pli-footer{display:flex;justify-content:space-between;margin-top:0.5rem;}
+.pli-value{font-size:0.8rem;color:var(--green);font-weight:700;}
+.pli-date{font-size:0.72rem;color:var(--muted);}
+
+/* TIMELINE */
+.timeline-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;}
+.timeline-project-name{font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;color:var(--gold-light);}
+.timeline-project-sub{font-size:0.78rem;color:var(--muted);margin-top:0.15rem;}
+.timeline-actions{display:flex;gap:0.5rem;}
+.timeline-body{padding:1.25rem 1.5rem;}
+.timeline-section{margin-bottom:1.5rem;}
+.timeline-section-label{font-size:0.65rem;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:var(--neon);margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:1px solid rgba(0,180,255,0.15);}
+
+/* STATS ROW */
+.stats-mini{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);margin-bottom:1.5rem;}
+.stat-mini{background:var(--black3);padding:0.85rem 0.75rem;text-align:center;}
+.stat-mini-label{font-size:0.6rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;}
+.stat-mini-val{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;}
+
+/* TIMELINE FEED */
+.feed-item{display:flex;gap:0.75rem;padding:0.65rem 0;border-bottom:1px solid rgba(200,146,42,0.06);}
+.feed-item:last-child{border-bottom:none;}
+.feed-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:0.35rem;}
+.feed-dot.income{background:var(--green);}
+.feed-dot.expense{background:var(--red);}
+.feed-dot.payment{background:var(--gold-light);}
+.feed-dot.note{background:var(--neon);}
+.feed-dot.start{background:var(--gold);}
+.feed-dot.photo{background:#a78bfa;}
+.feed-content{flex:1;min-width:0;}
+.feed-title{font-size:0.85rem;color:var(--text);font-weight:600;}
+.feed-sub{font-size:0.72rem;color:var(--muted);margin-top:0.1rem;}
+.feed-amount{font-size:0.85rem;font-family:'Cinzel',serif;font-weight:700;flex-shrink:0;}
+.feed-amount.green{color:var(--green);}
+.feed-amount.red{color:var(--red);}
+.feed-amount.gold{color:var(--gold-light);}
+
+/* ADD NOTE */
+.add-note-wrap{display:flex;gap:0.5rem;margin-top:0.75rem;}
+.add-note-input{flex:1;background:var(--black);border:1px solid var(--border);color:var(--text);padding:0.55rem 0.85rem;font-family:'Rajdhani',sans-serif;font-size:0.88rem;outline:none;}
+.add-note-input:focus{border-color:rgba(0,180,255,0.5);}
+.btn-add-note{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.55rem 1rem;cursor:pointer;}
+
+/* EMPTY PANEL */
+.panel-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:300px;color:var(--muted);text-align:center;padding:2rem;}
+.panel-empty-icon{font-size:2rem;margin-bottom:1rem;opacity:0.3;}
+
 @media(max-width:700px){
   .info-grid{grid-template-columns:1fr;}
   .fin-grid{grid-template-columns:1fr 1fr;}
@@ -232,120 +292,42 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <span class="toast-text" id="toastText">Done.</span>
     </div>
 
-    <!-- PROJECTS LIST VIEW -->
-    <div id="listView">
-      <div class="projects-header">
-        <div>
-          <div class="section-label">Project Management</div>
-          <div class="section-title" style="margin-bottom:0;">Projects</div>
-        </div>
-        <button class="btn-action gold" onclick="openNewProjectModal()">+ New Project</button>
+    <!-- HEADER -->
+    <div class="projects-header">
+      <div>
+        <div class="section-label">Project Management</div>
+        <div class="section-title" style="margin-bottom:0;">Projects</div>
+      </div>
+      <button class="btn-action gold" onclick="openNewProjectModal()">+ New Project</button>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="filterProjects('all',this)">All</button>
+      <button class="filter-tab" onclick="filterProjects('Active',this)">Active</button>
+      <button class="filter-tab" onclick="filterProjects('Completed',this)">Completed</button>
+      <button class="filter-tab" onclick="filterProjects('On Hold',this)">On Hold</button>
+    </div>
+
+    <!-- SPLIT LAYOUT -->
+    <div class="split-layout">
+      <!-- LEFT — Lista de proyectos -->
+      <div class="split-left" id="projectsList">
+        <div style="padding:1.5rem;color:var(--muted);font-size:0.82rem;">Loading...</div>
       </div>
 
-      <div class="filter-tabs">
-        <button class="filter-tab active" onclick="filterProjects('all',this)">All</button>
-        <button class="filter-tab" onclick="filterProjects('Active',this)">Active</button>
-        <button class="filter-tab" onclick="filterProjects('Completed',this)">Completed</button>
-        <button class="filter-tab" onclick="filterProjects('On Hold',this)">On Hold</button>
-      </div>
-
-      <div class="projects-grid" id="projectsGrid">
-        <div class="empty-state" style="grid-column:1/-1;background:var(--black2);">
-          <div class="empty-icon">📋</div>
-          <p>Loading projects...</p>
+      <!-- RIGHT — Timeline/Activity Feed -->
+      <div class="split-right" id="projectPanel">
+        <div class="panel-empty">
+          <div class="panel-empty-icon">👈</div>
+          <p style="font-size:0.88rem;">Select a project to see its activity feed</p>
         </div>
       </div>
     </div>
 
-    <!-- PROJECT DETAIL VIEW -->
-    <div id="detailView" class="detail-view">
-      <button class="detail-back" onclick="backToList()">← Back to Projects</button>
-      <div class="detail-header">
-        <div>
-          <div class="detail-title" id="detailName">—</div>
-          <div class="detail-client" id="detailClient">—</div>
-        </div>
-        <div style="display:flex;gap:0.75rem;align-items:center;">
-          <span class="project-status" id="detailStatus">—</span>
-          <button class="btn-action outline" onclick="openEditProjectModal()" style="font-size:0.68rem;">✏️ Edit</button>
-          <button class="btn-action danger" onclick="confirmDeleteProject()" style="font-size:0.68rem;">🗑 Delete</button>
-        </div>
-      </div>
-
-      <div class="detail-tabs">
-        <button class="detail-tab active" onclick="switchTab('info',this)">Info</button>
-        <button class="detail-tab" onclick="switchTab('financial',this)">Financial</button>
-        <button class="detail-tab" onclick="switchTab('photos',this)">Photos</button>
-        <button class="detail-tab" onclick="switchTab('notes',this)">Notes</button>
-      </div>
-
-      <!-- INFO TAB -->
-      <div class="detail-panel active" id="tab-info">
-        <div class="info-grid">
-          <div class="info-card"><div class="info-label">Client</div><div class="info-value" id="infoClient">—</div></div>
-          <div class="info-card"><div class="info-label">Location</div><div class="info-value" id="infoLocation">—</div></div>
-          <div class="info-card"><div class="info-label">Start Date</div><div class="info-value" id="infoStart">—</div></div>
-          <div class="info-card"><div class="info-label">Est. End Date</div><div class="info-value" id="infoEnd">—</div></div>
-          <div class="info-card"><div class="info-label">Contract Value</div><div class="info-value money" id="infoContract">—</div></div>
-          <div class="info-card"><div class="info-label">Status</div><div class="info-value" id="infoStatus">—</div></div>
-        </div>
-        <div style="background:var(--black2);padding:1.25rem;border:1px solid var(--border);">
-          <div class="info-label" style="margin-bottom:0.5rem;">Drive Folder</div>
-          <div id="infoDriveLink" style="font-size:0.88rem;color:var(--neon);">—</div>
-        </div>
-      </div>
-
-      <!-- FINANCIAL TAB -->
-      <div class="detail-panel" id="tab-financial">
-        <div class="fin-grid">
-          <div class="fin-card income"><div class="fin-label">Income</div><div class="fin-value green" id="finIncome">—</div></div>
-          <div class="fin-card expense"><div class="fin-label">Expenses</div><div class="fin-value red" id="finExpenses">—</div></div>
-          <div class="fin-card payment"><div class="fin-label">Payments</div><div class="fin-value red" id="finPayments">—</div></div>
-          <div class="fin-card net"><div class="fin-label">Net</div><div class="fin-value" id="finNet">—</div></div>
-        </div>
-        <div style="background:var(--black2);padding:1.5rem;">
-          <div class="section-label" style="margin-bottom:1rem;">Recent Transactions</div>
-          <div id="finTransactions"><div style="color:var(--muted);font-size:0.82rem;">Loading...</div></div>
-        </div>
-      </div>
-
-      <!-- PHOTOS TAB -->
-      <div class="detail-panel" id="tab-photos">
-        <div class="photos-section">
-          <div class="photos-section-title">
-            <span>📷 Before — 01_Antes</span>
-            <button class="btn-upload-phase" onclick="triggerUpload('antes')">+ Upload</button>
-            <input type="file" class="upload-input" id="upload-antes" accept="image/*" multiple onchange="uploadPhotos('antes')">
-          </div>
-          <div class="photos-grid" id="grid-antes"></div>
-        </div>
-        <div class="photos-section">
-          <div class="photos-section-title">
-            <span>🔨 In Progress — 02_Proceso</span>
-            <button class="btn-upload-phase" onclick="triggerUpload('proceso')">+ Upload</button>
-            <input type="file" class="upload-input" id="upload-proceso" accept="image/*" multiple onchange="uploadPhotos('proceso')">
-          </div>
-          <div class="photos-grid" id="grid-proceso"></div>
-        </div>
-        <div class="photos-section">
-          <div class="photos-section-title">
-            <span>✅ Completed — 03_Terminado</span>
-            <button class="btn-upload-phase" onclick="triggerUpload('terminado')">+ Upload</button>
-            <input type="file" class="upload-input" id="upload-terminado" accept="image/*" multiple onchange="uploadPhotos('terminado')">
-          </div>
-          <div class="photos-grid" id="grid-terminado"></div>
-        </div>
-      </div>
-
-      <!-- NOTES TAB -->
-      <div class="detail-panel" id="tab-notes">
-        <div class="section-label" style="margin-bottom:0.75rem;">Progress Notes</div>
-        <textarea class="notes-textarea" id="notesTextarea" placeholder="Add progress notes, observations, pending tasks..."></textarea>
-        <div class="notes-save">
-          <button class="btn-action gold" onclick="saveNotes()">Save Notes</button>
-        </div>
-      </div>
-    </div>
+    <!-- Hidden inputs para upload de fotos -->
+    <input type="file" class="upload-input" id="upload-antes"     accept="image/*" multiple onchange="uploadPhotos('antes')">
+    <input type="file" class="upload-input" id="upload-proceso"   accept="image/*" multiple onchange="uploadPhotos('proceso')">
+    <input type="file" class="upload-input" id="upload-terminado" accept="image/*" multiple onchange="uploadPhotos('terminado')">
   </div>
 </div>
 
@@ -542,31 +524,24 @@ async function loadProjects() {
 }
 
 function renderProjects() {
-  const grid = document.getElementById('projectsGrid');
+  const list = document.getElementById('projectsList');
   let filtered = allProjects;
   if (currentFilter !== 'all') filtered = allProjects.filter(p => p.status === currentFilter);
 
   if (!filtered.length) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;background:var(--black2);">
-      <div class="empty-icon">📋</div>
-      <p>No projects found.<br>Click "+ New Project" to create one.</p>
-    </div>`;
+    list.innerHTML = `<div class="panel-empty"><div class="panel-empty-icon">📋</div><p>No projects found.<br>Click "+ New Project".</p></div>`;
     return;
   }
 
-  grid.innerHTML = filtered.map(p => {
-    const statusClass = (p.status || 'active').toLowerCase().replace(' ', '-');
-    const statusLabel = p.status || 'Active';
-    return `<div class="project-card ${statusClass}" onclick="openProject('${p.id}')">
-      <div class="project-card-header">
-        <div class="project-card-name">${p.name}</div>
-        <span class="project-status ${statusClass}">${statusLabel}</span>
-      </div>
-      <div class="project-client">${p.client || '—'}</div>
-      <div class="project-location">${[p.address, p.city].filter(Boolean).join(', ') || '—'}</div>
-      <div class="project-card-footer">
-        <span class="project-contract">${p.contractValue ? fmt(p.contractValue) : '—'}</span>
-        <span class="project-date">${p.startDate || '—'}</span>
+  list.innerHTML = filtered.map(p => {
+    const sc = (p.status || 'active').toLowerCase().replace(' ', '-');
+    const isSelected = currentProject && currentProject.id === p.id ? 'selected' : '';
+    return `<div class="project-list-item ${sc}-status ${isSelected}" onclick="openProject('${p.id}')">
+      <div class="pli-name">${p.name}</div>
+      <div class="pli-client">${p.client || '—'} ${p.city ? '· ' + p.city : ''}</div>
+      <div class="pli-footer">
+        <span class="pli-value">${p.contractValue ? fmt(p.contractValue) : '—'}</span>
+        <span class="pli-date">${p.startDate || '—'}</span>
       </div>
     </div>`;
   }).join('');
@@ -580,143 +555,231 @@ function filterProjects(filter, btn) {
 }
 
 // ============================================================
-// OPEN PROJECT DETAIL
+// OPEN PROJECT — renderiza timeline en panel derecho
 // ============================================================
+let projectTransactions = [];
+
 async function openProject(id) {
   currentProject = allProjects.find(p => p.id === id);
   if (!currentProject) return;
 
-  document.getElementById('listView').style.display = 'none';
-  document.getElementById('detailView').style.display = 'block';
+  // Marcar seleccionado en lista
+  renderProjects();
 
-  // Header
-  document.getElementById('detailName').textContent   = currentProject.name;
-  document.getElementById('detailClient').textContent  = currentProject.client || '—';
-
-  const statusEl = document.getElementById('detailStatus');
+  const panel = document.getElementById('projectPanel');
   const sc = (currentProject.status || 'active').toLowerCase().replace(' ', '-');
-  statusEl.textContent  = currentProject.status || 'Active';
-  statusEl.className    = 'project-status ' + sc;
 
-  // Info tab
-  document.getElementById('infoClient').textContent   = currentProject.client || '—';
-  document.getElementById('infoLocation').textContent = [currentProject.address, currentProject.city].filter(Boolean).join(', ') || '—';
-  document.getElementById('infoStart').textContent    = currentProject.startDate || '—';
-  document.getElementById('infoEnd').textContent      = currentProject.endDate || '—';
-  document.getElementById('infoContract').textContent = currentProject.contractValue ? fmt(currentProject.contractValue) : '—';
-  document.getElementById('infoStatus').textContent   = currentProject.status || '—';
+  panel.innerHTML = `
+    <div class="timeline-header">
+      <div>
+        <div class="timeline-project-name">${currentProject.name}</div>
+        <div class="timeline-project-sub">${currentProject.client || ''}${currentProject.city ? ' · ' + currentProject.city : ''}</div>
+      </div>
+      <div class="timeline-actions">
+        <span class="project-status ${sc}">${currentProject.status || 'Active'}</span>
+        <button class="btn-action outline" onclick="openEditProjectModal()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">✏️ Edit</button>
+        <button class="btn-action danger" onclick="confirmDeleteProject()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">🗑</button>
+      </div>
+    </div>
+    <div class="timeline-body">
 
-  const driveEl = document.getElementById('infoDriveLink');
-  if (currentProject.driveFolderId) {
-    driveEl.innerHTML = `<a href="https://drive.google.com/drive/folders/${currentProject.driveFolderId}" target="_blank" style="color:var(--neon);">Open in Drive ↗</a>`;
-  } else {
-    driveEl.textContent = 'No Drive folder linked';
-  }
+      <!-- STATS MINI -->
+      <div class="stats-mini" id="statsMinI">
+        <div class="stat-mini"><div class="stat-mini-label">Income</div><div class="stat-mini-val green" id="tm-income">—</div></div>
+        <div class="stat-mini"><div class="stat-mini-label">Expenses</div><div class="stat-mini-val red" id="tm-expenses">—</div></div>
+        <div class="stat-mini"><div class="stat-mini-label">Payments</div><div class="stat-mini-val red" id="tm-payments">—</div></div>
+        <div class="stat-mini"><div class="stat-mini-label">Net</div><div class="stat-mini-val" id="tm-net">—</div></div>
+      </div>
 
-  // Notes
-  document.getElementById('notesTextarea').value = currentProject.notes || '';
+      <!-- INFO RÁPIDA -->
+      <div class="timeline-section">
+        <div class="timeline-section-label">Project Info</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:0.82rem;">
+          <div><span style="color:var(--muted);">Start:</span> <span style="color:var(--text);">${currentProject.startDate || '—'}</span></div>
+          <div><span style="color:var(--muted);">Est. End:</span> <span style="color:var(--text);">${currentProject.endDate || '—'}</span></div>
+          <div><span style="color:var(--muted);">Contract:</span> <span style="color:var(--green);font-weight:700;">${currentProject.contractValue ? fmt(currentProject.contractValue) : '—'}</span></div>
+          <div><span style="color:var(--muted);">Drive:</span> ${currentProject.driveFolderId ? '<a href="https://drive.google.com/drive/folders/' + currentProject.driveFolderId + '" target="_blank" style="color:var(--neon);">Open ↗</a>' : '<span style="color:var(--muted);">—</span>'}</div>
+        </div>
+      </div>
 
-  // Switch to info tab
-  switchTab('info', document.querySelector('.detail-tab'));
+      <!-- ACTIVITY FEED -->
+      <div class="timeline-section">
+        <div class="timeline-section-label">Activity Feed</div>
+        <div id="activityFeed"><div style="color:var(--muted);font-size:0.82rem;">Loading...</div></div>
+      </div>
 
-  // Load financial data
-  loadProjectFinancials();
+      <!-- ADD NOTE -->
+      <div class="timeline-section">
+        <div class="timeline-section-label">Add Note</div>
+        <div class="add-note-wrap">
+          <input type="text" class="add-note-input" id="quickNoteInput" placeholder="Framed south wall, installed LVL beam...">
+          <button class="btn-add-note" onclick="addQuickNote()">Add</button>
+        </div>
+      </div>
 
-  // Load photos if Drive folder exists
-  if (currentProject.driveFolderId) loadProjectPhotos();
+      <!-- PHOTOS QUICK -->
+      <div class="timeline-section">
+        <div class="timeline-section-label" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Photos</span>
+          <div style="display:flex;gap:0.4rem;">
+            <button class="btn-upload-phase" onclick="triggerUpload('antes')" style="font-size:0.6rem;">+ Before</button>
+            <button class="btn-upload-phase" onclick="triggerUpload('proceso')" style="font-size:0.6rem;">+ Progress</button>
+            <button class="btn-upload-phase" onclick="triggerUpload('terminado')" style="font-size:0.6rem;">+ Done</button>
+          </div>
+        </div>
+        <div id="photosQuickGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:3px;margin-top:0.5rem;"></div>
+      </div>
+
+    </div>`;
+
+  // Cargar datos
+  await loadTimelineData();
 }
 
-function backToList() {
-  document.getElementById('detailView').style.display = 'none';
-  document.getElementById('listView').style.display   = 'block';
-  currentProject = null;
-}
-
-// ============================================================
-// TABS
-// ============================================================
-function switchTab(tab, btn) {
-  document.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.detail-panel').forEach(p => p.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  else document.querySelector('.detail-tab').classList.add('active');
-  document.getElementById('tab-' + tab).classList.add('active');
-}
-
-// ============================================================
-// FINANCIAL DATA
-// ============================================================
-async function loadProjectFinancials() {
+async function loadTimelineData() {
   try {
     const data = await apiGet('ledger', { page: '1', size: '500' });
-    const transactions = (data.transactions || []).filter(t =>
+    projectTransactions = (data.transactions || []).filter(t =>
       (t.project || '').toLowerCase() === (currentProject.name || '').toLowerCase()
     );
 
+    // Stats
     let income = 0, expenses = 0, payments = 0;
-    transactions.forEach(t => {
+    projectTransactions.forEach(t => {
       if (t.type === 'Income')  income   += Math.abs(t.amount);
       if (t.type === 'Expense') expenses += Math.abs(t.amount);
       if (t.type === 'Payment') payments += Math.abs(t.amount);
     });
     const net = income - expenses - payments;
+    document.getElementById('tm-income').textContent   = fmt(income);
+    document.getElementById('tm-expenses').textContent = fmt(expenses);
+    document.getElementById('tm-payments').textContent = fmt(payments);
+    const netEl = document.getElementById('tm-net');
+    netEl.textContent = fmt(net);
+    netEl.className = 'stat-mini-val ' + (net >= 0 ? 'green' : 'red');
 
-    document.getElementById('finIncome').textContent   = fmt(income);
-    document.getElementById('finExpenses').textContent = fmt(expenses);
-    document.getElementById('finPayments').textContent = fmt(payments);
-    document.getElementById('finNet').textContent      = fmt(net);
-    document.getElementById('finNet').className        = 'fin-value ' + (net >= 0 ? 'green' : 'red');
+    // Build activity feed
+    renderActivityFeed();
 
-    // Recent transactions
-    const recent = [...transactions].sort((a,b) => b.date.localeCompare(a.date)).slice(0,10);
-    const finEl  = document.getElementById('finTransactions');
-    if (!recent.length) {
-      finEl.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">No transactions for this project yet.</div>';
-      return;
-    }
-    finEl.innerHTML = recent.map(t => {
-      const amt = Number(t.amount);
-      const color = t.type === 'Income' ? 'var(--green)' : t.type === 'Payment' ? 'var(--gold-light)' : 'var(--red)';
-      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid rgba(200,146,42,0.08);font-size:0.85rem;">
-        <div>
-          <span style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.1rem 0.4rem;border:1px solid;color:${color};border-color:${color}30;margin-right:0.5rem;">${t.type}</span>
-          ${t.description}
-        </div>
-        <span style="font-family:'Cinzel',serif;color:${color};font-weight:700;">${fmt(Math.abs(amt))}</span>
-      </div>`;
-    }).join('');
+    // Load photos
+    if (currentProject.driveFolderId) loadQuickPhotos();
   } catch(e) { console.error(e); }
 }
 
-// ============================================================
-// PHOTOS
-// ============================================================
-async function loadProjectPhotos() {
-  if (!currentProject?.driveFolderId) return;
-  const phases = [
-    { key: 'antes',     name: '01_Antes' },
-    { key: 'proceso',   name: '02_Proceso' },
-    { key: 'terminado', name: '03_Terminado' },
-  ];
-  for (const phase of phases) {
-    try {
-      const data = await apiGet('projectPhotos', { folderId: currentProject.driveFolderId, phase: phase.name });
-      renderPhotoGrid(phase.key, data.photos || []);
-    } catch(e) { console.error(e); }
-  }
-}
+function renderActivityFeed() {
+  const feed = document.getElementById('activityFeed');
+  if (!feed) return;
 
-function renderPhotoGrid(phase, photos) {
-  const grid = document.getElementById('grid-' + phase);
-  if (!photos.length) {
-    grid.innerHTML = `<div class="photo-thumb empty"><span style="font-size:0.7rem;color:var(--muted);">No photos yet</span></div>`;
+  // Construir items del feed
+  const items = [];
+
+  // Inicio del proyecto
+  if (currentProject.startDate) {
+    items.push({
+      date: currentProject.startDate,
+      type: 'start',
+      title: 'Project started',
+      sub: currentProject.name + (currentProject.client ? ' · ' + currentProject.client : ''),
+      amount: null
+    });
+  }
+
+  // Transacciones
+  projectTransactions.forEach(t => {
+    const typeMap = { Income: 'income', Expense: 'expense', Payment: 'payment' };
+    items.push({
+      date: t.date,
+      type: typeMap[t.type] || 'note',
+      title: t.description,
+      sub: t.type + (t.payee ? ' → ' + t.payee : '') + ' · ' + t.account,
+      amount: t.amount,
+      txType: t.type
+    });
+  });
+
+  // Notas del campo notes (líneas con timestamp si tienen formato "YYYY-MM-DD: texto")
+  const notesRaw = currentProject.notes || '';
+  notesRaw.split('
+').forEach(line => {
+    const match = line.match(/^(\d{4}-\d{2}-\d{2}):\s*(.+)/);
+    if (match) {
+      items.push({ date: match[1], type: 'note', title: match[2], sub: 'Note', amount: null });
+    }
+  });
+
+  // Ordenar por fecha desc
+  items.sort((a, b) => b.date.localeCompare(a.date));
+
+  if (!items.length) {
+    feed.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">No activity yet. Add a note or log a transaction for this project.</div>';
     return;
   }
-  grid.innerHTML = photos.map(p => `
-    <div class="photo-thumb" onclick="openLightbox('${p.url}')">
-      <img src="${p.thumbnailUrl || p.url}" alt="${p.name}" loading="lazy">
+
+  feed.innerHTML = items.map(item => {
+    const amtColor = item.txType === 'Income' ? 'green' : 'red';
+    const amtStr   = item.amount != null
+      ? `<span class="feed-amount ${amtColor}">${item.txType === 'Income' ? '+' : '-'}${fmt(Math.abs(item.amount))}</span>`
+      : '';
+    return `<div class="feed-item">
+      <div class="feed-dot ${item.type}"></div>
+      <div class="feed-content">
+        <div class="feed-title">${item.title}</div>
+        <div class="feed-sub">${item.date} · ${item.sub}</div>
+      </div>
+      ${amtStr}
+    </div>`;
+  }).join('');
+}
+
+async function addQuickNote() {
+  const input = document.getElementById('quickNoteInput');
+  const text = input.value.trim();
+  if (!text || !currentProject) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const newNote = (currentProject.notes ? currentProject.notes + '
+' : '') + today + ': ' + text;
+
+  try {
+    const result = await apiPost({
+      action: 'editProject', id: currentProject.id,
+      notes: newNote,
+      name: currentProject.name, client: currentProject.client,
+      address: currentProject.address, city: currentProject.city,
+      startDate: currentProject.startDate, endDate: currentProject.endDate,
+      contractValue: currentProject.contractValue, status: currentProject.status,
+    });
+    if (result.success) {
+      currentProject.notes = newNote;
+      input.value = '';
+      renderActivityFeed();
+      showToast('✓ Note added');
+    }
+  } catch(e) { showToast('Connection error'); }
+}
+
+async function loadQuickPhotos() {
+  const grid = document.getElementById('photosQuickGrid');
+  if (!grid || !currentProject?.driveFolderId) return;
+  const phases = ['01_Antes', '02_Proceso', '03_Terminado'];
+  const allPhotos = [];
+  for (const phase of phases) {
+    try {
+      const data = await apiGet('projectPhotos', { folderId: currentProject.driveFolderId, phase });
+      allPhotos.push(...(data.photos || []).map(p => ({ ...p, phase })));
+    } catch(e) {}
+  }
+  if (!allPhotos.length) {
+    grid.innerHTML = '<div style="color:var(--muted);font-size:0.72rem;">No photos yet</div>';
+    return;
+  }
+  grid.innerHTML = allPhotos.slice(0, 12).map(p => `
+    <div style="aspect-ratio:1;overflow:hidden;cursor:pointer;background:var(--black3);" onclick="openLightbox('${p.url}')">
+      <img src="${p.thumbnailUrl}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">
     </div>`).join('');
 }
+
+// (loadProjectFinancials y loadProjectPhotos movidos al timeline)
 
 function triggerUpload(phase) {
   document.getElementById('upload-' + phase).click();
@@ -864,33 +927,7 @@ async function doDeleteProject() {
   } catch(e) { showToast('Connection error'); }
 }
 
-// ============================================================
-// NOTES
-// ============================================================
-async function saveNotes() {
-  if (!currentProject) return;
-  showToast('Saving notes...');
-  try {
-    const result = await apiPost({
-      action: 'editProject',
-      id:     currentProject.id,
-      notes:  document.getElementById('notesTextarea').value,
-      // Mantener los demás campos
-      name:          currentProject.name,
-      client:        currentProject.client,
-      address:       currentProject.address,
-      city:          currentProject.city,
-      startDate:     currentProject.startDate,
-      endDate:       currentProject.endDate,
-      contractValue: currentProject.contractValue,
-      status:        currentProject.status,
-    });
-    if (result.success) {
-      showToast('✓ Notes saved');
-      currentProject.notes = document.getElementById('notesTextarea').value;
-    } else { showToast('Error: ' + result.message); }
-  } catch(e) { showToast('Connection error'); }
-}
+// saveNotes ahora se maneja por addQuickNote en el timeline
 
 // ============================================================
 // HELPERS
