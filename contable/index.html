@@ -1044,7 +1044,6 @@ function validateField(id, msg) {
   const val = el.value ? el.value.trim() : '';
   if (!val || val === '0') {
     el.classList.add('error');
-    // Buscar o crear mensaje de error
     let errEl = el.parentNode.querySelector('.field-error');
     if (!errEl) {
       errEl = document.createElement('div');
@@ -1061,12 +1060,35 @@ function validateField(id, msg) {
   return true;
 }
 
+function validateAmount(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return true;
+  const val = parseFloat(el.value);
+  const isValid = !isNaN(val) && val > 0;
+  if (!isValid) {
+    el.classList.add('error');
+    let errEl = el.parentNode.querySelector('.field-error');
+    if (!errEl) {
+      errEl = document.createElement('div');
+      errEl.className = 'field-error';
+      el.parentNode.appendChild(errEl);
+    }
+    errEl.textContent = msg || 'Enter a valid amount greater than 0';
+    errEl.classList.add('show');
+    return false;
+  }
+  el.classList.remove('error');
+  const errEl = el.parentNode.querySelector('.field-error');
+  if (errEl) errEl.classList.remove('show');
+  return true;
+}
+
 function validateExpense() {
   clearValidation('expense');
   const checks = [
     validateField('exp-date',        'Date is required'),
     validateField('exp-account',     'Select an account'),
-    validateField('exp-amount',      'Enter an amount'),
+    validateAmount('exp-amount',     'Enter a valid amount greater than 0'),
     validateField('exp-category',    'Select a category'),
     validateField('exp-description', 'Description is required'),
   ];
@@ -1078,7 +1100,7 @@ function validateIncome() {
   const checks = [
     validateField('inc-date',        'Date is required'),
     validateField('inc-account',     'Select an account'),
-    validateField('inc-amount',      'Enter an amount'),
+    validateAmount('inc-amount',     'Enter a valid amount greater than 0'),
     validateField('inc-type',        'Select income type'),
     validateField('inc-description', 'Description is required'),
   ];
@@ -1108,7 +1130,7 @@ function validatePayment() {
   const checks = [
     validateField('pay-date',        'Date is required'),
     validateField('pay-account',     'Select an account'),
-    validateField('pay-amount',      'Enter an amount'),
+    validateAmount('pay-amount',     'Enter a valid amount greater than 0'),
     validateField('pay-type',        'Select payment category'),
     validateField('pay-method',      'Select payment method'),
     payeeOk,
@@ -1126,7 +1148,7 @@ function validateEdit() {
   const checks = [
     validateField('editDate',        'Date is required'),
     validateField('editAccount',     'Select an account'),
-    validateField('editAmount',      'Enter an amount'),
+    validateAmount('editAmount',     'Enter a valid amount greater than 0'),
     validateField('editCategory',    'Select a category'),
     validateField('editDescription', 'Description is required'),
   ];
