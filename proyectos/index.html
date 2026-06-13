@@ -88,7 +88,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .project-client{font-size:0.82rem;color:var(--muted);margin-bottom:0.4rem;}
 .project-location{font-size:0.78rem;color:var(--muted);}
 .project-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:1rem;padding-top:0.75rem;border-top:1px solid var(--border);}
-.project-contract{font-family:'Cinzel',serif;font-size:0.95rem;color:var(--green);font-weight:700;}
+.project-documentation{font-family:'Cinzel',serif;font-size:0.95rem;color:var(--green);font-weight:700;}
 .project-date{font-size:0.72rem;color:var(--muted);}
 
 /* PROJECT DETAIL VIEW */
@@ -246,8 +246,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .inline-edit-actions{display:flex;gap:0.5rem;margin-top:0.4rem;}
 .btn-inline-save{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.3rem 0.75rem;cursor:pointer;}
 .btn-inline-cancel{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;}
-.contract-file-row{display:flex;align-items:center;gap:0.75rem;margin-top:0.5rem;}
-.btn-upload-contract{font-family:'Rajdhani',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-light);border:1px solid var(--border);background:var(--gold-dim);padding:0.28rem 0.75rem;cursor:pointer;}
+.documentation-file-row{display:flex;align-items:center;gap:0.75rem;margin-top:0.5rem;}
+.btn-upload-documentation{font-family:'Rajdhani',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-light);border:1px solid var(--border);background:var(--gold-dim);padding:0.28rem 0.75rem;cursor:pointer;}
 
 /* EMPTY PANEL */
 .panel-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:300px;color:var(--muted);text-align:center;padding:2rem;position:relative;overflow:hidden;}
@@ -410,7 +410,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div><label class="field-label">Est. End Date</label><input type="date" class="field-input" id="np-end"></div>
       </div>
       <div class="field-row">
-        <div><label class="field-label">Contract Value ($)</label><input type="number" class="field-input" id="np-value" placeholder="0.00" step="0.01"></div>
+        <div><label class="field-label">Documentation Value ($)</label><input type="number" class="field-input" id="np-value" placeholder="0.00" step="0.01"></div>
         <div><label class="field-label">Status <span>*</span></label>
           <select class="field-input" id="np-status">
             <option value="Active">Active</option>
@@ -450,7 +450,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div><label class="field-label">Est. End Date</label><input type="date" class="field-input" id="ep-end"></div>
       </div>
       <div class="field-row">
-        <div><label class="field-label">Contract Value ($)</label><input type="number" class="field-input" id="ep-value" step="0.01"></div>
+        <div><label class="field-label">Documentation Value ($)</label><input type="number" class="field-input" id="ep-value" step="0.01"></div>
         <div><label class="field-label">Status</label>
           <select class="field-input" id="ep-status">
             <option value="Active">Active</option>
@@ -695,7 +695,7 @@ async function openProject(id) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:0.82rem;">
           <div><span style="color:var(--muted);">Start:</span> <span style="color:var(--text);">${currentProject.startDate || '—'}</span></div>
           <div><span style="color:var(--muted);">Est. End:</span> <span style="color:var(--text);">${currentProject.endDate || '—'}</span></div>
-          <div><span style="color:var(--muted);">Contract:</span> <span style="color:var(--green);font-weight:700;">${currentProject.contractValue ? fmt(currentProject.contractValue) : '—'}</span></div>
+          <div><span style="color:var(--muted);">Documentation:</span> <span style="color:var(--green);font-weight:700;">${currentProject.contractValue ? fmt(currentProject.contractValue) : '—'}</span></div>
           <div><span style="color:var(--muted);">Drive:</span> ${currentProject.driveFolderId ? '<a href="https://drive.google.com/drive/folders/' + currentProject.driveFolderId + '" target="_blank" style="color:var(--neon);">Open ↗</a>' : '<span style="color:var(--muted);">—</span>'}</div>
         </div>
       </div>
@@ -703,7 +703,7 @@ async function openProject(id) {
       <!-- SCOPE & CONTRACT -->
       <div class="timeline-section">
         <div class="timeline-section-label" style="display:flex;justify-content:space-between;">
-          <span>Scope & Contract</span>
+          <span>Scope & Documentation</span>
         </div>
 
         <div style="margin-bottom:0.75rem;">
@@ -721,13 +721,13 @@ async function openProject(id) {
         </div>
 
         <div>
-          <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">Contract</div>
-          <div class="contract-file-row">
-            <div id="contractFileLink" style="font-size:0.85rem;flex:1;">
-              <span style="color:var(--muted);font-size:0.82rem;">No contract uploaded</span>
+          <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">Documentation</div>
+          <div class="documentation-file-row">
+            <div id="documentationFileLink" style="font-size:0.85rem;flex:1;">
+              <span style="color:var(--muted);font-size:0.82rem;">No documentation uploaded</span>
             </div>
-            <button class="btn-upload-contract" onclick="document.getElementById('upload-contract').click()">📄 Upload PDF</button>
-            <input type="file" id="upload-contract" accept=".pdf,image/*" style="display:none;" onchange="uploadContract()">
+            <button class="btn-upload-documentation" onclick="document.getElementById('upload-documentation').click()">📄 Upload Doc</button>
+            <input type="file" id="upload-documentation" accept=".pdf,image/*" style="display:none;" onchange="uploadDocumentation()">
           </div>
         </div>
       </div>
@@ -765,7 +765,7 @@ async function openProject(id) {
   // Cargar datos
   await loadTimelineData();
   renderObjective();
-  renderContractFile();
+  renderDocumentationFile();
 }
 
 async function loadTimelineData() {
@@ -891,7 +891,7 @@ async function saveObjective() {
       startDate: currentProject.startDate, endDate: currentProject.endDate,
       contractValue: currentProject.contractValue, status: currentProject.status,
       notes: currentProject.notes || '',
-      contractFileUrl: currentProject.contractFileUrl || '',
+      documentationFileUrl: currentProject.documentationFileUrl || '',
     });
     if (result.success) {
       currentProject.objective = val;
@@ -914,21 +914,21 @@ function renderObjective() {
   }
 }
 
-function renderContractFile() {
-  const el = document.getElementById('contractFileLink');
+function renderDocumentationFile() {
+  const el = document.getElementById('documentationFileLink');
   if (!el) return;
-  if (currentProject.contractFileUrl) {
-    el.innerHTML = `<a href="${currentProject.contractFileUrl}" target="_blank" style="color:var(--neon);font-size:0.85rem;">📄 View Contract ↗</a>`;
+  if (currentProject.documentationFileUrl) {
+    el.innerHTML = `<a href="${currentProject.documentationFileUrl}" target="_blank" style="color:var(--neon);font-size:0.85rem;">📄 View Documentation ↗</a>`;
   } else {
-    el.innerHTML = '<span style="color:var(--muted);font-size:0.82rem;">No contract uploaded</span>';
+    el.innerHTML = '<span style="color:var(--muted);font-size:0.82rem;">No documentation uploaded</span>';
   }
 }
 
-async function uploadContract() {
-  const input = document.getElementById('upload-contract');
+async function uploadDocumentation() {
+  const input = document.getElementById('upload-documentation');
   const file  = input.files[0];
   if (!file || !currentProject) return;
-  showToast('Uploading contract...');
+  showToast('Uploading documentation...');
   try {
     const base64 = await fileToBase64(file);
     const result = await apiPost({
@@ -946,9 +946,9 @@ async function uploadContract() {
       objective: currentProject.objective || '',
     });
     if (result.success) {
-      currentProject.contractFileUrl = result.fileUrl;
-      renderContractFile();
-      showToast('✓ Contract uploaded');
+      currentProject.documentationFileUrl = result.fileUrl;
+      renderDocumentationFile();
+      showToast('✓ Documentation uploaded');
     } else {
       showToast('Error: ' + result.message);
     }
