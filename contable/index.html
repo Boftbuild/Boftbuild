@@ -197,6 +197,11 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .btn-submit{font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.65rem 1.8rem;cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
 .btn-cancel{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;}
 
+/* ── FIELD VALIDATION ── */
+.field-input.error{border-color:var(--red)!important;background:rgba(224,85,85,0.05);}
+.field-error{font-size:0.7rem;color:var(--red);margin-top:0.25rem;display:none;}
+.field-error.show{display:block;}
+
 /* ── RECEIPT UPLOAD FIELD ── */
 .receipt-upload-zone{
   border:1px dashed rgba(200,146,42,0.35);
@@ -292,7 +297,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="nav-right">
       <img class="nav-avatar" id="navAvatar" src="" alt="">
       <span class="nav-username" id="navUsername"></span>
-      <button class="nav-sync" onclick="loadDashboard();loadMissingReceipts();loadReports();loadTransactions();">Sync</button>
+      <button class="nav-sync" onclick="loadDashboard();loadMissingReceipts();loadReports();loadTransactions();loadWorkers();loadWorkersSection();">Sync</button>
       <button class="nav-logout" onclick="doLogout()">Logout</button>
     </div>
   </nav>
@@ -1010,6 +1015,107 @@ let visibleTransactions = []; // array actual renderizado — acceso por índice
 const selectedFiles = {};
 
 // ============================================================
+// VALIDACIONES
+// ============================================================
+function clearValidation(formPrefix) {
+  document.querySelectorAll('#modal-' + formPrefix + ' .field-input').forEach(el => {
+    el.classList.remove('error');
+  });
+  document.querySelectorAll('#modal-' + formPrefix + ' .field-error').forEach(el => {
+    el.classList.remove('show');
+  });
+}
+
+function validateField(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return true;
+  const val = el.value ? el.value.trim() : '';
+  if (!val || val === '0') {
+    el.classList.add('error');
+    // Buscar o crear mensaje de error
+    let errEl = el.parentNode.querySelector('.field-error');
+    if (!errEl) {
+      errEl = document.createElement('div');
+      errEl.className = 'field-error';
+      el.parentNode.appendChild(errEl);
+    }
+    errEl.textContent = msg || 'This field is required';
+    errEl.classList.add('show');
+    return false;
+  }
+  el.classList.remove('error');
+  const errEl = el.parentNode.querySelector('.field-error');
+  if (errEl) errEl.classList.remove('show');
+  return true;
+}
+
+function validateExpense() {
+  clearValidation('expense');
+  const checks = [
+    validateField('exp-date',        'Date is required'),
+    validateField('exp-account',     'Select an account'),
+    validateField('exp-amount',      'Enter an amount'),
+    validateField('exp-category',    'Select a category'),
+    validateField('exp-description', 'Description is required'),
+  ];
+  return checks.every(Boolean);
+}
+
+function validateIncome() {
+  clearValidation('income');
+  const checks = [
+    validateField('inc-date',        'Date is required'),
+    validateField('inc-account',     'Select an account'),
+    validateField('inc-amount',      'Enter an amount'),
+    validateField('inc-type',        'Select income type'),
+    validateField('inc-description', 'Description is required'),
+  ];
+  return checks.every(Boolean);
+}
+
+function validatePayment() {
+  clearValidation('payment');
+  const payeeEl = document.getElementById('pay-payee');
+  const payeeOk = payeeEl && payeeEl.value && payeeEl.value !== '';
+  if (!payeeOk) {
+    payeeEl.classList.add('error');
+    let errEl = payeeEl.parentNode.querySelector('.field-error');
+    if (!errEl) { errEl = document.createElement('div'); errEl.className = 'field-error'; payeeEl.parentNode.appendChild(errEl); }
+    errEl.textContent = 'Select who to pay';
+    errEl.classList.add('show');
+  }
+  const checks = [
+    validateField('pay-date',        'Date is required'),
+    validateField('pay-account',     'Select an account'),
+    validateField('pay-amount',      'Enter an amount'),
+    validateField('pay-type',        'Select payment category'),
+    validateField('pay-method',      'Select payment method'),
+    payeeOk,
+    validateField('pay-description', 'Description is required'),
+  ];
+  if (!checks.every(Boolean)) {
+    showToast('⚠ Please fill all required fields');
+    return false;
+  }
+  return true;
+}
+
+function validateEdit() {
+  const checks = [
+    validateField('editDate',        'Date is required'),
+    validateField('editAccount',     'Select an account'),
+    validateField('editAmount',      'Enter an amount'),
+    validateField('editCategory',    'Select a category'),
+    validateField('editDescription', 'Description is required'),
+  ];
+  if (!checks.every(Boolean)) {
+    showToast('⚠ Please fill all required fields');
+    return false;
+  }
+  return true;
+}
+
+// ============================================================
 // GOOGLE AUTH
 // ============================================================
 function signInWithGoogle() {
@@ -1051,6 +1157,7 @@ function loginSuccess(user) {
   loadReports();
   loadTransactions();
   loadWorkers();
+  loadWorkersSection();
 }
 
 function doLogout() {
@@ -1619,6 +1726,7 @@ function openEditModal(idxOrT) {
 }
 
 async function saveEdit() {
+  if (!validateEdit()) return;
   // Leer receiptMode del DOM — más confiable que la variable global
   const actualReceiptMode = document.getElementById('modal-edit').dataset.receiptMode || receiptMode || 'replace';
 
@@ -1702,6 +1810,11 @@ async function submitForm(type) {
   const prefix    = prefixMap[type];
 
   let payload = { action: 'add' + type.charAt(0).toUpperCase() + type.slice(1) };
+
+  // Validar antes de proceder
+  if (type === 'expense' && !validateExpense()) return;
+  if (type === 'income'  && !validateIncome())  return;
+  if (type === 'payment' && !validatePayment()) return;
 
   if (type === 'expense') {
     payload = { ...payload,
@@ -2331,7 +2444,9 @@ function openModal(type) {
     else if (el.type === 'number') el.value = '';
     else if (el.tagName === 'SELECT') el.selectedIndex = 0;
     else el.value = '';
+    el.classList.remove('error');
   });
+  modal.querySelectorAll('.field-error').forEach(el => el.classList.remove('show'));
   // Limpiar upload zones al abrir modal
   const prefixMap = { expense: 'exp', income: 'inc', payment: 'pay' };
   const prefix = prefixMap[type];
