@@ -752,27 +752,18 @@ async function openProject(id) {
 
         <div style="margin-bottom:0.75rem;">
           <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">Scope of Work</div>
-          <div id="objectiveDisplay" class="inline-edit-field empty" onclick="startEditObjective()">
-            Click to add project objective...
-          </div>
-          <div id="objectiveEdit" style="display:none;">
-            <textarea class="inline-edit-textarea" id="objectiveTextarea" placeholder="Frame 2,400 sqft home, install LVL beams..."></textarea>
-            <div class="inline-edit-actions">
-              <button class="btn-inline-save" onclick="saveObjective()">Save</button>
-              <button class="btn-inline-cancel" onclick="cancelEditObjective()">Cancel</button>
-            </div>
+          <div id="objectiveDisplay" style="font-size:0.85rem;color:var(--text);line-height:1.6;padding:0.4rem 0;">
+            <span style="color:var(--muted);font-style:italic;">No scope defined — edit project to add.</span>
           </div>
         </div>
 
         <div>
           <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">Documentation</div>
-          <div class="documentation-file-row">
-            <div id="documentationFileLink" style="font-size:0.85rem;flex:1;">
-              <span style="color:var(--muted);font-size:0.82rem;">No documentation uploaded</span>
-            </div>
-            <button class="btn-upload-documentation" onclick="document.getElementById('upload-documentation').click()">📄 Upload Doc</button>
-            <input type="file" id="upload-documentation" accept=".pdf,image/*" style="display:none;" onchange="uploadDocumentation()">
+          <div id="documentsList" style="margin-bottom:0.5rem;">
+            <div style="color:var(--muted);font-size:0.82rem;font-style:italic;">No documents uploaded</div>
           </div>
+          <button class="btn-upload-documentation" onclick="document.getElementById('upload-documentation').click()" style="font-size:0.6rem;">+ Add Document</button>
+          <input type="file" id="upload-documentation" accept="image/*,.pdf,.doc,.docx" style="display:none;" onchange="uploadDocumentation()">
         </div>
       </div>
 
@@ -995,29 +986,61 @@ function renderObjective() {
   const display = document.getElementById('objectiveDisplay');
   if (!display) return;
   if (currentProject.objective) {
-    display.textContent = currentProject.objective;
-    display.classList.remove('empty');
+    display.innerHTML = '<span style="color:var(--text);">' + currentProject.objective.replace(/\n/g, '<br>') + '</span>';
   } else {
-    display.textContent = 'Click to add scope of work...';
-    display.classList.add('empty');
+    display.innerHTML = '<span style="color:var(--muted);font-style:italic;">No scope defined — edit project to add.</span>';
   }
 }
 
 function renderDocumentationFile() {
-  const el = document.getElementById('documentationFileLink');
+  const el = document.getElementById('documentsList');
   if (!el) return;
-  if (currentProject.documentationFileUrl) {
-    el.innerHTML = `<a href="${currentProject.documentationFileUrl}" target="_blank" style="color:var(--neon);font-size:0.85rem;">📄 View Documentation ↗</a>`;
-  } else {
-    el.innerHTML = '<span style="color:var(--muted);font-size:0.82rem;">No documentation uploaded</span>';
+  // Los docs se guardan como URLs separadas por coma en contractFileUrl
+  const urls = (currentProject.contractFileUrl || '').split(',').map(u => u.trim()).filter(Boolean);
+  if (!urls.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-style:italic;">No documents uploaded</div>';
+    return;
   }
+  el.innerHTML = urls.map((url, i) => {
+    const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(url);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.45rem 0;border-bottom:1px solid rgba(200,146,42,0.08);gap:0.5rem;">
+      <div style="display:flex;align-items:center;gap:0.5rem;min-width:0;flex:1;">
+        <span style="font-size:0.9rem;">${isImg ? '🖼️' : '📄'}</span>
+        <span style="font-size:0.78rem;color:var(--muted);">Document ${i+1}</span>
+      </div>
+      <div style="display:flex;gap:0.4rem;flex-shrink:0;">
+        <button class="btn-sm view" onclick="window.open('${url}','_blank')" style="font-size:0.6rem;padding:0.2rem 0.5rem;">View ↗</button>
+        <button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);font-size:0.6rem;padding:0.2rem 0.5rem;" onclick="removeDocument(${i})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function removeDocument(idx) {
+  const urls = (currentProject.contractFileUrl || '').split(',').map(u => u.trim()).filter(Boolean);
+  urls.splice(idx, 1);
+  const newVal = urls.join(',');
+  try {
+    await apiPost({
+      action: 'editProject', id: currentProject.id,
+      contractFileUrl: newVal,
+      name: currentProject.name, client: currentProject.client,
+      address: currentProject.address, city: currentProject.city,
+      startDate: currentProject.startDate, endDate: currentProject.endDate,
+      contractValue: currentProject.contractValue, status: currentProject.status,
+      notes: currentProject.notes || '', objective: currentProject.objective || '',
+    });
+    currentProject.contractFileUrl = newVal;
+    renderDocumentationFile();
+    showToast('✓ Document removed');
+  } catch(e) { showToast('Connection error'); }
 }
 
 async function uploadDocumentation() {
   const input = document.getElementById('upload-documentation');
   const file  = input.files[0];
   if (!file || !currentProject) return;
-  showToast('Uploading documentation...');
+  showToast('Uploading document...');
   try {
     const base64 = await fileToBase64(file);
     const result = await apiPost({
@@ -1035,9 +1058,11 @@ async function uploadDocumentation() {
       objective: currentProject.objective || '',
     });
     if (result.success) {
-      currentProject.documentationFileUrl = result.fileUrl;
+      // Agregar nueva URL a las existentes (separadas por coma)
+      const existing = currentProject.contractFileUrl || '';
+      currentProject.contractFileUrl = existing ? existing + ',' + result.fileUrl : result.fileUrl;
       renderDocumentationFile();
-      showToast('✓ Documentation uploaded');
+      showToast('✓ Document uploaded');
     } else {
       showToast('Error: ' + result.message);
     }
