@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BOFT — Sistema Contable</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -2159,52 +2160,125 @@ function populateProjectDropdown() {
 }
 
 // ============================================================
-// MONTHLY CHART — Barras Income vs Expenses por mes
+// MONTHLY CHART — Chart.js minimalista
 // ============================================================
-function renderMonthlyChart() {
-  const chart = document.getElementById('monthlyChart');
-  if (!chart || !allTransactions.length) return;
+let monthlyChartInstance = null;
 
-  // Agrupar por mes
-  const monthMap = {};
+function renderMonthlyChart() {
+  const container = document.getElementById('monthlyChart');
+  if (!container || !allTransactions.length) return;
+
   const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthMap = {};
 
   allTransactions.forEach(t => {
     if (!t.date) return;
     const d = new Date(t.date);
     const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
-    if (!monthMap[key]) monthMap[key] = { income:0, expenses:0, payments:0, label: monthNames[d.getMonth()] + ' ' + d.getFullYear() };
+    if (!monthMap[key]) monthMap[key] = { income:0, expenses:0, label: monthNames[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2) };
     if (t.type === 'Income')  monthMap[key].income   += Math.abs(t.amount);
     if (t.type === 'Expense') monthMap[key].expenses += Math.abs(t.amount);
-    if (t.type === 'Payment') monthMap[key].payments += Math.abs(t.amount);
+    if (t.type === 'Payment') monthMap[key].expenses += Math.abs(t.amount);
   });
 
-  const months = Object.keys(monthMap).sort().slice(-6); // últimos 6 meses
-  if (!months.length) { chart.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">No data yet</div>'; return; }
+  const keys    = Object.keys(monthMap).sort().slice(-6);
+  if (!keys.length) { container.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">No data yet</div>'; return; }
 
-  const maxVal = Math.max(...months.map(m => Math.max(monthMap[m].income, monthMap[m].expenses + monthMap[m].payments))) || 1;
+  const labels   = keys.map(k => monthMap[k].label);
+  const incomes  = keys.map(k => monthMap[k].income);
+  const exps     = keys.map(k => monthMap[k].expenses);
+  const nets     = keys.map((k,i) => incomes[i] - exps[i]);
 
-  chart.innerHTML = `
-    <div style="display:flex;align-items:flex-end;gap:8px;height:120px;margin-bottom:0.5rem;">
-      ${months.map(m => {
-        const d = monthMap[m];
-        const incH  = Math.round((d.income / maxVal) * 100);
-        const expH  = Math.round(((d.expenses + d.payments) / maxVal) * 100);
-        const net   = d.income - d.expenses - d.payments;
-        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;">
-          <div style="width:100%;display:flex;gap:2px;align-items:flex-end;height:100px;">
-            <div style="flex:1;background:var(--green);opacity:0.8;height:${incH}%;border-radius:2px 2px 0 0;" title="Income: ${fmt(d.income)}"></div>
-            <div style="flex:1;background:var(--red);opacity:0.8;height:${expH}%;border-radius:2px 2px 0 0;" title="Exp+Pay: ${fmt(d.expenses+d.payments)}"></div>
-          </div>
-          <div style="font-size:0.6rem;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;width:100%;">${d.label}</div>
-          <div style="font-size:0.58rem;font-weight:700;color:${net>=0?'var(--green)':'var(--red)'};">${net>=0?'+':''}${fmt(net)}</div>
-        </div>`;
-      }).join('')}
+  // Leyenda + canvas
+  container.innerHTML = `
+    <div style="display:flex;gap:1rem;margin-bottom:0.75rem;flex-wrap:wrap;">
+      <span style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--muted);"><span style="width:10px;height:10px;border-radius:2px;background:#4caf7d;display:inline-block;"></span>Income</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--muted);"><span style="width:10px;height:10px;border-radius:2px;background:#e05555;display:inline-block;"></span>Expenses + Payments</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--muted);"><span style="width:24px;height:2px;background:rgba(122,117,112,0.6);display:inline-block;border-radius:2px;"></span>Net</span>
     </div>
-    <div style="display:flex;gap:1rem;margin-top:0.25rem;">
-      <span style="font-size:0.68rem;color:var(--muted);display:flex;align-items:center;gap:0.3rem;"><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;"></span>Income</span>
-      <span style="font-size:0.68rem;color:var(--muted);display:flex;align-items:center;gap:0.3rem;"><span style="display:inline-block;width:10px;height:10px;background:var(--red);border-radius:2px;"></span>Expenses + Payments</span>
+    <div style="position:relative;width:100%;height:200px;">
+      <canvas id="monthlyChartCanvas" role="img" aria-label="Monthly income vs expenses chart">Monthly financial overview.</canvas>
     </div>`;
+
+  // Destruir instancia previa si existe
+  if (monthlyChartInstance) { monthlyChartInstance.destroy(); monthlyChartInstance = null; }
+
+  const ctx = document.getElementById('monthlyChartCanvas');
+  if (!ctx || !window.Chart) return;
+
+  monthlyChartInstance = new window.Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Income',
+          data: incomes,
+          backgroundColor: 'rgba(76,175,125,0.7)',
+          borderColor: '#4caf7d',
+          borderWidth: 1,
+          borderRadius: 3,
+          barPercentage: 0.45,
+          categoryPercentage: 0.7,
+        },
+        {
+          label: 'Expenses + Payments',
+          data: exps,
+          backgroundColor: 'rgba(224,85,85,0.6)',
+          borderColor: '#e05555',
+          borderWidth: 1,
+          borderRadius: 3,
+          barPercentage: 0.45,
+          categoryPercentage: 0.7,
+        },
+        {
+          label: 'Net',
+          data: nets,
+          type: 'line',
+          borderColor: 'rgba(122,117,112,0.7)',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          borderDash: [4,3],
+          pointRadius: 3,
+          pointBackgroundColor: nets.map(v => v >= 0 ? '#4caf7d' : '#e05555'),
+          tension: 0.3,
+          yAxisID: 'y',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed.y;
+              return ctx.dataset.label + ': ' + (v < 0 ? '-' : '') + '$' + Math.abs(v).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: { font: { size: 11 }, color: '#7a7570' }
+        },
+        y: {
+          grid: { color: 'rgba(122,117,112,0.1)', drawTicks: false },
+          border: { display: false },
+          ticks: {
+            font: { size: 10 },
+            color: '#7a7570',
+            maxTicksLimit: 5,
+            callback: v => '$' + (Math.abs(v) >= 1000 ? (Math.abs(v)/1000).toFixed(0)+'k' : Math.abs(v))
+          }
+        }
+      }
+    }
+  });
 }
 
 // ============================================================
