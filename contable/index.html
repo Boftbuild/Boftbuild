@@ -917,6 +917,18 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   </div>
 </div>
 
+<!-- CONFIRM SIN RECEIPT -->
+<div id="modal-no-receipt" class="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title">No Receipt Attached</div>
+    <div class="confirm-desc">You're about to submit this transaction without a receipt. This will appear in Missing Receipts. Are you sure you want to continue?</div>
+    <div class="confirm-btns">
+      <button class="btn-action danger" onclick="document.getElementById('modal-no-receipt').classList.remove('open')">Go Back & Add Receipt</button>
+      <button class="btn-action gold" onclick="confirmSubmitNoReceipt()">Submit Anyway</button>
+    </div>
+  </div>
+</div>
+
 <!-- CONFIRM REPLACE REPORT -->
 <div id="modal-replace-report" class="confirm-overlay">
   <div class="confirm-box">
@@ -1806,15 +1818,25 @@ async function confirmDelete() {
 // SUBMIT FORMS (con upload de archivo)
 // ============================================================
 async function submitForm(type) {
-  const prefixMap = { expense: 'exp', income: 'inc', payment: 'pay' };
-  const prefix    = prefixMap[type];
-
-  let payload = { action: 'add' + type.charAt(0).toUpperCase() + type.slice(1) };
-
   // Validar antes de proceder
   if (type === 'expense' && !validateExpense()) return;
   if (type === 'income'  && !validateIncome())  return;
   if (type === 'payment' && !validatePayment()) return;
+
+  // Verificar si hay receipt — si no, pedir confirmación
+  const prefix = { expense: 'exp', income: 'inc', payment: 'pay' }[type];
+  if (!selectedFiles[prefix]) {
+    window._pendingSubmitType = type;
+    document.getElementById('modal-no-receipt').classList.add('open');
+    return;
+  }
+  await doSubmitForm(type);
+}
+
+async function doSubmitForm(type) {
+  const prefixMap = { expense: 'exp', income: 'inc', payment: 'pay' };
+  const prefix    = prefixMap[type];
+  let payload = { action: 'add' + type.charAt(0).toUpperCase() + type.slice(1) };
 
   if (type === 'expense') {
     payload = { ...payload,
@@ -1875,6 +1897,17 @@ async function submitForm(type) {
     showToast('Connection error — try again');
     console.error(e);
   }
+}
+
+// ============================================================
+// SUBMIT SIN RECEIPT — Confirmar y proceder
+// ============================================================
+async function confirmSubmitNoReceipt() {
+  document.getElementById('modal-no-receipt').classList.remove('open');
+  const type = window._pendingSubmitType;
+  window._pendingSubmitType = null;
+  if (!type) return;
+  await doSubmitForm(type);
 }
 
 // ============================================================
