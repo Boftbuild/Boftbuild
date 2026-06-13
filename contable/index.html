@@ -2142,7 +2142,6 @@ async function loadProjects() {
     const data = await apiGet('projects');
     console.log('Projects data:', data);
     const fromSheet = (data.projects || [])
-      .filter(p => p.status === 'Active' || p.status === 'On Hold')
       .map(p => p.name)
       .sort();
     // Combinar con proyectos del ledger
