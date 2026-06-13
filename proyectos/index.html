@@ -238,6 +238,18 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .add-note-input:focus{border-color:rgba(0,180,255,0.5);}
 .btn-add-note{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.55rem 1rem;cursor:pointer;}
 
+/* RECEIPT UPLOAD ZONE — igual que contable */
+.receipt-upload-zone{border:1px dashed rgba(200,146,42,0.35);background:rgba(200,146,42,0.04);padding:0.9rem 1rem;cursor:pointer;transition:border-color 0.2s,background 0.2s;position:relative;display:flex;align-items:center;gap:0.75rem;}
+.receipt-upload-zone:hover{border-color:var(--gold);background:var(--gold-dim);}
+.receipt-upload-zone.has-file{border-color:var(--green);background:rgba(76,175,125,0.06);}
+.receipt-upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-icon{font-size:1.2rem;flex-shrink:0;}
+.upload-text{flex:1;min-width:0;}
+.upload-label{font-size:0.8rem;font-weight:600;color:var(--text);}
+.upload-sublabel{font-size:0.7rem;color:var(--muted);margin-top:0.1rem;}
+.upload-clear{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:0.2rem 0.4rem;flex-shrink:0;z-index:2;position:relative;}
+.upload-clear:hover{color:var(--red);}
+
 /* INLINE EDIT */
 .inline-edit-field{cursor:pointer;padding:0.4rem 0.5rem;border:1px solid transparent;transition:border-color 0.2s;border-radius:2px;min-height:2rem;}
 .inline-edit-field:hover{border-color:var(--border);background:var(--black);}
@@ -423,10 +435,14 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="np-notes" rows="2" placeholder="Initial notes..." style="resize:vertical;"></textarea></div>
       <div class="field-group">
         <label class="field-label">Documentation</label>
-        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-          <button type="button" class="btn-upload-contract" onclick="document.getElementById('np-doc-file').click()" style="flex-shrink:0;">📄 Upload Doc</button>
-          <span id="np-doc-name" style="font-size:0.78rem;color:var(--muted);">No file selected</span>
-          <input type="file" id="np-doc-file" accept=".pdf,image/*,.doc,.docx" style="display:none;" onchange="onNpDocSelect()">
+        <div class="receipt-upload-zone" id="np-doc-zone">
+          <input type="file" id="np-doc-file" accept=".pdf,image/*,.doc,.docx" onchange="onNpDocSelect()">
+          <span class="upload-icon">📎</span>
+          <div class="upload-text">
+            <div class="upload-label" id="np-doc-label">Tap to upload contract, permit or document</div>
+            <div class="upload-sublabel">PDF, JPG, PNG, DOC — max 10MB</div>
+          </div>
+          <button class="upload-clear" id="np-doc-clear" onclick="clearNpDoc(event)" style="display:none;">✕</button>
         </div>
       </div>
     </div>
@@ -477,10 +493,14 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
             <button type="button" onclick="removeEditDoc()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.78rem;">✕ Remove</button>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-          <button type="button" class="btn-upload-contract" onclick="document.getElementById('ep-doc-file').click()">📄 Upload New</button>
-          <span id="ep-doc-name" style="font-size:0.78rem;color:var(--muted);">No new file selected</span>
-          <input type="file" id="ep-doc-file" accept=".pdf,image/*,.doc,.docx" style="display:none;" onchange="onEpDocSelect()">
+        <div class="receipt-upload-zone" id="ep-doc-zone">
+          <input type="file" id="ep-doc-file" accept=".pdf,image/*,.doc,.docx" onchange="onEpDocSelect()">
+          <span class="upload-icon">📎</span>
+          <div class="upload-text">
+            <div class="upload-label" id="ep-doc-label">Tap to upload new document</div>
+            <div class="upload-sublabel">PDF, JPG, PNG, DOC — max 10MB</div>
+          </div>
+          <button class="upload-clear" id="ep-doc-clear" onclick="clearEpDoc(event)" style="display:none;">✕</button>
         </div>
       </div>
     </div>
@@ -891,16 +911,36 @@ function renderActivityFeed() {
 // ============================================================
 function onNpDocSelect() {
   const input = document.getElementById('np-doc-file');
-  const label = document.getElementById('np-doc-name');
-  label.textContent = input.files[0] ? input.files[0].name : 'No file selected';
-  label.style.color = input.files[0] ? 'var(--green)' : 'var(--muted)';
+  const file  = input.files[0];
+  if (!file) return;
+  document.getElementById('np-doc-label').textContent = file.name;
+  document.getElementById('np-doc-zone').classList.add('has-file');
+  document.getElementById('np-doc-clear').style.display = 'block';
+}
+
+function clearNpDoc(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  document.getElementById('np-doc-file').value = '';
+  document.getElementById('np-doc-label').textContent = 'Tap to upload contract, permit or document';
+  document.getElementById('np-doc-zone').classList.remove('has-file');
+  document.getElementById('np-doc-clear').style.display = 'none';
 }
 
 function onEpDocSelect() {
   const input = document.getElementById('ep-doc-file');
-  const label = document.getElementById('ep-doc-name');
-  label.textContent = input.files[0] ? input.files[0].name : 'No new file selected';
-  label.style.color = input.files[0] ? 'var(--green)' : 'var(--muted)';
+  const file  = input.files[0];
+  if (!file) return;
+  document.getElementById('ep-doc-label').textContent = file.name;
+  document.getElementById('ep-doc-zone').classList.add('has-file');
+  document.getElementById('ep-doc-clear').style.display = 'block';
+}
+
+function clearEpDoc(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  document.getElementById('ep-doc-file').value = '';
+  document.getElementById('ep-doc-label').textContent = 'Tap to upload new document';
+  document.getElementById('ep-doc-zone').classList.remove('has-file');
+  document.getElementById('ep-doc-clear').style.display = 'none';
 }
 
 function removeEditDoc() {
@@ -1095,6 +1135,7 @@ function closeLightbox() {
 // ============================================================
 function openNewProjectModal() {
   document.getElementById('np-start').value = new Date().toISOString().split('T')[0];
+  clearNpDoc(null);
   document.getElementById('modal-new-project').classList.add('open');
 }
 
