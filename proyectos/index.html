@@ -419,7 +419,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
           </select>
         </div>
       </div>
-      <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="np-notes" rows="3" placeholder="Initial notes..." style="resize:vertical;"></textarea></div>
+      <div class="field-group"><label class="field-label">Scope of Work</label><textarea class="field-input" id="np-scope" rows="3" placeholder="Describe what will be done: Frame 2,400 sqft single family home..." style="resize:vertical;"></textarea></div>
+      <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="np-notes" rows="2" placeholder="Initial notes..." style="resize:vertical;"></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('new-project')">Cancel</button>
@@ -459,6 +460,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
           </select>
         </div>
       </div>
+      <div class="field-group"><label class="field-label">Scope of Work</label><textarea class="field-input" id="ep-scope" rows="3" placeholder="Describe what will be done..." style="resize:vertical;"></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('edit-project')">Cancel</button>
@@ -707,12 +709,12 @@ async function openProject(id) {
         </div>
 
         <div style="margin-bottom:0.75rem;">
-          <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">Objective</div>
+          <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">Scope of Work</div>
           <div id="objectiveDisplay" class="inline-edit-field empty" onclick="startEditObjective()">
             Click to add project objective...
           </div>
           <div id="objectiveEdit" style="display:none;">
-            <textarea class="inline-edit-textarea" id="objectiveTextarea" placeholder="Describe the scope of work..."></textarea>
+            <textarea class="inline-edit-textarea" id="objectiveTextarea" placeholder="Frame 2,400 sqft home, install LVL beams..."></textarea>
             <div class="inline-edit-actions">
               <button class="btn-inline-save" onclick="saveObjective()">Save</button>
               <button class="btn-inline-cancel" onclick="cancelEditObjective()">Cancel</button>
@@ -909,7 +911,7 @@ function renderObjective() {
     display.textContent = currentProject.objective;
     display.classList.remove('empty');
   } else {
-    display.textContent = 'Click to add project objective...';
+    display.textContent = 'Click to add scope of work...';
     display.classList.add('empty');
   }
 }
@@ -1069,6 +1071,7 @@ async function createProject() {
       endDate:       document.getElementById('np-end').value,
       contractValue: document.getElementById('np-value').value,
       status:        document.getElementById('np-status').value,
+      scope:         document.getElementById('np-scope').value.trim(),
       notes:         document.getElementById('np-notes').value.trim(),
       templateId:    TEMPLATE_FOLDER_ID,
       parentId:      PROJECTS_PARENT_ID,
@@ -1096,6 +1099,7 @@ function openEditProjectModal() {
   document.getElementById('ep-end').value     = currentProject.endDate || '';
   document.getElementById('ep-value').value   = currentProject.contractValue || '';
   document.getElementById('ep-status').value  = currentProject.status || 'Active';
+  document.getElementById('ep-scope').value   = currentProject.objective || '';
   document.getElementById('modal-edit-project').classList.add('open');
 }
 
@@ -1115,6 +1119,7 @@ async function saveEditProject() {
       endDate:       document.getElementById('ep-end').value,
       contractValue: document.getElementById('ep-value').value,
       status:        document.getElementById('ep-status').value,
+      objective:     document.getElementById('ep-scope').value.trim(),
     });
     if (result.success) {
       showToast('✓ Project updated');
