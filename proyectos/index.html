@@ -239,8 +239,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .btn-add-note{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.55rem 1rem;cursor:pointer;}
 
 /* EMPTY PANEL */
-.panel-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:300px;color:var(--muted);text-align:center;padding:2rem;}
-.panel-empty-icon{font-size:2rem;margin-bottom:1rem;opacity:0.3;}
+.panel-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:300px;color:var(--muted);text-align:center;padding:2rem;position:relative;overflow:hidden;}
+.panel-empty-icon{font-size:2rem;margin-bottom:1rem;opacity:0.3;position:relative;z-index:1;}
+.panel-empty p{position:relative;z-index:1;}
+.panel-empty-bg{position:absolute;inset:0;opacity:0.07;pointer-events:none;}
 
 @media(max-width:700px){
   .info-grid{grid-template-columns:1fr;}
@@ -323,6 +325,46 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <!-- RIGHT — Timeline/Activity Feed -->
       <div class="split-right" id="projectPanel">
         <div class="panel-empty">
+          <!-- SVG background estilo framing -->
+          <svg class="panel-empty-bg" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+            <!-- Hex pattern -->
+            <defs>
+              <pattern id="hexBg" x="0" y="0" width="80" height="92" patternUnits="userSpaceOnUse">
+                <polygon points="40,2 74,21 74,71 40,90 6,71 6,21" fill="none" stroke="#c8922a" stroke-width="0.8"/>
+              </pattern>
+            </defs>
+            <rect width="800" height="600" fill="url(#hexBg)"/>
+            <!-- House frame -->
+            <line x1="150" y1="480" x2="150" y2="200" stroke="#c8922a" stroke-width="3" stroke-linecap="round"/>
+            <line x1="650" y1="480" x2="650" y2="200" stroke="#c8922a" stroke-width="3" stroke-linecap="round"/>
+            <line x1="150" y1="480" x2="650" y2="480" stroke="#c8922a" stroke-width="3"/>
+            <line x1="150" y1="200" x2="400" y2="60" stroke="#c8922a" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="650" y1="200" x2="400" y2="60" stroke="#c8922a" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Ridge -->
+            <line x1="400" y1="60" x2="400" y2="480" stroke="#c8922a" stroke-width="1.2" stroke-dasharray="8 5" opacity="0.5"/>
+            <!-- Floor line -->
+            <line x1="150" y1="340" x2="650" y2="340" stroke="#c8922a" stroke-width="1.5" opacity="0.6"/>
+            <!-- Studs -->
+            <line x1="230" y1="200" x2="230" y2="480" stroke="#c8922a" stroke-width="1.2" opacity="0.4"/>
+            <line x1="310" y1="200" x2="310" y2="480" stroke="#c8922a" stroke-width="1.2" opacity="0.4"/>
+            <line x1="490" y1="200" x2="490" y2="480" stroke="#c8922a" stroke-width="1.2" opacity="0.4"/>
+            <line x1="570" y1="200" x2="570" y2="480" stroke="#c8922a" stroke-width="1.2" opacity="0.4"/>
+            <!-- Top plate -->
+            <line x1="150" y1="200" x2="650" y2="200" stroke="#00b4ff" stroke-width="1.2" opacity="0.6"/>
+            <!-- Window -->
+            <rect x="310" y="260" width="180" height="120" fill="none" stroke="#00b4ff" stroke-width="1.5" opacity="0.5"/>
+            <line x1="400" y1="260" x2="400" y2="380" stroke="#00b4ff" stroke-width="1" opacity="0.4"/>
+            <line x1="310" y1="320" x2="490" y2="320" stroke="#00b4ff" stroke-width="1" opacity="0.4"/>
+            <!-- Rafter lines -->
+            <line x1="200" y1="200" x2="310" y2="115" stroke="#c8922a" stroke-width="1" opacity="0.35"/>
+            <line x1="270" y1="200" x2="346" y2="90" stroke="#c8922a" stroke-width="1" opacity="0.35"/>
+            <line x1="600" y1="200" x2="490" y2="115" stroke="#c8922a" stroke-width="1" opacity="0.35"/>
+            <line x1="530" y1="200" x2="454" y2="90" stroke="#c8922a" stroke-width="1" opacity="0.35"/>
+            <!-- Corner dots -->
+            <circle cx="150" cy="200" r="4" fill="#00b4ff" opacity="0.7"/>
+            <circle cx="650" cy="200" r="4" fill="#00b4ff" opacity="0.7"/>
+            <circle cx="400" cy="60" r="5" fill="#c8922a" opacity="0.8"/>
+          </svg>
           <div class="panel-empty-icon">👈</div>
           <p style="font-size:0.88rem;">Select a project to see its activity feed</p>
         </div>
