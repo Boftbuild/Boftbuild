@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BOFT — Projects</title>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://accounts.google.com/gsi/client"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -450,40 +450,50 @@ let currentFilter  = 'all';
 // ============================================================
 // GOOGLE AUTH
 // ============================================================
-function signInWithGoogle() {
-  try {
-    const client = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive',
-      callback: (response) => {
-        if (response.access_token) {
-          ACCESS_TOKEN = response.access_token;
-          const expiresAt = Date.now() + 3500 * 1000;
-          sessionStorage.setItem('boft_token', ACCESS_TOKEN);
-          sessionStorage.setItem('boft_token_exp', expiresAt);
-          fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: 'Bearer ' + ACCESS_TOKEN }
-          })
-          .then(r => r.json())
-          .then(user => {
-            if (user.email.split('@')[1] === ALLOWED_DOMAIN) {
-              sessionStorage.setItem('boft_user', JSON.stringify(user));
-              loginSuccess(user);
-            } else {
-              document.getElementById('loginError').classList.add('show');
-              ACCESS_TOKEN = null;
-              sessionStorage.clear();
-            }
-          });
-        }
-      }
-    });
-    client.requestAccessToken();
-  } catch(e) {
-    console.error('Google Sign In error:', e);
-    document.getElementById('loginError').textContent = 'Error loading Google Sign In. Please refresh.';
-    document.getElementById('loginError').classList.add('show');
+let gsiClient = null;
+
+function initGoogleClient() {
+  if (typeof google === 'undefined' || !google.accounts) {
+    setTimeout(initGoogleClient, 200);
+    return;
   }
+  gsiClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive',
+    callback: (response) => {
+      if (response.access_token) {
+        ACCESS_TOKEN = response.access_token;
+        const expiresAt = Date.now() + 3500 * 1000;
+        sessionStorage.setItem('boft_token', ACCESS_TOKEN);
+        sessionStorage.setItem('boft_token_exp', expiresAt);
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: 'Bearer ' + ACCESS_TOKEN }
+        })
+        .then(r => r.json())
+        .then(user => {
+          if (user.email.split('@')[1] === ALLOWED_DOMAIN) {
+            sessionStorage.setItem('boft_user', JSON.stringify(user));
+            loginSuccess(user);
+          } else {
+            document.getElementById('loginError').classList.add('show');
+            ACCESS_TOKEN = null;
+            sessionStorage.clear();
+          }
+        });
+      }
+    }
+  });
+}
+
+function signInWithGoogle() {
+  if (!gsiClient) {
+    document.getElementById('loginError').textContent = 'Loading Google Sign In... please try again in a moment.';
+    document.getElementById('loginError').classList.add('show');
+    initGoogleClient();
+    return;
+  }
+  document.getElementById('loginError').classList.remove('show');
+  gsiClient.requestAccessToken();
 }
 
 // Intentar restaurar sesión desde sessionStorage al cargar la página
@@ -996,8 +1006,11 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
 
-// Restaurar sesión al cargar
-window.addEventListener('load', () => { tryRestoreSession(); });
+// Inicializar Google client y restaurar sesión al cargar
+window.addEventListener('load', () => {
+  initGoogleClient();
+  tryRestoreSession();
+});
 </script>
 </body>
 </html>
