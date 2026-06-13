@@ -1198,7 +1198,15 @@ async function apiGet(action, params = {}) {
   const res = await fetch(API_URL + '?' + qs, {
     headers: { Authorization: 'Bearer ' + ACCESS_TOKEN }
   });
-  return res.json();
+  const data = await res.json();
+  if (data.error === 'Unauthorized' || data.code === 403) {
+    await refreshToken();
+    const res2 = await fetch(API_URL + '?' + qs, {
+      headers: { Authorization: 'Bearer ' + ACCESS_TOKEN }
+    });
+    return res2.json();
+  }
+  return data;
 }
 
 async function apiPost(payload) {
@@ -1207,7 +1215,28 @@ async function apiPost(payload) {
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ACCESS_TOKEN },
     body: JSON.stringify(payload)
   });
-  return res.json();
+  const data = await res.json();
+  if (data.error === 'Unauthorized' || data.code === 403) {
+    await refreshToken();
+    const res2 = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ACCESS_TOKEN },
+      body: JSON.stringify(payload)
+    });
+    return res2.json();
+  }
+  return data;
+}
+
+// Token expirado — mandar al login
+function refreshToken() {
+  return new Promise((resolve) => {
+    showToast('Session expired — redirecting to login...');
+    setTimeout(() => {
+      doLogout();
+      resolve();
+    }, 1500);
+  });
 }
 
 // ============================================================
