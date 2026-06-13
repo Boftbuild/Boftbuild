@@ -786,17 +786,36 @@ async function openProject(id) {
         </div>
       </div>
 
-      <!-- PHOTOS QUICK -->
+      <!-- PHOTOS BY PHASE -->
       <div class="timeline-section">
-        <div class="timeline-section-label" style="display:flex;justify-content:space-between;align-items:center;">
-          <span>Photos</span>
-          <div style="display:flex;gap:0.4rem;">
-            <button class="btn-upload-phase" onclick="triggerUpload('antes')" style="font-size:0.6rem;">+ Before</button>
-            <button class="btn-upload-phase" onclick="triggerUpload('proceso')" style="font-size:0.6rem;">+ Progress</button>
-            <button class="btn-upload-phase" onclick="triggerUpload('terminado')" style="font-size:0.6rem;">+ Done</button>
+        <div class="timeline-section-label">Photos</div>
+
+        <!-- Before -->
+        <div style="margin-bottom:1rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
+            <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">📷 Before</span>
+            <button class="btn-upload-phase" onclick="triggerUpload('antes')" style="font-size:0.58rem;">+ Add</button>
           </div>
+          <div id="grid-antes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:3px;"></div>
         </div>
-        <div id="photosQuickGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:3px;margin-top:0.5rem;"></div>
+
+        <!-- In Progress -->
+        <div style="margin-bottom:1rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
+            <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">🔨 In Progress</span>
+            <button class="btn-upload-phase" onclick="triggerUpload('proceso')" style="font-size:0.58rem;">+ Add</button>
+          </div>
+          <div id="grid-proceso" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:3px;"></div>
+        </div>
+
+        <!-- Completed -->
+        <div style="margin-bottom:0.5rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
+            <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">✅ Completed</span>
+            <button class="btn-upload-phase" onclick="triggerUpload('terminado')" style="font-size:0.58rem;">+ Add</button>
+          </div>
+          <div id="grid-terminado" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:3px;"></div>
+        </div>
       </div>
 
     </div>`;
@@ -1141,24 +1160,32 @@ async function addQuickNote() {
 }
 
 async function loadQuickPhotos() {
-  const grid = document.getElementById('photosQuickGrid');
-  if (!grid || !currentProject?.driveFolderId) return;
-  const phases = ['01_Antes', '02_Proceso', '03_Terminado'];
-  const allPhotos = [];
+  if (!currentProject?.driveFolderId) return;
+  const phases = [
+    { key: 'antes',     name: '01_Antes' },
+    { key: 'proceso',   name: '02_Proceso' },
+    { key: 'terminado', name: '03_Terminado' },
+  ];
   for (const phase of phases) {
+    const grid = document.getElementById('grid-' + phase.key);
+    if (!grid) continue;
+    grid.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;padding:0.3rem 0;">Loading...</div>';
     try {
-      const data = await apiGet('projectPhotos', { folderId: currentProject.driveFolderId, phase });
-      allPhotos.push(...(data.photos || []).map(p => ({ ...p, phase })));
-    } catch(e) {}
+      const data = await apiGet('projectPhotos', { folderId: currentProject.driveFolderId, phase: phase.name });
+      const photos = data.photos || [];
+      if (!photos.length) {
+        grid.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;font-style:italic;padding:0.3rem 0;">No photos yet</div>';
+      } else {
+        grid.innerHTML = photos.map(p => `
+          <div style="aspect-ratio:1;overflow:hidden;cursor:pointer;background:var(--black3);border:1px solid var(--border);" onclick="openLightbox('${p.url}')">
+            <img src="${p.thumbnailUrl}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.2s;" loading="lazy"
+              onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          </div>`).join('');
+      }
+    } catch(e) {
+      grid.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;">Error loading</div>';
+    }
   }
-  if (!allPhotos.length) {
-    grid.innerHTML = '<div style="color:var(--muted);font-size:0.72rem;">No photos yet</div>';
-    return;
-  }
-  grid.innerHTML = allPhotos.slice(0, 12).map(p => `
-    <div style="aspect-ratio:1;overflow:hidden;cursor:pointer;background:var(--black3);" onclick="openLightbox('${p.url}')">
-      <img src="${p.thumbnailUrl}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">
-    </div>`).join('');
 }
 
 // (loadProjectFinancials y loadProjectPhotos movidos al timeline)
