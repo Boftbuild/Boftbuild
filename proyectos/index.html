@@ -1,1 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOFT — Projects</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --black:#0a0b0d;--black2:#0f1114;--black3:#141618;
+  --neon:#00b4ff;--neon-dim:rgba(0,180,255,0.1);
+  --gold:#c8922a;--gold-light:#e8b84b;--gold-dim:rgba(200,146,42,0.12);
+  --text:#e8e2d4;--muted:#7a7570;
+  --border:rgba(200,146,42,0.2);--border-neon:rgba(0,180,255,0.25);
+  --red:#e05555;--green:#4caf7d;
+  --nav-h:52px;
+}
+html{scroll-behavior:smooth;}
+body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;}
 
+/* LOGIN */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--black);position:relative;overflow:hidden;}
+.login-box{background:var(--black2);border:1px solid var(--border);padding:2.5rem 2rem;width:100%;max-width:380px;position:relative;z-index:1;text-align:center;}
+.login-logo{font-family:'Cinzel',serif;font-size:2rem;font-weight:700;color:var(--gold-light);margin-bottom:0.25rem;}
+.login-logo span{color:var(--neon);}
+.login-sub{font-size:0.72rem;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
+.login-desc{font-size:0.82rem;color:var(--muted);margin-bottom:2rem;line-height:1.5;}
+.login-desc strong{color:var(--text);}
+.login-error{font-size:0.8rem;color:var(--red);margin-top:1rem;display:none;padding:0.75rem;border:1px solid rgba(224,85,85,0.3);background:rgba(224,85,85,0.05);}
+.login-error.show{display:block;}
+.g-signin-btn{display:flex;align-items:center;justify-content:center;gap:0.75rem;width:100%;padding:0.85rem 1.5rem;background:white;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.9rem;font-weight:700;letter-spacing:0.05em;color:#333;transition:background 0.2s,transform 0.15s;}
+.g-signin-btn:hover{background:#f5f5f5;transform:translateY(-1px);}
+
+/* NAV */
+.app{display:none;}
+.sticky-nav{position:sticky;top:0;z-index:50;background:rgba(10,11,13,0.97);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:var(--nav-h);gap:1rem;}
+.nav-logo-sm{font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:var(--gold-light);white-space:nowrap;}
+.nav-logo-sm span{color:var(--neon);}
+.nav-links-sm{display:flex;align-items:center;gap:0.25rem;}
+.nav-link{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;padding:0.4rem 0.75rem;transition:color 0.2s;white-space:nowrap;border-bottom:2px solid transparent;text-decoration:none;display:inline-block;}
+.nav-link:hover{color:var(--gold-light);}
+.nav-link.active{color:var(--gold-light);border-bottom-color:var(--gold);}
+.nav-right{display:flex;align-items:center;gap:0.75rem;}
+.nav-avatar{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);display:none;}
+.nav-username{font-size:0.75rem;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.nav-logout{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid rgba(122,117,112,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:color 0.2s;}
+.nav-logout:hover{color:var(--red);border-color:rgba(224,85,85,0.4);}
+
+/* PAGE */
+.page{max-width:1100px;margin:0 auto;padding:1.5rem 2rem 3rem;}
+.section-label{font-size:0.68rem;font-weight:700;letter-spacing:0.35em;text-transform:uppercase;color:var(--neon);margin-bottom:0.5rem;}
+.section-title{font-family:'Cinzel',serif;font-size:1.2rem;font-weight:700;color:var(--gold-light);margin-bottom:1.5rem;}
+
+/* TOAST */
+.success-toast{display:none;align-items:center;gap:0.75rem;background:var(--black3);border:1px solid rgba(76,175,125,0.4);border-left:3px solid var(--green);padding:0.75rem 1rem;margin-bottom:1rem;position:sticky;top:calc(var(--nav-h) + 8px);z-index:40;}
+.success-toast.show{display:flex;}
+.toast-text{font-size:0.85rem;color:var(--green);font-weight:600;}
+
+/* PROJECTS LIST */
+.projects-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;}
+.btn-action{font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;border:none;padding:0.55rem 1.4rem;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all 0.2s;}
+.btn-action.gold{color:var(--black);background:var(--gold);}
+.btn-action.gold:hover{background:var(--gold-light);}
+.btn-action.outline{color:var(--neon);background:transparent;border:1px solid var(--neon);clip-path:none;}
+.btn-action.danger{color:var(--red);background:transparent;border:1px solid rgba(224,85,85,0.4);clip-path:none;}
+
+.filter-tabs{display:flex;gap:0.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+.filter-tab{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid var(--border);padding:0.35rem 1rem;cursor:pointer;transition:all 0.2s;}
+.filter-tab:hover{color:var(--gold-light);border-color:var(--gold);}
+.filter-tab.active{color:var(--black);background:var(--gold);border-color:var(--gold);}
+
+.projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px;background:var(--border);}
+.project-card{background:var(--black2);padding:1.5rem;cursor:pointer;transition:background 0.2s;position:relative;overflow:hidden;}
+.project-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--neon);}
+.project-card.active::before{background:var(--green);}
+.project-card.completed::before{background:var(--muted);}
+.project-card.on-hold::before{background:var(--gold);}
+.project-card:hover{background:var(--black3);}
+.project-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:0.75rem;}
+.project-card-name{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold-light);}
+.project-status{font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:0.15rem 0.6rem;border:1px solid;}
+.project-status.active{color:var(--green);border-color:rgba(76,175,125,0.3);background:rgba(76,175,125,0.08);}
+.project-status.completed{color:var(--muted);border-color:rgba(122,117,112,0.3);}
+.project-status.on-hold{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
+.project-client{font-size:0.82rem;color:var(--muted);margin-bottom:0.4rem;}
+.project-location{font-size:0.78rem;color:var(--muted);}
+.project-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:1rem;padding-top:0.75rem;border-top:1px solid var(--border);}
+.project-contract{font-family:'Cinzel',serif;font-size:0.95rem;color:var(--green);font-weight:700;}
+.project-date{font-size:0.72rem;color:var(--muted);}
+
+/* PROJECT DETAIL VIEW */
+.detail-view{display:none;}
+.detail-back{font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--neon);background:none;border:none;cursor:pointer;padding:0;margin-bottom:1.5rem;display:flex;align-items:center;gap:0.5rem;}
+.detail-back:hover{color:var(--gold-light);}
+.detail-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;}
+.detail-title{font-family:'Cinzel',serif;font-size:1.6rem;font-weight:700;color:var(--gold-light);}
+.detail-client{font-size:1rem;color:var(--muted);margin-top:0.25rem;}
+.detail-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1.5rem;}
+.detail-tab{font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:0.65rem 1.25rem;cursor:pointer;transition:all 0.2s;margin-bottom:-1px;}
+.detail-tab:hover{color:var(--gold-light);}
+.detail-tab.active{color:var(--gold-light);border-bottom-color:var(--gold);}
+.detail-panel{display:none;}
+.detail-panel.active{display:block;}
+
+/* INFO PANEL */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;}
+.info-card{background:var(--black2);padding:1.25rem;border:1px solid var(--border);}
+.info-label{font-size:0.68rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem;}
+.info-value{font-size:0.95rem;color:var(--text);font-weight:600;}
+.info-value.money{font-family:'Cinzel',serif;color:var(--green);}
+
+/* FINANCIAL PANEL */
+.fin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);margin-bottom:1.5rem;}
+.fin-card{background:var(--black2);padding:1.25rem;position:relative;overflow:hidden;}
+.fin-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;}
+.fin-card.income::before{background:var(--green);}
+.fin-card.expense::before{background:var(--red);}
+.fin-card.payment::before{background:var(--gold);}
+.fin-card.net::before{background:var(--neon);}
+.fin-label{font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
+.fin-value{font-family:'Cinzel',serif;font-size:1.3rem;font-weight:700;}
+.fin-value.green{color:var(--green);}
+.fin-value.red{color:var(--red);}
+.fin-value.gold{color:var(--gold-light);}
+
+/* PHOTOS PANEL */
+.photos-section{margin-bottom:2rem;}
+.photos-section-title{font-size:0.72rem;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:var(--neon);margin-bottom:0.75rem;display:flex;align-items:center;justify-content:space-between;}
+.photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:3px;margin-bottom:0.5rem;}
+.photo-thumb{aspect-ratio:1;background:var(--black3);border:1px solid var(--border);overflow:hidden;position:relative;cursor:pointer;}
+.photo-thumb img{width:100%;height:100%;object-fit:cover;transition:transform 0.2s;}
+.photo-thumb:hover img{transform:scale(1.05);}
+.photo-thumb.empty{display:flex;align-items:center;justify-content:center;border-style:dashed;border-color:rgba(200,146,42,0.25);cursor:default;}
+.btn-upload-phase{font-family:'Rajdhani',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-light);border:1px solid var(--border);background:var(--gold-dim);padding:0.25rem 0.75rem;cursor:pointer;transition:all 0.2s;}
+.btn-upload-phase:hover{border-color:var(--gold);}
+.upload-input{display:none;}
+
+/* NOTES PANEL */
+.notes-textarea{width:100%;background:var(--black);border:1px solid var(--border);color:var(--text);padding:1rem;font-family:'Rajdhani',sans-serif;font-size:0.95rem;outline:none;resize:vertical;min-height:200px;transition:border-color 0.2s;line-height:1.6;}
+.notes-textarea:focus{border-color:rgba(0,180,255,0.5);}
+.notes-save{margin-top:0.75rem;}
+
+/* MODALS */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(5,6,8,0.96);z-index:100;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--black2);border:1px solid var(--border);width:100%;max-width:560px;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);}
+.modal-title{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold-light);}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;line-height:1;padding:0.2rem;}
+.modal-body{padding:1.5rem;}
+.field-group{margin-bottom:1rem;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;}
+.field-label{font-size:0.68rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:0.4rem;}
+.field-label span{color:var(--red);margin-left:2px;}
+.field-input{width:100%;background:var(--black);border:1px solid var(--border);color:var(--text);padding:0.65rem 0.9rem;font-family:'Rajdhani',sans-serif;font-size:0.92rem;outline:none;transition:border-color 0.2s;}
+.field-input:focus{border-color:rgba(0,180,255,0.5);}
+.field-input option{background:var(--black2);}
+.field-input.error{border-color:var(--red)!important;}
+.modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.btn-submit{font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.65rem 1.8rem;cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
+.btn-cancel{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;}
+
+/* CONFIRM */
+.confirm-overlay{display:none;position:fixed;inset:0;background:rgba(5,6,8,0.97);z-index:200;align-items:center;justify-content:center;}
+.confirm-overlay.open{display:flex;}
+.confirm-box{background:var(--black2);border:1px solid var(--border);padding:2rem;max-width:400px;width:90%;text-align:center;}
+.confirm-title{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold-light);margin-bottom:0.75rem;}
+.confirm-desc{font-size:0.88rem;color:var(--muted);line-height:1.6;margin-bottom:1.5rem;}
+.confirm-btns{display:flex;gap:0.75rem;justify-content:center;}
+
+/* PHOTO LIGHTBOX */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(5,6,8,0.98);z-index:300;align-items:center;justify-content:center;}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:90vw;max-height:90vh;object-fit:contain;}
+.lightbox-close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--text);font-size:1.5rem;cursor:pointer;}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:4rem 2rem;color:var(--muted);}
+.empty-state .empty-icon{font-size:2.5rem;margin-bottom:1rem;opacity:0.4;}
+.empty-state p{font-size:0.88rem;line-height:1.6;}
+
+@media(max-width:700px){
+  .info-grid{grid-template-columns:1fr;}
+  .fin-grid{grid-template-columns:1fr 1fr;}
+  .projects-grid{grid-template-columns:1fr;}
+  .field-row{grid-template-columns:1fr;}
+  .sticky-nav{padding:0 1rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">BOFT<span>.</span></div>
+    <div class="login-sub">Project Management</div>
+    <div class="login-desc">Acceso restringido a cuentas <strong>@boftbuild.com</strong></div>
+    <button class="g-signin-btn" onclick="signInWithGoogle()">
+      <svg width="20" height="20" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Sign in with Google
+    </button>
+    <div class="login-error" id="loginError">Acceso denegado. Solo cuentas @boftbuild.com pueden entrar.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <nav class="sticky-nav">
+    <div class="nav-logo-sm">BOFT<span>.</span></div>
+    <div class="nav-links-sm">
+      <a class="nav-link" href="/contable">Contable</a>
+      <span class="nav-link active">Projects</span>
+    </div>
+    <div class="nav-right">
+      <img class="nav-avatar" id="navAvatar" src="" alt="">
+      <span class="nav-username" id="navUsername"></span>
+      <button class="nav-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </nav>
+
+  <div class="page">
+    <div id="toast" class="success-toast">
+      <span style="font-size:18px;color:var(--green);">✓</span>
+      <span class="toast-text" id="toastText">Done.</span>
+    </div>
+
+    <!-- PROJECTS LIST VIEW -->
+    <div id="listView">
+      <div class="projects-header">
+        <div>
+          <div class="section-label">Project Management</div>
+          <div class="section-title" style="margin-bottom:0;">Projects</div>
+        </div>
+        <button class="btn-action gold" onclick="openNewProjectModal()">+ New Project</button>
+      </div>
+
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterProjects('all',this)">All</button>
+        <button class="filter-tab" onclick="filterProjects('Active',this)">Active</button>
+        <button class="filter-tab" onclick="filterProjects('Completed',this)">Completed</button>
+        <button class="filter-tab" onclick="filterProjects('On Hold',this)">On Hold</button>
+      </div>
+
+      <div class="projects-grid" id="projectsGrid">
+        <div class="empty-state" style="grid-column:1/-1;background:var(--black2);">
+          <div class="empty-icon">📋</div>
+          <p>Loading projects...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROJECT DETAIL VIEW -->
+    <div id="detailView" class="detail-view">
+      <button class="detail-back" onclick="backToList()">← Back to Projects</button>
+      <div class="detail-header">
+        <div>
+          <div class="detail-title" id="detailName">—</div>
+          <div class="detail-client" id="detailClient">—</div>
+        </div>
+        <div style="display:flex;gap:0.75rem;align-items:center;">
+          <span class="project-status" id="detailStatus">—</span>
+          <button class="btn-action outline" onclick="openEditProjectModal()" style="font-size:0.68rem;">✏️ Edit</button>
+          <button class="btn-action danger" onclick="confirmDeleteProject()" style="font-size:0.68rem;">🗑 Delete</button>
+        </div>
+      </div>
+
+      <div class="detail-tabs">
+        <button class="detail-tab active" onclick="switchTab('info',this)">Info</button>
+        <button class="detail-tab" onclick="switchTab('financial',this)">Financial</button>
+        <button class="detail-tab" onclick="switchTab('photos',this)">Photos</button>
+        <button class="detail-tab" onclick="switchTab('notes',this)">Notes</button>
+      </div>
+
+      <!-- INFO TAB -->
+      <div class="detail-panel active" id="tab-info">
+        <div class="info-grid">
+          <div class="info-card"><div class="info-label">Client</div><div class="info-value" id="infoClient">—</div></div>
+          <div class="info-card"><div class="info-label">Location</div><div class="info-value" id="infoLocation">—</div></div>
+          <div class="info-card"><div class="info-label">Start Date</div><div class="info-value" id="infoStart">—</div></div>
+          <div class="info-card"><div class="info-label">Est. End Date</div><div class="info-value" id="infoEnd">—</div></div>
+          <div class="info-card"><div class="info-label">Contract Value</div><div class="info-value money" id="infoContract">—</div></div>
+          <div class="info-card"><div class="info-label">Status</div><div class="info-value" id="infoStatus">—</div></div>
+        </div>
+        <div style="background:var(--black2);padding:1.25rem;border:1px solid var(--border);">
+          <div class="info-label" style="margin-bottom:0.5rem;">Drive Folder</div>
+          <div id="infoDriveLink" style="font-size:0.88rem;color:var(--neon);">—</div>
+        </div>
+      </div>
+
+      <!-- FINANCIAL TAB -->
+      <div class="detail-panel" id="tab-financial">
+        <div class="fin-grid">
+          <div class="fin-card income"><div class="fin-label">Income</div><div class="fin-value green" id="finIncome">—</div></div>
+          <div class="fin-card expense"><div class="fin-label">Expenses</div><div class="fin-value red" id="finExpenses">—</div></div>
+          <div class="fin-card payment"><div class="fin-label">Payments</div><div class="fin-value red" id="finPayments">—</div></div>
+          <div class="fin-card net"><div class="fin-label">Net</div><div class="fin-value" id="finNet">—</div></div>
+        </div>
+        <div style="background:var(--black2);padding:1.5rem;">
+          <div class="section-label" style="margin-bottom:1rem;">Recent Transactions</div>
+          <div id="finTransactions"><div style="color:var(--muted);font-size:0.82rem;">Loading...</div></div>
+        </div>
+      </div>
+
+      <!-- PHOTOS TAB -->
+      <div class="detail-panel" id="tab-photos">
+        <div class="photos-section">
+          <div class="photos-section-title">
+            <span>📷 Before — 01_Antes</span>
+            <button class="btn-upload-phase" onclick="triggerUpload('antes')">+ Upload</button>
+            <input type="file" class="upload-input" id="upload-antes" accept="image/*" multiple onchange="uploadPhotos('antes')">
+          </div>
+          <div class="photos-grid" id="grid-antes"></div>
+        </div>
+        <div class="photos-section">
+          <div class="photos-section-title">
+            <span>🔨 In Progress — 02_Proceso</span>
+            <button class="btn-upload-phase" onclick="triggerUpload('proceso')">+ Upload</button>
+            <input type="file" class="upload-input" id="upload-proceso" accept="image/*" multiple onchange="uploadPhotos('proceso')">
+          </div>
+          <div class="photos-grid" id="grid-proceso"></div>
+        </div>
+        <div class="photos-section">
+          <div class="photos-section-title">
+            <span>✅ Completed — 03_Terminado</span>
+            <button class="btn-upload-phase" onclick="triggerUpload('terminado')">+ Upload</button>
+            <input type="file" class="upload-input" id="upload-terminado" accept="image/*" multiple onchange="uploadPhotos('terminado')">
+          </div>
+          <div class="photos-grid" id="grid-terminado"></div>
+        </div>
+      </div>
+
+      <!-- NOTES TAB -->
+      <div class="detail-panel" id="tab-notes">
+        <div class="section-label" style="margin-bottom:0.75rem;">Progress Notes</div>
+        <textarea class="notes-textarea" id="notesTextarea" placeholder="Add progress notes, observations, pending tasks..."></textarea>
+        <div class="notes-save">
+          <button class="btn-action gold" onclick="saveNotes()">Save Notes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NEW PROJECT -->
+<div id="modal-new-project" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">New Project</span>
+      <button class="modal-close" onclick="closeModal('new-project')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div><label class="field-label">Project Name <span>*</span></label><input type="text" class="field-input" id="np-name" placeholder="Deck Panfilo"></div>
+        <div><label class="field-label">Client <span>*</span></label><input type="text" class="field-input" id="np-client" placeholder="John Smith"></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Address</label><input type="text" class="field-input" id="np-address" placeholder="123 Main St"></div>
+        <div><label class="field-label">City</label><input type="text" class="field-input" id="np-city" placeholder="Provo"></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Start Date <span>*</span></label><input type="date" class="field-input" id="np-start"></div>
+        <div><label class="field-label">Est. End Date</label><input type="date" class="field-input" id="np-end"></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Contract Value ($)</label><input type="number" class="field-input" id="np-value" placeholder="0.00" step="0.01"></div>
+        <div><label class="field-label">Status <span>*</span></label>
+          <select class="field-input" id="np-status">
+            <option value="Active">Active</option>
+            <option value="On Hold">On Hold</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="np-notes" rows="3" placeholder="Initial notes..." style="resize:vertical;"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('new-project')">Cancel</button>
+      <button class="btn-submit" onclick="createProject()">Create Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDIT PROJECT -->
+<div id="modal-edit-project" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Edit Project</span>
+      <button class="modal-close" onclick="closeModal('edit-project')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ep-id">
+      <div class="field-row">
+        <div><label class="field-label">Project Name <span>*</span></label><input type="text" class="field-input" id="ep-name"></div>
+        <div><label class="field-label">Client <span>*</span></label><input type="text" class="field-input" id="ep-client"></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Address</label><input type="text" class="field-input" id="ep-address"></div>
+        <div><label class="field-label">City</label><input type="text" class="field-input" id="ep-city"></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Start Date</label><input type="date" class="field-input" id="ep-start"></div>
+        <div><label class="field-label">Est. End Date</label><input type="date" class="field-input" id="ep-end"></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Contract Value ($)</label><input type="number" class="field-input" id="ep-value" step="0.01"></div>
+        <div><label class="field-label">Status</label>
+          <select class="field-input" id="ep-status">
+            <option value="Active">Active</option>
+            <option value="On Hold">On Hold</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('edit-project')">Cancel</button>
+      <button class="btn-submit" onclick="saveEditProject()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE -->
+<div id="confirm-delete" class="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title">Delete Project?</div>
+    <div class="confirm-desc" id="confirmDeleteDesc">This will delete the project record. The Drive folder will NOT be deleted.</div>
+    <div class="confirm-btns">
+      <button class="btn-action danger" onclick="document.getElementById('confirm-delete').classList.remove('open')">Cancel</button>
+      <button class="btn-action gold" onclick="doDeleteProject()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const CLIENT_ID      = '139648063899-tq9arpo1817e20a1qtmm5dm0jl35u4sm.apps.googleusercontent.com';
+const ALLOWED_DOMAIN = 'boftbuild.com';
+const API_URL        = '/api/proxy';
+const TEMPLATE_FOLDER_ID = '1CXLdthjjHhmV9H5Ezb5iwbL525xQ6h78'; // Proyecto_Nombre_Ciudad(plantilla)
+const PROJECTS_PARENT_ID  = '1mvnEloMb3Y5Y6IiOdqizY7WYDg3s7Ugl'; // 03_PROYECTOS/2026
+
+let ACCESS_TOKEN = null;
+let allProjects  = [];
+let currentProject = null;
+let currentFilter  = 'all';
+
+// ============================================================
+// GOOGLE AUTH
+// ============================================================
+function signInWithGoogle() {
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive',
+    callback: (response) => {
+      if (response.access_token) {
+        ACCESS_TOKEN = response.access_token;
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: 'Bearer ' + ACCESS_TOKEN }
+        })
+        .then(r => r.json())
+        .then(user => {
+          if (user.email.split('@')[1] === ALLOWED_DOMAIN) {
+            loginSuccess(user);
+          } else {
+            document.getElementById('loginError').classList.add('show');
+            ACCESS_TOKEN = null;
+          }
+        });
+      }
+    }
+  });
+  client.requestAccessToken();
+}
+
+function loginSuccess(user) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('navUsername').textContent = user.name || user.email;
+  if (user.picture) {
+    const a = document.getElementById('navAvatar');
+    a.src = user.picture; a.style.display = 'block';
+  }
+  loadProjects();
+}
+
+function doLogout() {
+  ACCESS_TOKEN = null;
+  google.accounts.id.disableAutoSelect();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// ============================================================
+// API
+// ============================================================
+async function apiGet(action, params = {}) {
+  const qs = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(API_URL + '?' + qs, { headers: { Authorization: 'Bearer ' + ACCESS_TOKEN } });
+  const data = await res.json();
+  if (data.error === 'Unauthorized' || data.code === 403) { doLogout(); return {}; }
+  return data;
+}
+
+async function apiPost(payload) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ACCESS_TOKEN },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (data.error === 'Unauthorized' || data.code === 403) { doLogout(); return {}; }
+  return data;
+}
+
+// ============================================================
+// LOAD PROJECTS
+// ============================================================
+async function loadProjects() {
+  try {
+    showToast('Loading projects...');
+    const data = await apiGet('projects');
+    allProjects = data.projects || [];
+    renderProjects();
+    showToast('Projects loaded ✓');
+  } catch(e) { console.error(e); showToast('Error loading projects'); }
+}
+
+function renderProjects() {
+  const grid = document.getElementById('projectsGrid');
+  let filtered = allProjects;
+  if (currentFilter !== 'all') filtered = allProjects.filter(p => p.status === currentFilter);
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;background:var(--black2);">
+      <div class="empty-icon">📋</div>
+      <p>No projects found.<br>Click "+ New Project" to create one.</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(p => {
+    const statusClass = (p.status || 'active').toLowerCase().replace(' ', '-');
+    const statusLabel = p.status || 'Active';
+    return `<div class="project-card ${statusClass}" onclick="openProject('${p.id}')">
+      <div class="project-card-header">
+        <div class="project-card-name">${p.name}</div>
+        <span class="project-status ${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="project-client">${p.client || '—'}</div>
+      <div class="project-location">${[p.address, p.city].filter(Boolean).join(', ') || '—'}</div>
+      <div class="project-card-footer">
+        <span class="project-contract">${p.contractValue ? fmt(p.contractValue) : '—'}</span>
+        <span class="project-date">${p.startDate || '—'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterProjects(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderProjects();
+}
+
+// ============================================================
+// OPEN PROJECT DETAIL
+// ============================================================
+async function openProject(id) {
+  currentProject = allProjects.find(p => p.id === id);
+  if (!currentProject) return;
+
+  document.getElementById('listView').style.display = 'none';
+  document.getElementById('detailView').style.display = 'block';
+
+  // Header
+  document.getElementById('detailName').textContent   = currentProject.name;
+  document.getElementById('detailClient').textContent  = currentProject.client || '—';
+
+  const statusEl = document.getElementById('detailStatus');
+  const sc = (currentProject.status || 'active').toLowerCase().replace(' ', '-');
+  statusEl.textContent  = currentProject.status || 'Active';
+  statusEl.className    = 'project-status ' + sc;
+
+  // Info tab
+  document.getElementById('infoClient').textContent   = currentProject.client || '—';
+  document.getElementById('infoLocation').textContent = [currentProject.address, currentProject.city].filter(Boolean).join(', ') || '—';
+  document.getElementById('infoStart').textContent    = currentProject.startDate || '—';
+  document.getElementById('infoEnd').textContent      = currentProject.endDate || '—';
+  document.getElementById('infoContract').textContent = currentProject.contractValue ? fmt(currentProject.contractValue) : '—';
+  document.getElementById('infoStatus').textContent   = currentProject.status || '—';
+
+  const driveEl = document.getElementById('infoDriveLink');
+  if (currentProject.driveFolderId) {
+    driveEl.innerHTML = `<a href="https://drive.google.com/drive/folders/${currentProject.driveFolderId}" target="_blank" style="color:var(--neon);">Open in Drive ↗</a>`;
+  } else {
+    driveEl.textContent = 'No Drive folder linked';
+  }
+
+  // Notes
+  document.getElementById('notesTextarea').value = currentProject.notes || '';
+
+  // Switch to info tab
+  switchTab('info', document.querySelector('.detail-tab'));
+
+  // Load financial data
+  loadProjectFinancials();
+
+  // Load photos if Drive folder exists
+  if (currentProject.driveFolderId) loadProjectPhotos();
+}
+
+function backToList() {
+  document.getElementById('detailView').style.display = 'none';
+  document.getElementById('listView').style.display   = 'block';
+  currentProject = null;
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab, btn) {
+  document.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.detail-panel').forEach(p => p.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else document.querySelector('.detail-tab').classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+// ============================================================
+// FINANCIAL DATA
+// ============================================================
+async function loadProjectFinancials() {
+  try {
+    const data = await apiGet('ledger', { page: '1', size: '500' });
+    const transactions = (data.transactions || []).filter(t =>
+      (t.project || '').toLowerCase() === (currentProject.name || '').toLowerCase()
+    );
+
+    let income = 0, expenses = 0, payments = 0;
+    transactions.forEach(t => {
+      if (t.type === 'Income')  income   += Math.abs(t.amount);
+      if (t.type === 'Expense') expenses += Math.abs(t.amount);
+      if (t.type === 'Payment') payments += Math.abs(t.amount);
+    });
+    const net = income - expenses - payments;
+
+    document.getElementById('finIncome').textContent   = fmt(income);
+    document.getElementById('finExpenses').textContent = fmt(expenses);
+    document.getElementById('finPayments').textContent = fmt(payments);
+    document.getElementById('finNet').textContent      = fmt(net);
+    document.getElementById('finNet').className        = 'fin-value ' + (net >= 0 ? 'green' : 'red');
+
+    // Recent transactions
+    const recent = [...transactions].sort((a,b) => b.date.localeCompare(a.date)).slice(0,10);
+    const finEl  = document.getElementById('finTransactions');
+    if (!recent.length) {
+      finEl.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">No transactions for this project yet.</div>';
+      return;
+    }
+    finEl.innerHTML = recent.map(t => {
+      const amt = Number(t.amount);
+      const color = t.type === 'Income' ? 'var(--green)' : t.type === 'Payment' ? 'var(--gold-light)' : 'var(--red)';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid rgba(200,146,42,0.08);font-size:0.85rem;">
+        <div>
+          <span style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.1rem 0.4rem;border:1px solid;color:${color};border-color:${color}30;margin-right:0.5rem;">${t.type}</span>
+          ${t.description}
+        </div>
+        <span style="font-family:'Cinzel',serif;color:${color};font-weight:700;">${fmt(Math.abs(amt))}</span>
+      </div>`;
+    }).join('');
+  } catch(e) { console.error(e); }
+}
+
+// ============================================================
+// PHOTOS
+// ============================================================
+async function loadProjectPhotos() {
+  if (!currentProject?.driveFolderId) return;
+  const phases = [
+    { key: 'antes',     name: '01_Antes' },
+    { key: 'proceso',   name: '02_Proceso' },
+    { key: 'terminado', name: '03_Terminado' },
+  ];
+  for (const phase of phases) {
+    try {
+      const data = await apiGet('projectPhotos', { folderId: currentProject.driveFolderId, phase: phase.name });
+      renderPhotoGrid(phase.key, data.photos || []);
+    } catch(e) { console.error(e); }
+  }
+}
+
+function renderPhotoGrid(phase, photos) {
+  const grid = document.getElementById('grid-' + phase);
+  if (!photos.length) {
+    grid.innerHTML = `<div class="photo-thumb empty"><span style="font-size:0.7rem;color:var(--muted);">No photos yet</span></div>`;
+    return;
+  }
+  grid.innerHTML = photos.map(p => `
+    <div class="photo-thumb" onclick="openLightbox('${p.url}')">
+      <img src="${p.thumbnailUrl || p.url}" alt="${p.name}" loading="lazy">
+    </div>`).join('');
+}
+
+function triggerUpload(phase) {
+  document.getElementById('upload-' + phase).click();
+}
+
+async function uploadPhotos(phase) {
+  const input = document.getElementById('upload-' + phase);
+  const files = Array.from(input.files);
+  if (!files.length || !currentProject?.driveFolderId) return;
+
+  showToast('Uploading ' + files.length + ' photo(s)...');
+  for (const file of files) {
+    try {
+      const base64 = await fileToBase64(file);
+      await apiPost({
+        action:      'uploadProjectPhoto',
+        folderId:    currentProject.driveFolderId,
+        phase:       phase === 'antes' ? '01_Antes' : phase === 'proceso' ? '02_Proceso' : '03_Terminado',
+        fileBase64:  base64,
+        fileName:    file.name,
+        mimeType:    file.type,
+      });
+    } catch(e) { console.error(e); }
+  }
+  input.value = '';
+  showToast('✓ Photos uploaded');
+  loadProjectPhotos();
+}
+
+function openLightbox(url) {
+  document.getElementById('lightboxImg').src = url;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+// ============================================================
+// CREATE PROJECT
+// ============================================================
+function openNewProjectModal() {
+  document.getElementById('np-start').value = new Date().toISOString().split('T')[0];
+  document.getElementById('modal-new-project').classList.add('open');
+}
+
+async function createProject() {
+  const name   = document.getElementById('np-name').value.trim();
+  const client = document.getElementById('np-client').value.trim();
+  const start  = document.getElementById('np-start').value;
+  if (!name || !client || !start) { showToast('⚠ Fill all required fields'); return; }
+
+  closeModal('new-project');
+  showToast('Creating project & Drive folder...');
+
+  try {
+    const result = await apiPost({
+      action:        'createProject',
+      name,
+      client,
+      address:       document.getElementById('np-address').value.trim(),
+      city:          document.getElementById('np-city').value.trim(),
+      startDate:     start,
+      endDate:       document.getElementById('np-end').value,
+      contractValue: document.getElementById('np-value').value,
+      status:        document.getElementById('np-status').value,
+      notes:         document.getElementById('np-notes').value.trim(),
+      templateId:    TEMPLATE_FOLDER_ID,
+      parentId:      PROJECTS_PARENT_ID,
+    });
+    if (result.success) {
+      showToast('✓ Project created — ' + result.id);
+      loadProjects();
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
+}
+
+// ============================================================
+// EDIT PROJECT
+// ============================================================
+function openEditProjectModal() {
+  if (!currentProject) return;
+  document.getElementById('ep-id').value      = currentProject.id;
+  document.getElementById('ep-name').value    = currentProject.name || '';
+  document.getElementById('ep-client').value  = currentProject.client || '';
+  document.getElementById('ep-address').value = currentProject.address || '';
+  document.getElementById('ep-city').value    = currentProject.city || '';
+  document.getElementById('ep-start').value   = currentProject.startDate || '';
+  document.getElementById('ep-end').value     = currentProject.endDate || '';
+  document.getElementById('ep-value').value   = currentProject.contractValue || '';
+  document.getElementById('ep-status').value  = currentProject.status || 'Active';
+  document.getElementById('modal-edit-project').classList.add('open');
+}
+
+async function saveEditProject() {
+  const id = document.getElementById('ep-id').value;
+  closeModal('edit-project');
+  showToast('Saving...');
+  try {
+    const result = await apiPost({
+      action:        'editProject',
+      id,
+      name:          document.getElementById('ep-name').value.trim(),
+      client:        document.getElementById('ep-client').value.trim(),
+      address:       document.getElementById('ep-address').value.trim(),
+      city:          document.getElementById('ep-city').value.trim(),
+      startDate:     document.getElementById('ep-start').value,
+      endDate:       document.getElementById('ep-end').value,
+      contractValue: document.getElementById('ep-value').value,
+      status:        document.getElementById('ep-status').value,
+    });
+    if (result.success) {
+      showToast('✓ Project updated');
+      await loadProjects();
+      // Refrescar currentProject
+      currentProject = allProjects.find(p => p.id === id);
+      openProject(id);
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
+}
+
+// ============================================================
+// DELETE PROJECT
+// ============================================================
+function confirmDeleteProject() {
+  if (!currentProject) return;
+  document.getElementById('confirmDeleteDesc').textContent =
+    'Delete "' + currentProject.name + '"? The Drive folder will NOT be deleted.';
+  document.getElementById('confirm-delete').classList.add('open');
+}
+
+async function doDeleteProject() {
+  document.getElementById('confirm-delete').classList.remove('open');
+  showToast('Deleting project...');
+  try {
+    const result = await apiPost({ action: 'deleteProject', id: currentProject.id });
+    if (result.success) {
+      showToast('✓ Project deleted');
+      backToList();
+      loadProjects();
+    } else { showToast('Error: ' + result.message); }
+  } catch(e) { showToast('Connection error'); }
+}
+
+// ============================================================
+// NOTES
+// ============================================================
+async function saveNotes() {
+  if (!currentProject) return;
+  showToast('Saving notes...');
+  try {
+    const result = await apiPost({
+      action: 'editProject',
+      id:     currentProject.id,
+      notes:  document.getElementById('notesTextarea').value,
+      // Mantener los demás campos
+      name:          currentProject.name,
+      client:        currentProject.client,
+      address:       currentProject.address,
+      city:          currentProject.city,
+      startDate:     currentProject.startDate,
+      endDate:       currentProject.endDate,
+      contractValue: currentProject.contractValue,
+      status:        currentProject.status,
+    });
+    if (result.success) {
+      showToast('✓ Notes saved');
+      currentProject.notes = document.getElementById('notesTextarea').value;
+    } else { showToast('Error: ' + result.message); }
+  } catch(e) { showToast('Connection error'); }
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function fmt(n) {
+  const num = Number(n) || 0;
+  return (num < 0 ? '-' : '') + '$' + Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function showToast(msg) {
+  document.getElementById('toastText').textContent = msg;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function closeModal(id) {
+  document.getElementById('modal-' + id).classList.remove('open');
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = e => resolve(e.target.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+</script>
+</body>
+</html>
