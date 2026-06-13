@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOFT. — Hub</title>
+<script src="https://accounts.google.com/gsi/client"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --black:#0a0b0d;--black2:#0f1114;--black3:#141618;
+  --neon:#00b4ff;--gold:#c8922a;--gold-light:#e8b84b;
+  --gold-dim:rgba(200,146,42,0.12);--border:rgba(200,146,42,0.2);
+  --text:#e8e2d4;--muted:#7a7570;--green:#4caf7d;--red:#e05555;
+}
+html,body{min-height:100vh;background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif;}
+
+/* ── LOGIN ── */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.login-bg{position:absolute;inset:0;pointer-events:none;}
+.login-box{position:relative;z-index:1;text-align:center;padding:3rem 2.5rem;background:var(--black2);border:1px solid var(--border);width:100%;max-width:400px;}
+.login-logo{font-family:'Cinzel',serif;font-size:3rem;font-weight:700;color:var(--gold-light);letter-spacing:0.05em;}
+.login-logo span{color:var(--neon);}
+.login-tagline{font-size:0.7rem;font-weight:700;letter-spacing:0.4em;text-transform:uppercase;color:var(--muted);margin-bottom:2.5rem;margin-top:0.25rem;}
+.login-desc{font-size:0.85rem;color:var(--muted);margin-bottom:2rem;line-height:1.5;}
+.login-desc strong{color:var(--text);}
+.g-signin-btn{display:flex;align-items:center;justify-content:center;gap:0.75rem;width:100%;padding:0.9rem 1.5rem;background:white;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.95rem;font-weight:700;letter-spacing:0.05em;color:#333;transition:background 0.2s,transform 0.15s;}
+.g-signin-btn:hover{background:#f5f5f5;transform:translateY(-1px);}
+.login-error{font-size:0.8rem;color:var(--red);margin-top:1rem;display:none;padding:0.75rem;border:1px solid rgba(224,85,85,0.3);background:rgba(224,85,85,0.05);}
+.login-error.show{display:block;}
+
+/* ── HUB ── */
+.hub{display:none;min-height:100vh;flex-direction:column;}
+
+/* NAV */
+.hub-nav{display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:52px;border-bottom:1px solid var(--border);background:rgba(10,11,13,0.97);backdrop-filter:blur(10px);position:sticky;top:0;z-index:50;}
+.hub-logo{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold-light);}
+.hub-logo span{color:var(--neon);}
+.nav-right{display:flex;align-items:center;gap:0.75rem;}
+.nav-avatar{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);display:none;}
+.nav-username{font-size:0.75rem;color:var(--muted);}
+.btn-logout{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid rgba(122,117,112,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:color 0.2s;}
+.btn-logout:hover{color:var(--red);border-color:rgba(224,85,85,0.4);}
+
+/* MAIN */
+.hub-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 2rem;}
+.hub-greeting{font-size:0.75rem;font-weight:700;letter-spacing:0.35em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;text-align:center;}
+.hub-title{font-family:'Cinzel',serif;font-size:1.8rem;font-weight:700;color:var(--gold-light);text-align:center;margin-bottom:3rem;}
+
+/* CARDS */
+.hub-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--border);width:100%;max-width:860px;}
+.hub-card{background:var(--black2);padding:2.5rem 1.5rem;display:flex;flex-direction:column;align-items:center;gap:1rem;cursor:pointer;text-decoration:none;position:relative;overflow:hidden;transition:background 0.2s;border:none;}
+.hub-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;transition:opacity 0.2s;}
+.hub-card.contable::before{background:linear-gradient(90deg,var(--green),rgba(76,175,125,0.3));}
+.hub-card.proyectos::before{background:linear-gradient(90deg,var(--neon),rgba(0,180,255,0.3));}
+.hub-card.finder::before{background:linear-gradient(90deg,var(--gold),rgba(200,146,42,0.3));}
+.hub-card:hover{background:var(--black3);}
+.hub-card-icon{width:72px;height:72px;display:flex;align-items:center;justify-content:center;position:relative;}
+.hub-card-name{font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;color:var(--gold-light);}
+.hub-card-desc{font-size:0.78rem;color:var(--muted);text-align:center;line-height:1.5;max-width:180px;}
+.hub-card-tag{font-size:0.62rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;padding:0.18rem 0.6rem;border:1px solid;margin-top:0.25rem;}
+.hub-card.contable .hub-card-tag{color:var(--green);border-color:rgba(76,175,125,0.35);}
+.hub-card.proyectos .hub-card-tag{color:var(--neon);border-color:rgba(0,180,255,0.35);}
+.hub-card.finder .hub-card-tag{color:var(--gold-light);border-color:var(--border);}
+
+/* Footer */
+.hub-footer{text-align:center;padding:1.5rem;font-size:0.68rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;}
+
+@media(max-width:640px){
+  .hub-cards{grid-template-columns:1fr;}
+  .hub-title{font-size:1.3rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <!-- SVG Background -->
+  <svg class="login-bg" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <pattern id="hexPat" x="0" y="0" width="80" height="92" patternUnits="userSpaceOnUse">
+        <polygon points="40,2 74,21 74,71 40,90 6,71 6,21" fill="none" stroke="#c8922a" stroke-width="0.6" opacity="0.15"/>
+      </pattern>
+    </defs>
+    <rect width="800" height="600" fill="url(#hexPat)"/>
+    <line x1="100" y1="500" x2="400" y2="100" stroke="#00b4ff" stroke-width="0.5" opacity="0.12"/>
+    <line x1="400" y1="100" x2="700" y2="500" stroke="#00b4ff" stroke-width="0.5" opacity="0.12"/>
+    <line x1="100" y1="500" x2="700" y2="500" stroke="#c8922a" stroke-width="0.5" opacity="0.12"/>
+    <circle cx="400" cy="100" r="4" fill="#c8922a" opacity="0.3"/>
+    <circle cx="100" cy="500" r="4" fill="#00b4ff" opacity="0.3"/>
+    <circle cx="700" cy="500" r="4" fill="#00b4ff" opacity="0.3"/>
+  </svg>
+
+  <div class="login-box">
+    <div class="login-logo">BOFT<span>.</span></div>
+    <div class="login-tagline">Build Operations Field Tools</div>
+    <div class="login-desc">Acceso restringido a cuentas <strong>@boftbuild.com</strong></div>
+    <button class="g-signin-btn" id="googleSignInBtn" onclick="signInWithGoogle()">
+      <svg width="20" height="20" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Sign in with Google
+    </button>
+    <div class="login-error" id="loginError">Acceso denegado. Solo cuentas @boftbuild.com.</div>
+  </div>
+</div>
+
+<!-- HUB -->
+<div class="hub" id="hub">
+  <nav class="hub-nav">
+    <div class="hub-logo">BOFT<span>.</span></div>
+    <div class="nav-right">
+      <img class="nav-avatar" id="navAvatar" src="" alt="">
+      <span class="nav-username" id="navUsername"></span>
+      <button class="btn-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </nav>
+
+  <main class="hub-main">
+    <div class="hub-greeting" id="hubGreeting">Welcome back</div>
+    <div class="hub-title">What are you working on?</div>
+
+    <div class="hub-cards">
+
+      <!-- CONTABLE -->
+      <a class="hub-card contable" href="/contable">
+        <div class="hub-card-icon">
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+            <rect x="8" y="12" width="40" height="48" rx="2" stroke="#4caf7d" stroke-width="1.5" fill="none" opacity="0.3"/>
+            <rect x="16" y="8" width="40" height="48" rx="2" stroke="#4caf7d" stroke-width="1.5" fill="none" opacity="0.6"/>
+            <line x1="24" y1="24" x2="48" y2="24" stroke="#4caf7d" stroke-width="1.5"/>
+            <line x1="24" y1="32" x2="48" y2="32" stroke="#4caf7d" stroke-width="1" opacity="0.6"/>
+            <line x1="24" y1="40" x2="40" y2="40" stroke="#4caf7d" stroke-width="1" opacity="0.6"/>
+            <text x="36" y="52" font-family="serif" font-size="14" fill="#4caf7d" text-anchor="middle" font-weight="700">$</text>
+          </svg>
+        </div>
+        <div class="hub-card-name">Contable</div>
+        <div class="hub-card-desc">Income, expenses, payments, reports and workers</div>
+        <span class="hub-card-tag">Accounting</span>
+      </a>
+
+      <!-- PROJECTS -->
+      <a class="hub-card proyectos" href="/proyectos">
+        <div class="hub-card-icon">
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+            <polygon points="36,8 64,24 64,56 36,64 8,56 8,24" stroke="#00b4ff" stroke-width="1.5" fill="none" opacity="0.3"/>
+            <line x1="8" y1="24" x2="64" y2="24" stroke="#00b4ff" stroke-width="1" opacity="0.5"/>
+            <line x1="36" y1="8" x2="36" y2="64" stroke="#00b4ff" stroke-width="1" stroke-dasharray="4 3" opacity="0.4"/>
+            <line x1="8" y1="24" x2="36" y2="8" stroke="#c8922a" stroke-width="1.5" opacity="0.8"/>
+            <line x1="64" y1="24" x2="36" y2="8" stroke="#c8922a" stroke-width="1.5" opacity="0.8"/>
+            <rect x="26" y="38" width="20" height="26" fill="none" stroke="#00b4ff" stroke-width="1.2" opacity="0.6"/>
+            <circle cx="36" cy="24" r="3" fill="#c8922a" opacity="0.9"/>
+          </svg>
+        </div>
+        <div class="hub-card-name">Projects</div>
+        <div class="hub-card-desc">Track progress, photos, documents and activity</div>
+        <span class="hub-card-tag">Field Ops</span>
+      </a>
+
+      <!-- FINDER -->
+      <a class="hub-card finder" href="/finder">
+        <div class="hub-card-icon">
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+            <circle cx="30" cy="30" r="18" stroke="#c8922a" stroke-width="1.5" fill="none" opacity="0.5"/>
+            <circle cx="30" cy="30" r="10" stroke="#c8922a" stroke-width="1" fill="none" opacity="0.3"/>
+            <line x1="43" y1="43" x2="60" y2="60" stroke="#c8922a" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
+            <line x1="30" y1="22" x2="30" y2="38" stroke="#e8b84b" stroke-width="1" opacity="0.5"/>
+            <line x1="22" y1="30" x2="38" y2="30" stroke="#e8b84b" stroke-width="1" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="hub-card-name">Finder</div>
+        <div class="hub-card-desc">Search and access any file in Drive instantly</div>
+        <span class="hub-card-tag">Documents</span>
+      </a>
+
+    </div>
+  </main>
+
+  <footer class="hub-footer">BOFT Build · Utah County · Internal Use Only</footer>
+</div>
+
+<script>
+const CLIENT_ID      = '139648063899-tq9arpo1817e20a1qtmm5dm0jl35u4sm.apps.googleusercontent.com';
+const ALLOWED_DOMAIN = 'boftbuild.com';
+
+let gsiClient = null;
+
+// ── INIT ──
+function initGoogleClient() {
+  if (typeof google === 'undefined' || !google.accounts) {
+    setTimeout(initGoogleClient, 200);
+    return;
+  }
+  gsiClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive',
+    callback: handleTokenResponse,
+  });
+}
+
+function handleTokenResponse(response) {
+  if (!response.access_token) return;
+  fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: 'Bearer ' + response.access_token }
+  })
+  .then(r => r.json())
+  .then(user => {
+    if (user.email && user.email.split('@')[1] === ALLOWED_DOMAIN) {
+      const expiresAt = Date.now() + 3500 * 1000;
+      sessionStorage.setItem('boft_token',     response.access_token);
+      sessionStorage.setItem('boft_token_exp', expiresAt);
+      sessionStorage.setItem('boft_user',      JSON.stringify(user));
+      showHub(user);
+    } else {
+      document.getElementById('loginError').classList.add('show');
+    }
+  });
+}
+
+function signInWithGoogle() {
+  if (!gsiClient) {
+    initGoogleClient();
+    setTimeout(() => gsiClient && gsiClient.requestAccessToken(), 800);
+    return;
+  }
+  document.getElementById('loginError').classList.remove('show');
+  gsiClient.requestAccessToken();
+}
+
+// ── SESSION ──
+function tryRestoreSession() {
+  const token   = sessionStorage.getItem('boft_token');
+  const exp     = parseInt(sessionStorage.getItem('boft_token_exp') || '0');
+  const userStr = sessionStorage.getItem('boft_user');
+  if (token && exp > Date.now() && userStr) {
+    showHub(JSON.parse(userStr));
+    return true;
+  }
+  sessionStorage.removeItem('boft_token');
+  sessionStorage.removeItem('boft_token_exp');
+  sessionStorage.removeItem('boft_user');
+  return false;
+}
+
+// ── UI ──
+function showHub(user) {
+  document.getElementById('loginScreen').style.display = 'none';
+  const hub = document.getElementById('hub');
+  hub.style.display = 'flex';
+
+  // Saludo dinámico
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const name = user.given_name || user.name || '';
+  document.getElementById('hubGreeting').textContent = greeting + (name ? ', ' + name : '');
+
+  document.getElementById('navUsername').textContent = user.name || user.email;
+  if (user.picture) {
+    const av = document.getElementById('navAvatar');
+    av.src = user.picture;
+    av.style.display = 'block';
+  }
+}
+
+function doLogout() {
+  sessionStorage.clear();
+  if (typeof google !== 'undefined') google.accounts.id.disableAutoSelect();
+  document.getElementById('hub').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// ── BOOT ──
+window.addEventListener('load', () => {
+  initGoogleClient();
+  tryRestoreSession();
+});
+</script>
+</body>
+</html>
