@@ -1,1 +1,395 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOFT. — Finder</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --black:#0a0b0d;--black2:#0f1114;--black3:#141618;
+  --neon:#00b4ff;--gold:#c8922a;--gold-light:#e8b84b;
+  --gold-dim:rgba(200,146,42,0.12);--border:rgba(200,146,42,0.2);
+  --border-neon:rgba(0,180,255,0.25);
+  --text:#e8e2d4;--muted:#7a7570;--green:#4caf7d;--red:#e05555;
+  --nav-h:52px;
+}
+html,body{min-height:100vh;background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif;}
+
+/* NAV */
+.sticky-nav{position:sticky;top:0;z-index:50;background:rgba(10,11,13,0.97);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:var(--nav-h);}
+.nav-logo{font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:var(--gold-light);}
+.nav-logo span{color:var(--neon);}
+.nav-links{display:flex;align-items:center;gap:0.25rem;}
+.nav-link{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:0.4rem 0.75rem;border-bottom:2px solid transparent;text-decoration:none;transition:color 0.2s;}
+.nav-link:hover{color:var(--gold-light);}
+.nav-link.active{color:var(--gold-light);border-bottom-color:var(--gold);}
+.nav-right{display:flex;align-items:center;gap:0.75rem;}
+.nav-avatar{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);display:none;}
+.nav-username{font-size:0.75rem;color:var(--muted);}
+.nav-sync{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.35rem 0.9rem;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:background 0.15s;}
+.nav-sync:hover{background:var(--gold-light);}
+.nav-hub-btn{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--neon);background:none;border:1px solid rgba(0,180,255,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:all 0.2s;text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
+.nav-hub-btn:hover{color:var(--gold-light);border-color:var(--border);}
+.nav-logout{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid rgba(122,117,112,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:color 0.2s;}
+.nav-logout:hover{color:var(--red);border-color:rgba(224,85,85,0.4);}
+
+/* PAGE */
+.page{max-width:960px;margin:0 auto;padding:2rem 2rem 4rem;}
+
+/* SEARCH HERO */
+.search-hero{text-align:center;padding:2.5rem 0 2rem;}
+.search-label{font-size:0.68rem;font-weight:700;letter-spacing:0.4em;text-transform:uppercase;color:var(--neon);margin-bottom:0.5rem;}
+.search-title{font-family:'Cinzel',serif;font-size:1.6rem;font-weight:700;color:var(--gold-light);margin-bottom:1.75rem;}
+.search-wrap{position:relative;max-width:600px;margin:0 auto;}
+.search-input{width:100%;background:var(--black2);border:1px solid var(--border);color:var(--text);padding:0.9rem 3rem 0.9rem 1.25rem;font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:500;outline:none;transition:border-color 0.2s;}
+.search-input:focus{border-color:rgba(0,180,255,0.6);}
+.search-input::placeholder{color:var(--muted);}
+.search-icon{position:absolute;right:1rem;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:1rem;}
+.search-clear{position:absolute;right:1rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;display:none;}
+.search-clear:hover{color:var(--red);}
+
+/* FILTER TABS */
+.filter-row{display:flex;gap:0.4rem;justify-content:center;margin-top:1rem;flex-wrap:wrap;}
+.filter-btn{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid var(--border);padding:0.3rem 0.85rem;cursor:pointer;transition:all 0.2s;}
+.filter-btn:hover{color:var(--gold-light);border-color:var(--gold);}
+.filter-btn.active{color:var(--black);background:var(--gold);border-color:var(--gold);}
+
+/* QUICK FOLDERS */
+.quick-section{margin-bottom:2rem;}
+.section-label{font-size:0.65rem;font-weight:700;letter-spacing:0.35em;text-transform:uppercase;color:var(--neon);margin-bottom:0.75rem;}
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:2px;background:var(--border);}
+.quick-card{background:var(--black2);padding:1rem;display:flex;flex-direction:column;align-items:center;gap:0.5rem;cursor:pointer;text-decoration:none;transition:background 0.2s;text-align:center;}
+.quick-card:hover{background:var(--black3);}
+.quick-card-icon{font-size:1.6rem;}
+.quick-card-name{font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);line-height:1.3;}
+
+/* RESULTS */
+.results-section{margin-top:1.5rem;}
+.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;}
+.results-count{font-size:0.75rem;color:var(--muted);}
+.results-list{display:flex;flex-direction:column;gap:2px;background:var(--border);}
+.result-item{background:var(--black2);padding:0.85rem 1.1rem;display:flex;align-items:center;gap:1rem;transition:background 0.2s;}
+.result-item:hover{background:var(--black3);}
+.result-icon{font-size:1.4rem;flex-shrink:0;width:28px;text-align:center;}
+.result-info{flex:1;min-width:0;}
+.result-name{font-size:0.9rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.result-path{font-size:0.72rem;color:var(--muted);margin-top:0.15rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.result-date{font-size:0.7rem;color:var(--muted);flex-shrink:0;text-align:right;}
+.result-open{font-family:'Rajdhani',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--neon);border:1px solid var(--border-neon);background:transparent;padding:0.25rem 0.65rem;cursor:pointer;text-decoration:none;flex-shrink:0;white-space:nowrap;transition:all 0.2s;}
+.result-open:hover{background:var(--neon);color:var(--black);}
+
+/* EMPTY / LOADING */
+.state-box{text-align:center;padding:3rem 2rem;color:var(--muted);}
+.state-icon{font-size:2.5rem;margin-bottom:1rem;opacity:0.3;}
+.state-text{font-size:0.88rem;line-height:1.6;}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;margin-bottom:0.75rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* TOAST */
+.toast{display:none;position:fixed;bottom:1.5rem;right:1.5rem;background:var(--black2);border:1px solid rgba(76,175,125,0.4);border-left:3px solid var(--green);padding:0.75rem 1.25rem;font-size:0.85rem;color:var(--green);font-weight:600;z-index:100;}
+.toast.show{display:block;}
+
+@media(max-width:640px){
+  .quick-grid{grid-template-columns:repeat(3,1fr);}
+  .sticky-nav{padding:0 1rem;}
+  .page{padding:1.5rem 1rem 3rem;}
+}
+</style>
+</head>
+<body>
+
+<nav class="sticky-nav">
+  <div class="nav-logo">BOFT<span>.</span></div>
+  <div class="nav-links">
+    <span class="nav-link active">Finder</span>
+  </div>
+  <div class="nav-right">
+    <img class="nav-avatar" id="navAvatar" src="" alt="">
+    <span class="nav-username" id="navUsername"></span>
+    <button class="nav-sync" onclick="clearSearch()">⟳ Clear</button>
+    <a href="/hub" class="nav-hub-btn">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polygon points="6,0.5 11,3 11,9 6,11.5 1,9 1,3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>Hub
+    </a>
+    <button class="nav-logout" onclick="doLogout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- SEARCH HERO -->
+  <div class="search-hero">
+    <div class="search-label">BOFT Drive</div>
+    <div class="search-title">Find Any File</div>
+    <div class="search-wrap">
+      <input type="text" class="search-input" id="searchInput"
+        placeholder="Search contracts, permits, receipts, photos..."
+        oninput="onSearchInput(this.value)"
+        onkeydown="if(event.key==='Enter')doSearch()">
+      <span class="search-icon" id="searchIconEl">🔍</span>
+      <button class="search-clear" id="searchClearBtn" onclick="clearSearch()">✕</button>
+    </div>
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('pdf',this)">📄 PDFs</button>
+      <button class="filter-btn" onclick="setFilter('image',this)">🖼️ Images</button>
+      <button class="filter-btn" onclick="setFilter('sheet',this)">📊 Sheets</button>
+      <button class="filter-btn" onclick="setFilter('doc',this)">📝 Docs</button>
+    </div>
+  </div>
+
+  <!-- QUICK FOLDERS -->
+  <div class="quick-section" id="quickSection">
+    <div class="section-label">Quick Access</div>
+    <div class="quick-grid">
+      <a class="quick-card" href="https://drive.google.com/drive/folders/1IFcy_jK_5JBTuW8RqWthkq5Y6eso22WN" target="_blank">
+        <span class="quick-card-icon">⚖️</span>
+        <span class="quick-card-name">Admin Legal</span>
+      </a>
+      <a class="quick-card" href="https://drive.google.com/drive/folders/1sR_fSDB7QD88ZPc5XN1wtpl4Giqfw1lm" target="_blank">
+        <span class="quick-card-icon">💰</span>
+        <span class="quick-card-name">Finanzas</span>
+      </a>
+      <a class="quick-card" href="https://drive.google.com/drive/folders/1GpZbaJqoBIKVjnW0MDvPXcNS0U_BK9be" target="_blank">
+        <span class="quick-card-icon">🏗️</span>
+        <span class="quick-card-name">Proyectos</span>
+      </a>
+      <a class="quick-card" href="https://drive.google.com/drive/folders/1-M8jBj77P802Pn_5YFZRpHkvzUWMqouZ" target="_blank">
+        <span class="quick-card-icon">📣</span>
+        <span class="quick-card-name">Marketing</span>
+      </a>
+      <a class="quick-card" href="https://drive.google.com/drive/folders/1NtLvE5Jf9WyaJbSvooew_IvRgKUOZKUJ" target="_blank">
+        <span class="quick-card-icon">⚙️</span>
+        <span class="quick-card-name">Operación</span>
+      </a>
+      <a class="quick-card" href="https://drive.google.com/drive/folders/1sCKdPp01M2RBBpCaK9oP2aBVZH20okBu" target="_blank">
+        <span class="quick-card-icon">📊</span>
+        <span class="quick-card-name">Financial Reports</span>
+      </a>
+      <a class="quick-card" href="https://drive.google.com/drive/folders/1jDa1YkFR1knqY55iR0XlMlllYi7GQZdk" target="_blank">
+        <span class="quick-card-icon">🧾</span>
+        <span class="quick-card-name">Recibos</span>
+      </a>
+      <a class="quick-card" href="https://drive.google.com/drive/folders/1NHwhMoUp4KGeuaUjaDCuWc0b9MS2Dhuw" target="_blank">
+        <span class="quick-card-icon">📦</span>
+        <span class="quick-card-name">Archive</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-section" id="resultsSection" style="display:none;">
+    <div class="results-header">
+      <div class="results-count" id="resultsCount">Searching...</div>
+    </div>
+    <div class="results-list" id="resultsList"></div>
+  </div>
+
+  <!-- INITIAL STATE -->
+  <div class="state-box" id="initialState">
+    <div class="state-icon">🔍</div>
+    <div class="state-text">Type at least 3 characters to search<br>across all BOFT Drive files</div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_URL        = '/api/proxy';
+const BOFT_MASTER_ID = '1bfHttx44ZGkN-Ydu5y-iZZfGHBS5lr6-';
+
+let ACCESS_TOKEN = null;
+let currentFilter = 'all';
+let searchTimer   = null;
+let lastQuery     = '';
+
+// ── AUTH ──
+function tryRestoreSession() {
+  const token   = sessionStorage.getItem('boft_token');
+  const exp     = parseInt(sessionStorage.getItem('boft_token_exp') || '0');
+  const userStr = sessionStorage.getItem('boft_user');
+  if (token && exp > Date.now() && userStr) {
+    ACCESS_TOKEN = token;
+    const user = JSON.parse(userStr);
+    document.getElementById('navUsername').textContent = user.name || user.email;
+    if (user.picture) {
+      const av = document.getElementById('navAvatar');
+      av.src = user.picture; av.style.display = 'block';
+    }
+    return true;
+  }
+  sessionStorage.clear();
+  window.location.href = '/hub';
+  return false;
+}
+
+function doLogout() {
+  ACCESS_TOKEN = null;
+  sessionStorage.clear();
+  window.location.href = '/hub';
+}
+
+// ── SEARCH ──
+function onSearchInput(val) {
+  const clearBtn  = document.getElementById('searchClearBtn');
+  const iconEl    = document.getElementById('searchIconEl');
+  clearBtn.style.display = val ? 'block' : 'none';
+  iconEl.style.display   = val ? 'none'  : 'block';
+
+  clearTimeout(searchTimer);
+  if (val.length < 3) {
+    showInitialState();
+    return;
+  }
+  showLoading();
+  searchTimer = setTimeout(() => doSearch(val), 400);
+}
+
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const q = document.getElementById('searchInput').value;
+  if (q.length >= 3) doSearch(q);
+}
+
+async function doSearch(query) {
+  query = query || document.getElementById('searchInput').value;
+  if (!query || query.length < 3) return;
+  lastQuery = query;
+  showLoading();
+
+  try {
+    const params = new URLSearchParams({
+      action: 'searchFiles',
+      query:  query,
+      filter: currentFilter,
+      folderId: BOFT_MASTER_ID
+    });
+    const res  = await fetch(API_URL + '?' + params, {
+      headers: { Authorization: 'Bearer ' + ACCESS_TOKEN }
+    });
+    const data = await res.json();
+
+    if (data.error === 'Unauthorized' || data.code === 403) {
+      window.location.href = '/hub'; return;
+    }
+    renderResults(data.files || [], query);
+  } catch(e) {
+    console.error(e);
+    showError();
+  }
+}
+
+function renderResults(files, query) {
+  const section = document.getElementById('resultsSection');
+  const list    = document.getElementById('resultsList');
+  const count   = document.getElementById('resultsCount');
+  const initial = document.getElementById('initialState');
+  const quick   = document.getElementById('quickSection');
+
+  initial.style.display = 'none';
+  quick.style.display   = 'none';
+  section.style.display = 'block';
+
+  count.textContent = files.length
+    ? files.length + ' result' + (files.length !== 1 ? 's' : '') + ' for "' + query + '"'
+    : 'No results for "' + query + '"';
+
+  if (!files.length) {
+    list.innerHTML = `<div class="state-box">
+      <div class="state-icon">📭</div>
+      <div class="state-text">No files found.<br>Try different keywords.</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = files.map(f => {
+    const icon = getFileIcon(f.mimeType);
+    const date = f.modifiedDate ? new Date(f.modifiedDate).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—';
+    const name = highlightMatch(escHtml(f.name), query);
+    return `<div class="result-item">
+      <span class="result-icon">${icon}</span>
+      <div class="result-info">
+        <div class="result-name">${name}</div>
+        <div class="result-path">${escHtml(f.path || '—')}</div>
+      </div>
+      <div class="result-date">${date}</div>
+      <a class="result-open" href="${f.url}" target="_blank">Open ↗</a>
+    </div>`;
+  }).join('');
+}
+
+function getFileIcon(mime) {
+  if (!mime) return '📄';
+  if (mime === 'application/pdf') return '📄';
+  if (mime.startsWith('image/')) return '🖼️';
+  if (mime.includes('spreadsheet') || mime.includes('excel')) return '📊';
+  if (mime.includes('document') || mime.includes('word')) return '📝';
+  if (mime.includes('presentation') || mime.includes('powerpoint')) return '📑';
+  if (mime.includes('folder')) return '📁';
+  if (mime.includes('json') || mime.includes('text')) return '📃';
+  return '📄';
+}
+
+function highlightMatch(text, query) {
+  try {
+    const re = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+    return text.replace(re, '<span style="color:var(--gold-light);font-weight:700;">$1</span>');
+  } catch(e) { return text; }
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchClearBtn').style.display = 'none';
+  document.getElementById('searchIconEl').style.display   = 'block';
+  showInitialState();
+}
+
+function showInitialState() {
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('initialState').style.display   = 'block';
+  document.getElementById('quickSection').style.display   = 'block';
+}
+
+function showLoading() {
+  const section = document.getElementById('resultsSection');
+  const quick   = document.getElementById('quickSection');
+  const initial = document.getElementById('initialState');
+  initial.style.display = 'none';
+  quick.style.display   = 'none';
+  section.style.display = 'block';
+  document.getElementById('resultsCount').textContent = 'Searching...';
+  document.getElementById('resultsList').innerHTML = `
+    <div class="state-box">
+      <div class="spinner"></div>
+      <div class="state-text">Searching Drive...</div>
+    </div>`;
+}
+
+function showError() {
+  document.getElementById('resultsList').innerHTML = `
+    <div class="state-box">
+      <div class="state-icon">⚠️</div>
+      <div class="state-text">Error searching. Try again.</div>
+    </div>`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+window.addEventListener('load', () => { tryRestoreSession(); });
+</script>
+</body>
+</html>
