@@ -250,6 +250,9 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .upload-clear{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:0.2rem 0.4rem;flex-shrink:0;z-index:2;position:relative;}
 .upload-clear:hover{color:var(--red);}
 
+.btn-sm{font-family:'Rajdhani',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:0.28rem 0.75rem;cursor:pointer;border:1px solid;background:transparent;transition:all 0.2s;}
+.btn-sm.view{color:var(--neon);border-color:var(--border-neon);}
+
 /* INLINE EDIT */
 .inline-edit-field{cursor:pointer;padding:0.4rem 0.5rem;border:1px solid transparent;transition:border-color 0.2s;border-radius:2px;min-height:2rem;}
 .inline-edit-field:hover{border-color:var(--border);background:var(--black);}
@@ -485,6 +488,11 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         </div>
       </div>
       <div class="field-group"><label class="field-label">Scope of Work</label><textarea class="field-input" id="ep-scope" rows="3" placeholder="Describe what will be done..." style="resize:vertical;"></textarea></div>
+      <div class="field-group">
+        <label class="field-label">Activity Feed / Notes</label>
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.4rem;">Format: YYYY-MM-DD: note text (one per line)</div>
+        <textarea class="field-input" id="ep-notes" rows="4" placeholder="2026-06-13: Framed south wall&#10;2026-06-14: Installed LVL beam..." style="resize:vertical;font-family:monospace;font-size:0.82rem;"></textarea>
+      </div>
       <div class="field-group">
         <label class="field-label">Documentation</label>
         <!-- Lista de docs existentes -->
@@ -922,34 +930,44 @@ function onEpDocSelect() {
   document.getElementById('ep-doc-clear').style.display = 'block';
 }
 
+// Docs se guardan como "nombre|url" separados por coma
+function parseDocEntry(entry) {
+  const parts = entry.split('|');
+  if (parts.length >= 2) return { name: parts[0], url: parts.slice(1).join('|') };
+  return { name: null, url: entry };
+}
+
 function renderEditDocList() {
   const el = document.getElementById('ep-doc-current');
   if (!el) return;
   const urls = (currentProject.contractFileUrl || '').split(',').map(u => u.trim()).filter(Boolean);
   if (!urls.length) {
-    el.style.display = 'none';
+    el.innerHTML = '<div style="font-size:0.78rem;color:var(--muted);padding:0.4rem 0;">No documents attached</div>';
     return;
   }
-  el.style.display = 'block';
-  el.innerHTML = urls.map((url, i) => {
+  el.innerHTML = urls.map((entry, i) => {
+    const {name, url} = parseDocEntry(entry);
     const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(url);
-    return `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--black);border:1px solid var(--border);padding:0.45rem 0.75rem;margin-bottom:4px;">
-      <div style="display:flex;align-items:center;gap:0.5rem;">
-        <span>${isImg ? '🖼️' : '📄'}</span>
-        <a href="${url}" target="_blank" style="color:var(--neon);font-size:0.82rem;">Document ${i+1} ↗</a>
+    const label = name || (isImg ? 'Image ' + (i+1) : 'Document ' + (i+1));
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid rgba(200,146,42,0.08);gap:0.5rem;">
+      <div style="display:flex;align-items:center;gap:0.5rem;min-width:0;flex:1;">
+        <span style="font-size:1rem;">${isImg ? '🖼️' : '📄'}</span>
+        <span style="font-size:0.82rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label}</span>
       </div>
-      <button type="button" onclick="removeEditDocByIndex(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.78rem;">✕</button>
+      <div style="display:flex;gap:0.4rem;flex-shrink:0;">
+        <button class="btn-sm view" onclick="window.open('${url}','_blank')">View ↗</button>
+        <button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="removeEditDocByIndex(${i})">🗑</button>
+      </div>
     </div>`;
   }).join('');
 }
 
 function removeEditDocByIndex(idx) {
-  const urls = (currentProject.contractFileUrl || '').split(',').map(u => u.trim()).filter(Boolean);
-  urls.splice(idx, 1);
-  currentProject.contractFileUrl = urls.join(',');
-  renderEditDocList();
-  // Marcar para guardar al hacer Save
+  const entries = (currentProject.contractFileUrl || '').split(',').map(u => u.trim()).filter(Boolean);
+  entries.splice(idx, 1);
+  currentProject.contractFileUrl = entries.join(',');
   window._updatedDocUrls = currentProject.contractFileUrl;
+  renderEditDocList();
 }
 
 function clearEpDoc(e) {
@@ -1027,17 +1045,16 @@ function renderDocumentationFile() {
     el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-style:italic;">No documents uploaded</div>';
     return;
   }
-  el.innerHTML = urls.map((url, i) => {
+  el.innerHTML = urls.map((entry, i) => {
+    const {name, url} = parseDocEntry(entry);
     const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(url);
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.45rem 0;border-bottom:1px solid rgba(200,146,42,0.08);gap:0.5rem;">
+    const label = name || (isImg ? 'Image ' + (i+1) : 'Document ' + (i+1));
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid rgba(200,146,42,0.08);gap:0.5rem;">
       <div style="display:flex;align-items:center;gap:0.5rem;min-width:0;flex:1;">
-        <span style="font-size:0.9rem;">${isImg ? '🖼️' : '📄'}</span>
-        <span style="font-size:0.78rem;color:var(--muted);">Document ${i+1}</span>
+        <span style="font-size:1rem;">${isImg ? '🖼️' : '📄'}</span>
+        <span style="font-size:0.82rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label}</span>
       </div>
-      <div style="display:flex;gap:0.4rem;flex-shrink:0;">
-        <button class="btn-sm view" onclick="window.open('${url}','_blank')" style="font-size:0.6rem;padding:0.2rem 0.5rem;">View ↗</button>
-        <button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);font-size:0.6rem;padding:0.2rem 0.5rem;" onclick="removeDocument(${i})">✕</button>
-      </div>
+      <button class="btn-sm view" onclick="window.open('${url}','_blank')">View ↗</button>
     </div>`;
   }).join('');
 }
@@ -1251,6 +1268,7 @@ function openEditProjectModal() {
   document.getElementById('ep-value').value   = currentProject.contractValue || '';
   document.getElementById('ep-status').value  = currentProject.status || 'Active';
   document.getElementById('ep-scope').value   = currentProject.objective || '';
+  document.getElementById('ep-notes').value   = currentProject.notes || '';
   // Doc actual — mostrar lista de documentos existentes
   window._updatedDocUrls = undefined;
   renderEditDocList();
@@ -1280,6 +1298,7 @@ async function saveEditProject() {
       contractValue:   document.getElementById('ep-value').value,
       status:          document.getElementById('ep-status').value,
       objective:       document.getElementById('ep-scope').value.trim(),
+      notes:           document.getElementById('ep-notes').value,
       contractFileUrl: window._updatedDocUrls !== undefined ? window._updatedDocUrls : (currentProject.contractFileUrl || ''),
       folderId:        currentProject.driveFolderId || '',
     });
@@ -1311,7 +1330,8 @@ async function saveEditProject() {
               existingUrls,
             });
             if (uploadResult.success) {
-              existingUrls = existingUrls ? existingUrls + ',' + uploadResult.fileUrl : uploadResult.fileUrl;
+              const entry = file.name + '|' + uploadResult.fileUrl;
+              existingUrls = existingUrls ? existingUrls + ',' + entry : entry;
             }
           } catch(e) { console.error(e); }
         }
