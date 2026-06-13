@@ -421,6 +421,14 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       </div>
       <div class="field-group"><label class="field-label">Scope of Work</label><textarea class="field-input" id="np-scope" rows="3" placeholder="Describe what will be done: Frame 2,400 sqft single family home..." style="resize:vertical;"></textarea></div>
       <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="np-notes" rows="2" placeholder="Initial notes..." style="resize:vertical;"></textarea></div>
+      <div class="field-group">
+        <label class="field-label">Documentation</label>
+        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+          <button type="button" class="btn-upload-contract" onclick="document.getElementById('np-doc-file').click()" style="flex-shrink:0;">📄 Upload Doc</button>
+          <span id="np-doc-name" style="font-size:0.78rem;color:var(--muted);">No file selected</span>
+          <input type="file" id="np-doc-file" accept=".pdf,image/*,.doc,.docx" style="display:none;" onchange="onNpDocSelect()">
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('new-project')">Cancel</button>
@@ -461,6 +469,20 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         </div>
       </div>
       <div class="field-group"><label class="field-label">Scope of Work</label><textarea class="field-input" id="ep-scope" rows="3" placeholder="Describe what will be done..." style="resize:vertical;"></textarea></div>
+      <div class="field-group">
+        <label class="field-label">Documentation</label>
+        <div id="ep-doc-current" style="margin-bottom:0.5rem;display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--black);border:1px solid var(--border);padding:0.5rem 0.75rem;">
+            <a id="ep-doc-link" href="#" target="_blank" style="color:var(--neon);font-size:0.82rem;">📄 View current document ↗</a>
+            <button type="button" onclick="removeEditDoc()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.78rem;">✕ Remove</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+          <button type="button" class="btn-upload-contract" onclick="document.getElementById('ep-doc-file').click()">📄 Upload New</button>
+          <span id="ep-doc-name" style="font-size:0.78rem;color:var(--muted);">No new file selected</span>
+          <input type="file" id="ep-doc-file" accept=".pdf,image/*,.doc,.docx" style="display:none;" onchange="onEpDocSelect()">
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('edit-project')">Cancel</button>
@@ -865,6 +887,31 @@ function renderActivityFeed() {
 }
 
 // ============================================================
+// DOCUMENTATION — Modal handlers
+// ============================================================
+function onNpDocSelect() {
+  const input = document.getElementById('np-doc-file');
+  const label = document.getElementById('np-doc-name');
+  label.textContent = input.files[0] ? input.files[0].name : 'No file selected';
+  label.style.color = input.files[0] ? 'var(--green)' : 'var(--muted)';
+}
+
+function onEpDocSelect() {
+  const input = document.getElementById('ep-doc-file');
+  const label = document.getElementById('ep-doc-name');
+  label.textContent = input.files[0] ? input.files[0].name : 'No new file selected';
+  label.style.color = input.files[0] ? 'var(--green)' : 'var(--muted)';
+}
+
+function removeEditDoc() {
+  // Marcar para eliminar al guardar
+  window._removeDoc = true;
+  document.getElementById('ep-doc-current').style.display = 'none';
+  document.getElementById('ep-doc-name').textContent = 'Document will be removed on save';
+  document.getElementById('ep-doc-name').style.color = 'var(--red)';
+}
+
+// ============================================================
 // OBJECTIVE INLINE EDIT
 // ============================================================
 function startEditObjective() {
@@ -1060,6 +1107,15 @@ async function createProject() {
   closeModal('new-project');
   showToast('Creating project & Drive folder...');
 
+  // Leer archivo de doc si hay
+  let npDocBase64 = '', npDocName = '', npDocMime = '';
+  const npDocFile = document.getElementById('np-doc-file').files[0];
+  if (npDocFile) {
+    npDocBase64 = await fileToBase64(npDocFile);
+    npDocName   = npDocFile.name;
+    npDocMime   = npDocFile.type;
+  }
+
   try {
     const result = await apiPost({
       action:        'createProject',
@@ -1073,6 +1129,9 @@ async function createProject() {
       status:        document.getElementById('np-status').value,
       scope:         document.getElementById('np-scope').value.trim(),
       notes:         document.getElementById('np-notes').value.trim(),
+      docBase64:     npDocBase64,
+      docFileName:   npDocName,
+      docMimeType:   npDocMime,
       templateId:    TEMPLATE_FOLDER_ID,
       parentId:      PROJECTS_PARENT_ID,
     });
@@ -1100,6 +1159,18 @@ function openEditProjectModal() {
   document.getElementById('ep-value').value   = currentProject.contractValue || '';
   document.getElementById('ep-status').value  = currentProject.status || 'Active';
   document.getElementById('ep-scope').value   = currentProject.objective || '';
+  // Doc actual
+  const epDocCurrent = document.getElementById('ep-doc-current');
+  const epDocLink    = document.getElementById('ep-doc-link');
+  const epDocName    = document.getElementById('ep-doc-name');
+  epDocName.textContent = 'No new file selected';
+  document.getElementById('ep-doc-file').value = '';
+  if (currentProject.contractFileUrl) {
+    epDocCurrent.style.display = 'block';
+    epDocLink.href = currentProject.contractFileUrl;
+  } else {
+    epDocCurrent.style.display = 'none';
+  }
   document.getElementById('modal-edit-project').classList.add('open');
 }
 
@@ -1107,6 +1178,19 @@ async function saveEditProject() {
   const id = document.getElementById('ep-id').value;
   closeModal('edit-project');
   showToast('Saving...');
+
+  // Leer nuevo archivo de doc si hay
+  let epDocBase64 = '', epDocName = '', epDocMime = '';
+  const epDocFile = document.getElementById('ep-doc-file').files[0];
+  if (epDocFile) {
+    epDocBase64 = await fileToBase64(epDocFile);
+    epDocName   = epDocFile.name;
+    epDocMime   = epDocFile.type;
+  }
+  // Si marcó eliminar y no hay nuevo, limpiar URL
+  const removeDoc = window._removeDoc && !epDocFile;
+  window._removeDoc = false;
+
   try {
     const result = await apiPost({
       action:        'editProject',
@@ -1120,6 +1204,11 @@ async function saveEditProject() {
       contractValue: document.getElementById('ep-value').value,
       status:        document.getElementById('ep-status').value,
       objective:     document.getElementById('ep-scope').value.trim(),
+      docBase64:     epDocBase64,
+      docFileName:   epDocName,
+      docMimeType:   epDocMime,
+      removeDoc:     removeDoc,
+      folderId:      currentProject.driveFolderId || '',
     });
     if (result.success) {
       showToast('✓ Project updated');
