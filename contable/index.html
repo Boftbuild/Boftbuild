@@ -1185,22 +1185,46 @@ function signInWithGoogle() {
     callback: (response) => {
       if (response.access_token) {
         ACCESS_TOKEN = response.access_token;
+        // Guardar token y expiración en sessionStorage
+        const expiresAt = Date.now() + 3500 * 1000; // ~58 min
+        sessionStorage.setItem('boft_token', ACCESS_TOKEN);
+        sessionStorage.setItem('boft_token_exp', expiresAt);
         fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: 'Bearer ' + ACCESS_TOKEN }
         })
         .then(r => r.json())
         .then(user => {
           if (user.email.split('@')[1] === ALLOWED_DOMAIN) {
+            sessionStorage.setItem('boft_user', JSON.stringify(user));
             loginSuccess(user);
           } else {
             document.getElementById('loginError').classList.add('show');
             ACCESS_TOKEN = null;
+            sessionStorage.clear();
           }
         });
       }
     }
   });
   client.requestAccessToken();
+}
+
+// Intentar restaurar sesión desde sessionStorage al cargar la página
+function tryRestoreSession() {
+  const token   = sessionStorage.getItem('boft_token');
+  const exp     = parseInt(sessionStorage.getItem('boft_token_exp') || '0');
+  const userStr = sessionStorage.getItem('boft_user');
+  if (token && exp > Date.now() && userStr) {
+    ACCESS_TOKEN = token;
+    const user = JSON.parse(userStr);
+    loginSuccess(user);
+    return true;
+  }
+  // Limpiar si expiró
+  sessionStorage.removeItem('boft_token');
+  sessionStorage.removeItem('boft_token_exp');
+  sessionStorage.removeItem('boft_user');
+  return false;
 }
 
 function loginSuccess(user) {
@@ -1222,10 +1246,11 @@ function loginSuccess(user) {
 
 function doLogout() {
   ACCESS_TOKEN = null;
+  sessionStorage.clear();
   google.accounts.id.disableAutoSelect();
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('loginError').classList.remove('show');
+  if (document.getElementById('loginError')) document.getElementById('loginError').classList.remove('show');
 }
 
 // ============================================================
@@ -2753,6 +2778,9 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 });
 document.querySelectorAll('.sub-modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
-});</script>
+});
+
+// Restaurar sesión al cargar
+window.addEventListener('load', () => { tryRestoreSession(); });</script>
 </body>
 </html>
