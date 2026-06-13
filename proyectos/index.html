@@ -28,6 +28,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .login-sub{font-size:0.72rem;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
 .login-desc{font-size:0.82rem;color:var(--muted);margin-bottom:2rem;line-height:1.5;}
 .login-desc strong{color:var(--text);}
+.login-hex{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);opacity:0.06;pointer-events:none;}
 .login-error{font-size:0.8rem;color:var(--red);margin-top:1rem;display:none;padding:0.75rem;border:1px solid rgba(224,85,85,0.3);background:rgba(224,85,85,0.05);}
 .login-error.show{display:block;}
 .g-signin-btn{display:flex;align-items:center;justify-content:center;gap:0.75rem;width:100%;padding:0.85rem 1.5rem;background:white;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.9rem;font-weight:700;letter-spacing:0.05em;color:#333;transition:background 0.2s,transform 0.15s;}
@@ -254,11 +255,15 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 
 <!-- LOGIN -->
 <div class="login-screen" id="loginScreen">
+  <svg class="login-hex" width="600" height="600" viewBox="0 0 600 600" fill="none">
+    <polygon points="300,20 555,155 555,445 300,580 45,445 45,155" stroke="#00b4ff" stroke-width="1"/>
+    <polygon points="300,60 520,175 520,425 300,540 80,425 80,175" stroke="#c8922a" stroke-width="0.5"/>
+  </svg>
   <div class="login-box">
     <div class="login-logo">BOFT<span>.</span></div>
     <div class="login-sub">Project Management</div>
     <div class="login-desc">Acceso restringido a cuentas <strong>@boftbuild.com</strong></div>
-    <button class="g-signin-btn" onclick="signInWithGoogle()">
+    <button class="g-signin-btn" id="googleSignInBtn" onclick="signInWithGoogle()">
       <svg width="20" height="20" viewBox="0 0 48 48">
         <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
         <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -446,34 +451,39 @@ let currentFilter  = 'all';
 // GOOGLE AUTH
 // ============================================================
 function signInWithGoogle() {
-  const client = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive',
-    callback: (response) => {
-      if (response.access_token) {
-        ACCESS_TOKEN = response.access_token;
-        // Guardar token y expiración en sessionStorage
-        const expiresAt = Date.now() + 3500 * 1000; // ~58 min
-        sessionStorage.setItem('boft_token', ACCESS_TOKEN);
-        sessionStorage.setItem('boft_token_exp', expiresAt);
-        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: 'Bearer ' + ACCESS_TOKEN }
-        })
-        .then(r => r.json())
-        .then(user => {
-          if (user.email.split('@')[1] === ALLOWED_DOMAIN) {
-            sessionStorage.setItem('boft_user', JSON.stringify(user));
-            loginSuccess(user);
-          } else {
-            document.getElementById('loginError').classList.add('show');
-            ACCESS_TOKEN = null;
-            sessionStorage.clear();
-          }
-        });
+  try {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive',
+      callback: (response) => {
+        if (response.access_token) {
+          ACCESS_TOKEN = response.access_token;
+          const expiresAt = Date.now() + 3500 * 1000;
+          sessionStorage.setItem('boft_token', ACCESS_TOKEN);
+          sessionStorage.setItem('boft_token_exp', expiresAt);
+          fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: 'Bearer ' + ACCESS_TOKEN }
+          })
+          .then(r => r.json())
+          .then(user => {
+            if (user.email.split('@')[1] === ALLOWED_DOMAIN) {
+              sessionStorage.setItem('boft_user', JSON.stringify(user));
+              loginSuccess(user);
+            } else {
+              document.getElementById('loginError').classList.add('show');
+              ACCESS_TOKEN = null;
+              sessionStorage.clear();
+            }
+          });
+        }
       }
-    }
-  });
-  client.requestAccessToken();
+    });
+    client.requestAccessToken();
+  } catch(e) {
+    console.error('Google Sign In error:', e);
+    document.getElementById('loginError').textContent = 'Error loading Google Sign In. Please refresh.';
+    document.getElementById('loginError').classList.add('show');
+  }
 }
 
 // Intentar restaurar sesión desde sessionStorage al cargar la página
