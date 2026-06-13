@@ -760,10 +760,8 @@ async function openProject(id) {
         <div>
           <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">Documentation</div>
           <div id="documentsList" style="margin-bottom:0.5rem;">
-            <div style="color:var(--muted);font-size:0.82rem;font-style:italic;">No documents uploaded</div>
+            <div style="color:var(--muted);font-size:0.82rem;font-style:italic;">No documents — add from Edit Project</div>
           </div>
-          <button class="btn-upload-documentation" onclick="document.getElementById('upload-documentation').click()" style="font-size:0.6rem;">+ Add Document</button>
-          <input type="file" id="upload-documentation" accept="image/*,.pdf,.doc,.docx" style="display:none;" onchange="uploadDocumentation()">
         </div>
       </div>
 
@@ -924,6 +922,36 @@ function onEpDocSelect() {
   document.getElementById('ep-doc-label').textContent = file.name;
   document.getElementById('ep-doc-zone').classList.add('has-file');
   document.getElementById('ep-doc-clear').style.display = 'block';
+}
+
+function renderEditDocList() {
+  const el = document.getElementById('ep-doc-current');
+  if (!el) return;
+  const urls = (currentProject.contractFileUrl || '').split(',').map(u => u.trim()).filter(Boolean);
+  if (!urls.length) {
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = 'block';
+  el.innerHTML = urls.map((url, i) => {
+    const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(url);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--black);border:1px solid var(--border);padding:0.45rem 0.75rem;margin-bottom:4px;">
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <span>${isImg ? '🖼️' : '📄'}</span>
+        <a href="${url}" target="_blank" style="color:var(--neon);font-size:0.82rem;">Document ${i+1} ↗</a>
+      </div>
+      <button type="button" onclick="removeEditDocByIndex(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:0.78rem;">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function removeEditDocByIndex(idx) {
+  const urls = (currentProject.contractFileUrl || '').split(',').map(u => u.trim()).filter(Boolean);
+  urls.splice(idx, 1);
+  currentProject.contractFileUrl = urls.join(',');
+  renderEditDocList();
+  // Marcar para guardar al hacer Save
+  window._updatedDocUrls = currentProject.contractFileUrl;
 }
 
 function clearEpDoc(e) {
@@ -1225,18 +1253,10 @@ function openEditProjectModal() {
   document.getElementById('ep-value').value   = currentProject.contractValue || '';
   document.getElementById('ep-status').value  = currentProject.status || 'Active';
   document.getElementById('ep-scope').value   = currentProject.objective || '';
-  // Doc actual
-  const epDocCurrent = document.getElementById('ep-doc-current');
-  const epDocLink    = document.getElementById('ep-doc-link');
-  const epDocName    = document.getElementById('ep-doc-name');
-  epDocName.textContent = 'No new file selected';
-  document.getElementById('ep-doc-file').value = '';
-  if (currentProject.contractFileUrl) {
-    epDocCurrent.style.display = 'block';
-    epDocLink.href = currentProject.contractFileUrl;
-  } else {
-    epDocCurrent.style.display = 'none';
-  }
+  // Doc actual — mostrar lista de documentos existentes
+  window._updatedDocUrls = undefined;
+  renderEditDocList();
+  clearEpDoc(null);
   document.getElementById('modal-edit-project').classList.add('open');
 }
 
@@ -1267,14 +1287,14 @@ async function saveEditProject() {
       city:          document.getElementById('ep-city').value.trim(),
       startDate:     document.getElementById('ep-start').value,
       endDate:       document.getElementById('ep-end').value,
-      contractValue: document.getElementById('ep-value').value,
-      status:        document.getElementById('ep-status').value,
-      objective:     document.getElementById('ep-scope').value.trim(),
-      docBase64:     epDocBase64,
-      docFileName:   epDocName,
-      docMimeType:   epDocMime,
-      removeDoc:     removeDoc,
-      folderId:      currentProject.driveFolderId || '',
+      contractValue:   document.getElementById('ep-value').value,
+      status:          document.getElementById('ep-status').value,
+      objective:       document.getElementById('ep-scope').value.trim(),
+      contractFileUrl: window._updatedDocUrls !== undefined ? window._updatedDocUrls : (currentProject.contractFileUrl || ''),
+      docBase64:       epDocBase64,
+      docFileName:     epDocName,
+      docMimeType:     epDocMime,
+      folderId:        currentProject.driveFolderId || '',
     });
     if (result.success) {
       showToast('✓ Project updated');
