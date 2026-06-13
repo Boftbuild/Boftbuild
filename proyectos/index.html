@@ -1164,12 +1164,14 @@ async function uploadPhotos(phase) {
     try {
       const base64 = await fileToBase64(file);
       await apiPost({
-        action:      'uploadProjectPhoto',
-        folderId:    currentProject.driveFolderId,
-        phase:       phase === 'antes' ? '01_Antes' : phase === 'proceso' ? '02_Proceso' : '03_Terminado',
-        fileBase64:  base64,
-        fileName:    file.name,
-        mimeType:    file.type,
+        action:        'uploadProjectPhoto',
+        folderId:      currentProject.driveFolderId,
+        phase:         phase === 'antes' ? '01_Antes' : phase === 'proceso' ? '02_Proceso' : '03_Terminado',
+        fileBase64:    base64,
+        fileName:      file.name,
+        mimeType:      file.type,
+        projectName:   currentProject.name   || '',
+        clientName:    currentProject.client || '',
       });
     } catch(e) { console.error(e); }
   }
