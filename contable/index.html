@@ -2139,20 +2139,22 @@ async function saveNewWorker() {
 
 async function loadProjects() {
   try {
-    // Jalar proyectos activos desde la hoja PROJECTS
     const data = await apiGet('projects');
+    console.log('Projects data:', data);
     const fromSheet = (data.projects || [])
       .filter(p => p.status === 'Active' || p.status === 'On Hold')
       .map(p => p.name)
       .sort();
-    // Combinar con proyectos del ledger por si hay transacciones de proyectos viejos
+    // Combinar con proyectos del ledger
     const fromLedger = [...new Set(
       allTransactions.map(t => t.project).filter(p => p && p.trim())
     )];
     const all = [...new Set([...fromSheet, ...fromLedger])].sort();
-    projectsCache = all.length > 0 ? all : fromSheet;
+    projectsCache = all.length > 0 ? all : fromLedger;
+    console.log('projectsCache:', projectsCache);
     populateProjectDropdown();
   } catch(e) {
+    console.error('loadProjects error:', e);
     projectsCache = [...new Set(
       allTransactions.map(t => t.project).filter(p => p && p.trim())
     )].sort();
