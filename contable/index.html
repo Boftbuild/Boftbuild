@@ -59,6 +59,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .stat-card.income::before{background:var(--green);}
 .stat-card.expense::before{background:var(--red);}
 .stat-card.net::before{background:var(--red);}
+.stat-card.net-pos::before{background:var(--green)!important;}
+.stat-card.net-neg::before{background:var(--red)!important;}
 .stat-card.missing::before{background:var(--gold);}
 .stat-label{font-size:0.68rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
 .stat-num{font-family:'Cinzel',serif;font-size:1.6rem;font-weight:700;}
@@ -326,7 +328,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <div class="stats-grid">
         <div class="stat-card income"><div class="stat-label">Total Income</div><div class="stat-num green" id="statIncome">Loading...</div><div class="stat-sub">YTD 2026</div></div>
         <div class="stat-card expense"><div class="stat-label">Total Expenses</div><div class="stat-num red" id="statExpense">Loading...</div><div class="stat-sub">YTD 2026</div></div>
-        <div class="stat-card net"><div class="stat-label">Net Profit</div><div class="stat-num red" id="statNet">Loading...</div><div class="stat-sub">YTD 2026</div></div>
+        <div class="stat-card net" id="statNetCard"><div class="stat-label">Net Profit</div><div class="stat-num red" id="statNet">Loading...</div><div class="stat-sub">YTD 2026</div></div>
         <div class="stat-card missing"><div class="stat-label">Missing Receipts</div><div class="stat-num warning" id="statMissing">—</div><div class="stat-sub">Pending upload</div></div>
       </div>
       <div class="two-col">
@@ -352,6 +354,14 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
             </table>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- MONTHLY CHART -->
+    <div style="background:var(--black2);padding:1.5rem;margin-top:2px;">
+      <div class="section-label">Monthly Overview</div>
+      <div id="monthlyChart" style="margin-top:0.75rem;">
+        <div style="color:var(--muted);font-size:0.82rem;">Loading chart...</div>
       </div>
     </div>
 
@@ -492,6 +502,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
           <option value="Yes">Active</option>
           <option value="No">Inactive</option>
         </select>
+      </div>
+      <div class="field-group" id="workerPaymentHistory" style="margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;">
+        <div class="section-label" style="margin-bottom:0.75rem;">Payment History</div>
+        <div id="workerPaymentList"><div style="color:var(--muted);font-size:0.82rem;">Loading...</div></div>
       </div>
     </div>
     <div class="sub-modal-footer">
@@ -1428,6 +1442,16 @@ async function loadDashboard() {
     document.getElementById('cashTotal').textContent   = fmt(data.cashPosition.total);
     const netEl = document.getElementById('statNet');
     netEl.className = 'stat-num ' + (data.net >= 0 ? 'green' : 'red');
+    // Cambiar barra lateral del card según positivo/negativo
+    const netCard = document.getElementById('statNetCard');
+    if (netCard) netCard.style.setProperty('--card-accent', data.net >= 0 ? 'var(--green)' : 'var(--red)');
+    if (netCard) netCard.querySelector('::before') && null; // trigger repaint
+    if (netCard) netCard.style.cssText = netCard.style.cssText; // force
+    // Usar clase dinámica
+    if (netCard) {
+      netCard.classList.remove('net-pos', 'net-neg');
+      netCard.classList.add(data.net >= 0 ? 'net-pos' : 'net-neg');
+    }
     const maxAmt = data.topCategories[0]?.amount || 1;
     document.getElementById('expenseBreakdown').innerHTML = data.topCategories.map(c => `
       <div class="bar-label-row"><span class="bar-label">${c.name}</span><span class="bar-val">${fmt(c.amount)}</span></div>
@@ -1547,6 +1571,7 @@ async function loadTransactions() {
     allTransactions = data.transactions || [];
     currentPage = 1;
     renderResults();
+    renderMonthlyChart();
   } catch(e) { console.error('Ledger error:', e); }
 }
 
@@ -2134,6 +2159,55 @@ function populateProjectDropdown() {
 }
 
 // ============================================================
+// MONTHLY CHART — Barras Income vs Expenses por mes
+// ============================================================
+function renderMonthlyChart() {
+  const chart = document.getElementById('monthlyChart');
+  if (!chart || !allTransactions.length) return;
+
+  // Agrupar por mes
+  const monthMap = {};
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  allTransactions.forEach(t => {
+    if (!t.date) return;
+    const d = new Date(t.date);
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    if (!monthMap[key]) monthMap[key] = { income:0, expenses:0, payments:0, label: monthNames[d.getMonth()] + ' ' + d.getFullYear() };
+    if (t.type === 'Income')  monthMap[key].income   += Math.abs(t.amount);
+    if (t.type === 'Expense') monthMap[key].expenses += Math.abs(t.amount);
+    if (t.type === 'Payment') monthMap[key].payments += Math.abs(t.amount);
+  });
+
+  const months = Object.keys(monthMap).sort().slice(-6); // últimos 6 meses
+  if (!months.length) { chart.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">No data yet</div>'; return; }
+
+  const maxVal = Math.max(...months.map(m => Math.max(monthMap[m].income, monthMap[m].expenses + monthMap[m].payments))) || 1;
+
+  chart.innerHTML = `
+    <div style="display:flex;align-items:flex-end;gap:8px;height:120px;margin-bottom:0.5rem;">
+      ${months.map(m => {
+        const d = monthMap[m];
+        const incH  = Math.round((d.income / maxVal) * 100);
+        const expH  = Math.round(((d.expenses + d.payments) / maxVal) * 100);
+        const net   = d.income - d.expenses - d.payments;
+        return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;">
+          <div style="width:100%;display:flex;gap:2px;align-items:flex-end;height:100px;">
+            <div style="flex:1;background:var(--green);opacity:0.8;height:${incH}%;border-radius:2px 2px 0 0;" title="Income: ${fmt(d.income)}"></div>
+            <div style="flex:1;background:var(--red);opacity:0.8;height:${expH}%;border-radius:2px 2px 0 0;" title="Exp+Pay: ${fmt(d.expenses+d.payments)}"></div>
+          </div>
+          <div style="font-size:0.6rem;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;width:100%;">${d.label}</div>
+          <div style="font-size:0.58rem;font-weight:700;color:${net>=0?'var(--green)':'var(--red)'};">${net>=0?'+':''}${fmt(net)}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:1rem;margin-top:0.25rem;">
+      <span style="font-size:0.68rem;color:var(--muted);display:flex;align-items:center;gap:0.3rem;"><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;"></span>Income</span>
+      <span style="font-size:0.68rem;color:var(--muted);display:flex;align-items:center;gap:0.3rem;"><span style="display:inline-block;width:10px;height:10px;background:var(--red);border-radius:2px;"></span>Expenses + Payments</span>
+    </div>`;
+}
+
+// ============================================================
 // WORKERS SECTION — Directorio completo
 // ============================================================
 let allWorkersData = []; // incluye inactivos
@@ -2232,6 +2306,35 @@ function openEditWorkerModal(idx) {
   for (let o of rateEl.options) { if (o.value === w.rateType) { o.selected = true; break; } }
 
   document.getElementById('ew-active').value = w.active || 'Yes';
+
+  // Cargar historial de pagos del worker
+  const historyList = document.getElementById('workerPaymentList');
+  if (historyList) {
+    const payments = allTransactions.filter(t =>
+      t.type === 'Payment' && t.payee && t.payee.toLowerCase() === w.name.toLowerCase()
+    ).sort((a,b) => b.date.localeCompare(a.date));
+
+    if (payments.length === 0) {
+      historyList.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">No payments recorded yet</div>';
+    } else {
+      const total = payments.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+      historyList.innerHTML = `
+        <div style="display:flex;justify-content:space-between;margin-bottom:0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border);">
+          <span style="font-size:0.78rem;color:var(--muted);">${payments.length} payment${payments.length!==1?'s':''}</span>
+          <span style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--gold-light);font-weight:700;">Total: ${fmt(total)}</span>
+        </div>
+        ${payments.slice(0,8).map(t => `
+          <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(200,146,42,0.06);font-size:0.8rem;">
+            <div>
+              <span style="color:var(--text);">${t.description}</span>
+              <span style="color:var(--muted);margin-left:0.5rem;font-size:0.72rem;">${t.date}${t.project?' · '+t.project:''}</span>
+            </div>
+            <span style="color:var(--red);font-weight:700;">${fmt(Math.abs(t.amount))}</span>
+          </div>`).join('')}
+        ${payments.length > 8 ? `<div style="font-size:0.72rem;color:var(--muted);margin-top:0.5rem;text-align:center;">+ ${payments.length-8} more payments</div>` : ''}`;
+    }
+  }
+
   document.getElementById('modal-edit-worker').classList.add('open');
 }
 
