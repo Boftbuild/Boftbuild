@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BOFT — Projects</title>
 <script src="https://accounts.google.com/gsi/client"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -140,6 +141,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .photo-thumb.empty{display:flex;align-items:center;justify-content:center;border-style:dashed;border-color:rgba(200,146,42,0.25);cursor:default;}
 .btn-upload-phase{font-family:'Rajdhani',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-light);border:1px solid var(--border);background:var(--gold-dim);padding:0.25rem 0.75rem;cursor:pointer;transition:all 0.2s;}
 .btn-upload-phase:hover{border-color:var(--gold);}
+.btn-upload-phase:disabled{opacity:0.5;cursor:wait;}
 .upload-input{display:none;}
 
 /* NOTES PANEL */
@@ -165,6 +167,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .field-input.error{border-color:var(--red)!important;}
 .modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .btn-submit{font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.65rem 1.8rem;cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
+.btn-submit:disabled{opacity:0.5;cursor:wait;}
 .btn-cancel{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;}
 
 /* CONFIRM */
@@ -273,6 +276,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .panel-empty-icon{font-size:2rem;margin-bottom:1rem;opacity:0.3;position:relative;z-index:1;}
 .panel-empty p{position:relative;z-index:1;}
 .panel-empty-bg{position:absolute;inset:0;opacity:0.07;pointer-events:none;}
+
+/* UPLOAD PROGRESS / CONVERSION STATUS */
+.upload-progress{font-size:0.7rem;color:var(--neon);margin-top:0.3rem;display:none;}
+.upload-progress.show{display:block;}
 
 @media(max-width:700px){
   .info-grid{grid-template-columns:1fr;}
@@ -405,9 +412,9 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     </div>
 
     <!-- Hidden inputs para upload de fotos -->
-    <input type="file" class="upload-input" id="upload-antes"     accept="image/*" multiple onchange="uploadPhotos('antes')">
-    <input type="file" class="upload-input" id="upload-proceso"   accept="image/*" multiple onchange="uploadPhotos('proceso')">
-    <input type="file" class="upload-input" id="upload-terminado" accept="image/*" multiple onchange="uploadPhotos('terminado')">
+    <input type="file" class="upload-input" id="upload-antes"     accept="image/*,.heic,.heif" multiple capture="environment" onchange="uploadPhotos('antes')">
+    <input type="file" class="upload-input" id="upload-proceso"   accept="image/*,.heic,.heif" multiple capture="environment" onchange="uploadPhotos('proceso')">
+    <input type="file" class="upload-input" id="upload-terminado" accept="image/*,.heic,.heif" multiple capture="environment" onchange="uploadPhotos('terminado')">
   </div>
 </div>
 
@@ -555,6 +562,81 @@ let ACCESS_TOKEN = null;
 let allProjects  = [];
 let currentProject = null;
 let currentFilter  = 'all';
+
+// ============================================================
+// IMAGE PROCESSING — HEIC → JPEG + compresión via Canvas
+// ============================================================
+// Convierte cualquier archivo de imagen (incluyendo HEIC del iPhone) a un
+// Blob JPEG listo para subir. Si no es imagen (PDF, DOC), lo deja igual.
+async function processImageFile(file) {
+  const isHeic = /\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif';
+
+  let workingFile = file;
+
+  // 1. Si es HEIC/HEIF, convertir a JPEG primero con heic2any
+  if (isHeic) {
+    try {
+      const convertedBlob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+      const blobResult = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+      workingFile = new File(
+        [blobResult],
+        file.name.replace(/\.(heic|heif)$/i, '.jpg'),
+        { type: 'image/jpeg' }
+      );
+    } catch (err) {
+      console.error('HEIC conversion failed:', err);
+      throw new Error('No se pudo convertir la foto HEIC. Intenta tomar la foto en otro formato.');
+    }
+  }
+
+  // 2. Si no es imagen (PDF, DOC, etc.), no tocar — regresar tal cual
+  if (!workingFile.type.startsWith('image/')) {
+    return workingFile;
+  }
+
+  // 3. Re-comprimir/normalizar vía Canvas (también arregla orientación EXIF en la mayoría de navegadores)
+  try {
+    const resizedBlob = await resizeImageViaCanvas(workingFile, 1920, 0.82);
+    return new File(
+      [resizedBlob],
+      workingFile.name.replace(/\.[^.]+$/, '.jpg'),
+      { type: 'image/jpeg' }
+    );
+  } catch (err) {
+    console.warn('Canvas resize failed, using converted file as-is:', err);
+    return workingFile;
+  }
+}
+
+function resizeImageViaCanvas(file, maxDimension, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round(height * (maxDimension / width));
+          width  = maxDimension;
+        } else {
+          width  = Math.round(width * (maxDimension / height));
+          height = maxDimension;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width  = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(blob => {
+        if (blob) resolve(blob); else reject(new Error('Canvas toBlob failed'));
+      }, 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+    img.src = url;
+  });
+}
 
 // ============================================================
 // GOOGLE AUTH
@@ -749,27 +831,30 @@ async function openProject(id) {
         <div style="margin-bottom:1rem;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
             <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">📷 Before</span>
-            <button class="btn-upload-phase" onclick="triggerUpload('antes')" style="font-size:0.58rem;">+ Add</button>
+            <button class="btn-upload-phase" id="btn-upload-antes" onclick="triggerUpload('antes')" style="font-size:0.58rem;">+ Add</button>
           </div>
           <div id="grid-antes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:3px;"></div>
+          <div class="upload-progress" id="progress-antes"></div>
         </div>
 
         <!-- In Progress -->
         <div style="margin-bottom:1rem;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
             <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">🔨 In Progress</span>
-            <button class="btn-upload-phase" onclick="triggerUpload('proceso')" style="font-size:0.58rem;">+ Add</button>
+            <button class="btn-upload-phase" id="btn-upload-proceso" onclick="triggerUpload('proceso')" style="font-size:0.58rem;">+ Add</button>
           </div>
           <div id="grid-proceso" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:3px;"></div>
+          <div class="upload-progress" id="progress-proceso"></div>
         </div>
 
         <!-- Completed -->
         <div style="margin-bottom:0.5rem;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
             <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">✅ Completed</span>
-            <button class="btn-upload-phase" onclick="triggerUpload('terminado')" style="font-size:0.58rem;">+ Add</button>
+            <button class="btn-upload-phase" id="btn-upload-terminado" onclick="triggerUpload('terminado')" style="font-size:0.58rem;">+ Add</button>
           </div>
           <div id="grid-terminado" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:3px;"></div>
+          <div class="upload-progress" id="progress-terminado"></div>
         </div>
       </div>
 
@@ -1138,7 +1223,7 @@ async function loadQuickPhotos() {
           return `<div style="aspect-ratio:1;overflow:hidden;cursor:pointer;background:var(--black3);border:1px solid var(--border);" onclick="openLightbox('${p.url}','${large}')">
             <img src="${thumb}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.2s;" loading="lazy"
               onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"
-              onerror="this.style.display='none';this.parentElement.innerHTML+='<div style=\'display:flex;align-items:center;justify-content:center;height:100%;\'>📄</div>'">
+              onerror="this.style.display='none';this.parentElement.innerHTML+='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;\\'>📄</div>'">
           </div>`;
         }).join('');
       }
@@ -1148,36 +1233,72 @@ async function loadQuickPhotos() {
   }
 }
 
-// (loadProjectFinancials y loadProjectPhotos movidos al timeline)
-
 function triggerUpload(phase) {
   document.getElementById('upload-' + phase).click();
 }
 
+// ============================================================
+// UPLOAD PHOTOS — ahora con conversión HEIC→JPEG automática
+// ============================================================
 async function uploadPhotos(phase) {
   const input = document.getElementById('upload-' + phase);
   const files = Array.from(input.files);
   if (!files.length || !currentProject?.driveFolderId) return;
 
-  showToast('Uploading ' + files.length + ' photo(s)...');
-  for (const file of files) {
+  const btn = document.getElementById('btn-upload-' + phase);
+  const progressEl = document.getElementById('progress-' + phase);
+  if (btn) btn.disabled = true;
+  if (progressEl) progressEl.classList.add('show');
+
+  let uploaded = 0;
+  let failed   = 0;
+
+  for (let i = 0; i < files.length; i++) {
+    const originalFile = files[i];
+    if (progressEl) progressEl.textContent = `Processing ${i + 1} of ${files.length}: ${originalFile.name}`;
+    showToast(`Processing photo ${i + 1} of ${files.length}...`);
+
     try {
-      const base64 = await fileToBase64(file);
-      await apiPost({
+      // Convertir HEIC→JPEG y comprimir antes de subir
+      const processedFile = await processImageFile(originalFile);
+      const base64 = await fileToBase64(processedFile);
+
+      const result = await apiPost({
         action:        'uploadProjectPhoto',
         folderId:      currentProject.driveFolderId,
         phase:         phase === 'antes' ? '01_Antes' : phase === 'proceso' ? '02_Proceso' : '03_Terminado',
         fileBase64:    base64,
-        fileName:      file.name,
-        mimeType:      file.type,
+        fileName:      processedFile.name,
+        mimeType:      processedFile.type || 'image/jpeg',
         projectName:   currentProject.name   || '',
         clientName:    currentProject.client || '',
       });
-    } catch(e) { console.error(e); }
+
+      if (result && result.success) {
+        uploaded++;
+      } else {
+        failed++;
+        console.error('Upload failed for', originalFile.name, result);
+      }
+    } catch(e) {
+      failed++;
+      console.error('Error processing/uploading', originalFile.name, e);
+    }
   }
+
   input.value = '';
-  showToast('✓ Photos uploaded');
-  loadProjectPhotos();
+  if (btn) btn.disabled = false;
+  if (progressEl) { progressEl.classList.remove('show'); progressEl.textContent = ''; }
+
+  if (failed === 0) {
+    showToast(`✓ ${uploaded} photo(s) uploaded`);
+  } else if (uploaded === 0) {
+    showToast(`⚠ Could not upload photo(s). Try again.`);
+  } else {
+    showToast(`✓ ${uploaded} uploaded, ⚠ ${failed} failed`);
+  }
+
+  loadQuickPhotos();
 }
 
 function openLightbox(url, thumbUrl) {
