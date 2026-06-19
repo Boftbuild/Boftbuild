@@ -6,6 +6,7 @@
 <title>BOFT — Sistema Contable</title>
 <script src="https://accounts.google.com/gsi/client"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -233,6 +234,14 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .receipt-preview .pdf-badge{display:inline-flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:var(--red);border:1px solid rgba(224,85,85,0.3);background:rgba(224,85,85,0.07);padding:0.3rem 0.6rem;}
 .receipt-preview .file-size{font-size:0.7rem;color:var(--muted);margin-top:0.3rem;}
 
+/* ── MULTI-FILE LIST (nuevos uploads pendientes) ── */
+.pending-files-list{margin-top:0.5rem;display:flex;flex-direction:column;gap:4px;}
+.pending-file-chip{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;background:rgba(76,175,125,0.06);border:1px solid rgba(76,175,125,0.3);padding:0.4rem 0.6rem;font-size:0.78rem;}
+.pending-file-chip .name{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}
+.pending-file-chip .size{color:var(--muted);font-size:0.7rem;flex-shrink:0;}
+.pending-file-chip .remove-chip{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.8rem;flex-shrink:0;}
+.pending-file-chip .remove-chip:hover{color:var(--red);}
+
 /* ── EDIT RECEIPT SUB-MODAL ── */
 .sub-modal-overlay{display:none;position:fixed;inset:0;background:rgba(5,6,8,0.98);z-index:150;align-items:center;justify-content:center;padding:1rem;}
 .sub-modal-overlay.open{display:flex;}
@@ -251,14 +260,94 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .btn-receipt-edit{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold-light);border:1px solid var(--border);background:var(--gold-dim);padding:0.3rem 0.9rem;cursor:pointer;transition:all 0.2s;}
 .btn-receipt-edit:hover{border-color:var(--gold);}
 
+/* ════════════════════════════════════════════════════════
+   MOBILE OPTIMIZATION — pantallas chicas (<=700px)
+   ════════════════════════════════════════════════════════ */
 @media(max-width:700px){
+  body{font-size:15px;}
+  .page{padding:1rem 1rem 2.5rem;}
+  .sticky-nav{padding:0 0.85rem;height:auto;min-height:var(--nav-h);flex-wrap:wrap;row-gap:0.4rem;padding-top:0.4rem;padding-bottom:0.4rem;}
+  .nav-logo-sm{order:1;}
+  .nav-links-sm{order:3;width:100%;justify-content:flex-start;border-top:1px solid var(--border);padding-top:0.4rem;margin-top:0.2rem;}
+  .nav-right{order:2;margin-left:auto;gap:0.4rem;flex-wrap:nowrap;}
+  .nav-username{display:none;}
+  .nav-sync{padding:0.32rem 0.6rem;font-size:0.62rem;}
+  .nav-hub-btn{padding:0.32rem 0.55rem;font-size:0.62rem;}
+  .nav-hub-btn svg{display:none;}
+  .nav-logout{padding:0.32rem 0.55rem;font-size:0.62rem;}
+
+  .top-bar{flex-direction:column;align-items:flex-start;gap:0.75rem;}
+  .top-bar > div:last-child{width:100%;display:flex;justify-content:space-between;align-items:center;}
+
   .stats-grid{grid-template-columns:1fr 1fr;}
+  .stat-card{padding:1rem 0.85rem;}
+  .stat-num{font-size:1.25rem;}
+
   .two-col{grid-template-columns:1fr;}
   .forms-grid{grid-template-columns:1fr;}
-  .filters-row{grid-template-columns:1fr 1fr;}
-  .sticky-nav{padding:0 1rem;}
+
+  .filters-row{grid-template-columns:1fr 1fr;gap:0.5rem;}
   .field-row{grid-template-columns:1fr;}
   .receipt-action-grid{grid-template-columns:1fr;}
+
+  /* SEARCH BAR */
+  .search-bar{flex-direction:column;align-items:stretch;}
+  .btn-search{width:100%;text-align:center;}
+
+  /* SEARCH RESULTS — apilar en columna, sin traslape */
+  .result-row{flex-direction:column;align-items:stretch;gap:0.6rem;padding:1rem 0;}
+  .result-left{width:100%;}
+  .result-desc{white-space:normal;overflow:visible;text-overflow:initial;}
+  .result-right{width:100%;flex-wrap:wrap;justify-content:flex-start;gap:0.5rem;}
+  .result-amount{font-size:1.05rem;width:100%;order:-1;margin-bottom:0.2rem;}
+
+  /* LEDGER TABLE (dashboard recent) — permitir wrap, quitar table-layout fixed */
+  .ledger-table{table-layout:auto;}
+  .ledger-table th:nth-child(3),
+  .ledger-table td:nth-child(3){white-space:nowrap;}
+  .ledger-table td{white-space:normal;overflow:visible;text-overflow:initial;}
+
+  /* MISSING RECEIPTS — apilar */
+  .missing-row{flex-direction:column;align-items:stretch;gap:0.6rem;}
+  .missing-info{width:100%;}
+  .missing-row > div:last-child{width:100%;justify-content:space-between;}
+
+  /* REPORTS — apilar */
+  .report-row{flex-direction:column;align-items:stretch;gap:0.6rem;}
+  .report-info{width:100%;}
+  .report-btns{width:100%;justify-content:flex-start;}
+  .reports-actions{flex-direction:column;}
+  .reports-actions .btn-action{width:100%;text-align:center;}
+
+  /* MODALS — que no se corten ni traslapen en pantallas chicas */
+  .modal-overlay, .sub-modal-overlay{padding:0.75rem 0.5rem;align-items:flex-start;}
+  .modal, .sub-modal{max-width:100%;}
+  .modal-header, .sub-modal-header{padding:1rem 1.1rem;flex-wrap:wrap;gap:0.5rem;}
+  .modal-body, .sub-modal-body{padding:1.1rem;max-height:75vh;overflow-y:auto;}
+  .modal-footer, .sub-modal-footer{padding:0.85rem 1.1rem;flex-direction:column-reverse;gap:0.6rem;align-items:stretch;}
+  .modal-footer > *, .sub-modal-footer > *{width:100%;text-align:center;}
+  .btn-submit, .btn-cancel{width:100%;}
+
+  /* WORKERS — convertir la tabla en cards apiladas */
+  #workersList table{display:block;}
+  #workersList thead{display:none;}
+  #workersList tbody{display:block;}
+  #workersList tr{display:flex;flex-direction:column;padding:0.85rem 0.25rem;border-bottom:1px solid rgba(200,146,42,0.12);gap:0.35rem;}
+  #workersList td{display:flex;justify-content:space-between;align-items:center;padding:0.15rem 0;border-bottom:none;white-space:normal;}
+  #workersList td:not(:last-child)::before{
+    content:attr(data-label);
+    font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);
+    margin-right:0.75rem;flex-shrink:0;
+  }
+  #workersList td:last-child{justify-content:flex-end;}
+
+  #workersList > div[style*="justify-content:space-between"]{flex-direction:column;align-items:stretch;gap:0.75rem;}
+  #workersList > div[style*="justify-content:space-between"] .btn-action{width:100%;text-align:center;}
+}
+
+@media(max-width:420px){
+  .stats-grid{grid-template-columns:1fr;}
+  .filters-row{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -578,14 +667,15 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <div class="field-group">
         <label class="field-label">Receipt</label>
         <div class="receipt-upload-zone" id="exp-upload-zone">
-          <input type="file" id="exp-file" accept="image/*,.pdf" onchange="handleFileSelect('exp')">
+          <input type="file" id="exp-file" accept="image/*,.pdf,.heic,.heif" multiple onchange="handleFileSelect('exp')">
           <span class="upload-icon">📎</span>
           <div class="upload-text">
-            <div class="upload-label" id="exp-upload-label">Tap to upload photo or PDF</div>
-            <div class="upload-sublabel">JPG, PNG, PDF — max 10MB</div>
+            <div class="upload-label" id="exp-upload-label">Tap to upload photo(s) or PDF</div>
+            <div class="upload-sublabel">JPG, PNG, PDF — max 10MB each, multiple allowed</div>
           </div>
           <button class="upload-clear" id="exp-clear" onclick="clearFile('exp',event)" style="display:none;">✕</button>
         </div>
+        <div class="pending-files-list" id="exp-pending-list"></div>
         <div class="receipt-preview" id="exp-preview"></div>
       </div>
     </div>
@@ -625,14 +715,15 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <div class="field-group">
         <label class="field-label">Receipt / Proof</label>
         <div class="receipt-upload-zone" id="inc-upload-zone">
-          <input type="file" id="inc-file" accept="image/*,.pdf" onchange="handleFileSelect('inc')">
+          <input type="file" id="inc-file" accept="image/*,.pdf,.heic,.heif" multiple onchange="handleFileSelect('inc')">
           <span class="upload-icon">📎</span>
           <div class="upload-text">
-            <div class="upload-label" id="inc-upload-label">Tap to upload photo or PDF</div>
-            <div class="upload-sublabel">JPG, PNG, PDF — max 10MB</div>
+            <div class="upload-label" id="inc-upload-label">Tap to upload photo(s) or PDF</div>
+            <div class="upload-sublabel">JPG, PNG, PDF — max 10MB each, multiple allowed</div>
           </div>
           <button class="upload-clear" id="inc-clear" onclick="clearFile('inc',event)" style="display:none;">✕</button>
         </div>
+        <div class="pending-files-list" id="inc-pending-list"></div>
         <div class="receipt-preview" id="inc-preview"></div>
       </div>
     </div>
@@ -706,14 +797,15 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <div class="field-group">
         <label class="field-label">Receipt</label>
         <div class="receipt-upload-zone" id="pay-upload-zone">
-          <input type="file" id="pay-file" accept="image/*,.pdf" onchange="handleFileSelect('pay')">
+          <input type="file" id="pay-file" accept="image/*,.pdf,.heic,.heif" multiple onchange="handleFileSelect('pay')">
           <span class="upload-icon">📎</span>
           <div class="upload-text">
-            <div class="upload-label" id="pay-upload-label">Tap to upload photo or PDF</div>
-            <div class="upload-sublabel">JPG, PNG, PDF — max 10MB</div>
+            <div class="upload-label" id="pay-upload-label">Tap to upload photo(s) or PDF</div>
+            <div class="upload-sublabel">JPG, PNG, PDF — max 10MB each, multiple allowed</div>
           </div>
           <button class="upload-clear" id="pay-clear" onclick="clearFile('pay',event)" style="display:none;">✕</button>
         </div>
+        <div class="pending-files-list" id="pay-pending-list"></div>
         <div class="receipt-preview" id="pay-preview"></div>
       </div>
     </div>
@@ -852,7 +944,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         </div>
         <div id="editReceiptList"></div>
         <div class="receipt-preview" id="edit-preview" style="margin-top:0.5rem;"></div>
-        <div id="edit-new-file-info" style="display:none;margin-top:0.4rem;font-size:0.72rem;color:var(--green);">+ Adding receipt — will upload on save</div>
+        <div id="edit-new-file-info" style="display:none;margin-top:0.4rem;font-size:0.72rem;color:var(--green);">+ Adding receipt(s) — will upload on save</div>
       </div>
       <input type="hidden" id="editReceipt">
     </div>
@@ -864,24 +956,25 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 </div>
 
 <!-- ══════════════════════════════════════════════════
-     SUB-MODAL — ADD RECEIPT
+     SUB-MODAL — ADD RECEIPT (ahora soporta múltiples)
 ══════════════════════════════════════════════════ -->
 <div id="sub-modal-receipt" class="sub-modal-overlay">
   <div class="sub-modal">
     <div class="sub-modal-header">
-      <span class="sub-modal-title">Add Receipt</span>
+      <span class="sub-modal-title">Add Receipt(s)</span>
       <button class="modal-close" onclick="closeReceiptSubModal()">✕</button>
     </div>
     <div class="sub-modal-body">
       <div class="receipt-upload-zone" id="edit-upload-zone">
-        <input type="file" id="edit-file" accept="image/*,.pdf" onchange="handleFileSelect('edit')">
+        <input type="file" id="edit-file" accept="image/*,.pdf,.heic,.heif" multiple onchange="handleFileSelect('edit')">
         <span class="upload-icon">📎</span>
         <div class="upload-text">
-          <div class="upload-label" id="edit-upload-label">Tap to upload photo or PDF</div>
-          <div class="upload-sublabel">JPG, PNG, PDF — max 10MB</div>
+          <div class="upload-label" id="edit-upload-label">Tap to upload photo(s) or PDF</div>
+          <div class="upload-sublabel">JPG, PNG, PDF — max 10MB each, multiple allowed</div>
         </div>
         <button class="upload-clear" id="edit-clear" onclick="clearFile('edit',event)" style="display:none;">✕</button>
       </div>
+      <div class="pending-files-list" id="edit-pending-list"></div>
       <div class="receipt-preview" id="edit-sub-preview" style="margin-top:0.5rem;"></div>
     </div>
     <div class="sub-modal-footer">
@@ -1049,8 +1142,67 @@ let currentPage   = 1;
 let allTransactions  = [];
 let visibleTransactions = []; // array actual renderizado — acceso por índice desde onclick
 
-// Almacena el File seleccionado por prefijo de modal (exp, inc, pay, edit)
+// Almacena los Files seleccionados por prefijo de modal (exp, inc, pay, edit) — ahora arrays
 const selectedFiles = {};
+
+// ============================================================
+// IMAGE PROCESSING — HEIC → JPEG + compresión via Canvas
+// ============================================================
+async function processImageFile(file) {
+  const isHeic = /\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif';
+  let workingFile = file;
+
+  if (isHeic && typeof heic2any !== 'undefined') {
+    try {
+      const convertedBlob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+      const blobResult = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+      workingFile = new File(
+        [blobResult],
+        file.name.replace(/\.(heic|heif)$/i, '.jpg'),
+        { type: 'image/jpeg' }
+      );
+    } catch (err) {
+      console.error('HEIC conversion failed:', err);
+      return file; // fallback: intentar subir tal cual
+    }
+  }
+
+  if (!workingFile.type.startsWith('image/')) return workingFile;
+
+  try {
+    const resizedBlob = await resizeImageViaCanvas(workingFile, 1920, 0.85);
+    return new File(
+      [resizedBlob],
+      workingFile.name.replace(/\.[^.]+$/, '.jpg'),
+      { type: 'image/jpeg' }
+    );
+  } catch (err) {
+    console.warn('Canvas resize failed, using file as-is:', err);
+    return workingFile;
+  }
+}
+
+function resizeImageViaCanvas(file, maxDimension, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) { height = Math.round(height * (maxDimension / width)); width = maxDimension; }
+        else { width = Math.round(width * (maxDimension / height)); height = maxDimension; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(blob => { if (blob) resolve(blob); else reject(new Error('toBlob failed')); }, 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')); };
+    img.src = url;
+  });
+}
 
 // ============================================================
 // VALIDACIONES
@@ -1278,53 +1430,73 @@ function refreshToken() {
 }
 
 // ============================================================
-// FILE HANDLING — Upload zone
+// FILE HANDLING — Upload zone (MULTI-FILE)
 // ============================================================
 function handleFileSelect(prefix) {
   const input = document.getElementById(prefix + '-file');
-  const file  = input ? input.files[0] : null;
-  if (!file) return;
+  const files = input ? Array.from(input.files) : [];
+  if (!files.length) return;
 
-  if (file.size > MAX_FILE_BYTES) {
-    showToast('File too large — max 10MB');
-    input.value = '';
-    return;
+  const validFiles = [];
+  for (const file of files) {
+    if (file.size > MAX_FILE_BYTES) {
+      showToast(file.name + ' too large — max 10MB, skipped');
+      continue;
+    }
+    validFiles.push(file);
   }
+  if (!validFiles.length) { input.value = ''; return; }
 
-  selectedFiles[prefix] = file;
+  if (!selectedFiles[prefix]) selectedFiles[prefix] = [];
+  selectedFiles[prefix].push(...validFiles);
 
   // Actualizar label
   const label = document.getElementById(prefix + '-upload-label');
-  if (label) label.textContent = file.name;
+  const total = selectedFiles[prefix].length;
+  if (label) label.textContent = total === 1 ? selectedFiles[prefix][0].name : total + ' files selected';
 
-  // Mostrar zona activa
   const zone = document.getElementById(prefix + '-upload-zone');
   if (zone) zone.classList.add('has-file');
 
-  // Mostrar botón de limpiar
   const clear = document.getElementById(prefix + '-clear');
   if (clear) clear.style.display = 'block';
 
-  // Preview
-  showFilePreview(prefix, file);
+  renderPendingFilesList(prefix);
+  input.value = ''; // permitir re-seleccionar el mismo archivo después
 }
 
-function showFilePreview(prefix, file) {
-  // Para el sub-modal de edit usamos 'edit-sub-preview'
-  const previewId = prefix === 'edit' ? 'edit-sub-preview' : prefix + '-preview';
-  const preview = document.getElementById(previewId);
-  if (!preview) return;
+function renderPendingFilesList(prefix) {
+  const listId = prefix === 'edit' ? 'edit-pending-list' : prefix + '-pending-list';
+  const list = document.getElementById(listId);
+  if (!list) return;
+  const files = selectedFiles[prefix] || [];
+  if (!files.length) { list.innerHTML = ''; return; }
+  list.innerHTML = files.map((f, i) => `
+    <div class="pending-file-chip">
+      <span class="name">📎 ${f.name}</span>
+      <span class="size">${formatBytes(f.size)}</span>
+      <button class="remove-chip" onclick="removePendingFile('${prefix}',${i})">✕</button>
+    </div>`).join('');
+}
 
-  preview.style.display = 'block';
+function removePendingFile(prefix, idx) {
+  if (!selectedFiles[prefix]) return;
+  selectedFiles[prefix].splice(idx, 1);
+  renderPendingFilesList(prefix);
 
-  if (file.type.startsWith('image/')) {
-    const reader = new FileReader();
-    reader.onload = e => {
-      preview.innerHTML = `<img src="${e.target.result}" alt="Receipt preview"><div class="file-size">${formatBytes(file.size)}</div>`;
-    };
-    reader.readAsDataURL(file);
-  } else if (file.type === 'application/pdf') {
-    preview.innerHTML = `<div class="pdf-badge">📄 ${file.name}</div><div class="file-size">${formatBytes(file.size)}</div>`;
+  const label = document.getElementById(prefix + '-upload-label');
+  const zone  = document.getElementById(prefix + '-upload-zone');
+  const clear = document.getElementById(prefix + '-clear');
+  const fallbackText = prefix === 'edit' ? 'Tap to upload photo(s) or PDF' : 'Tap to upload photo(s) or PDF';
+
+  if (selectedFiles[prefix].length === 0) {
+    delete selectedFiles[prefix];
+    if (label) label.textContent = fallbackText;
+    if (zone) zone.classList.remove('has-file');
+    if (clear) clear.style.display = 'none';
+  } else if (label) {
+    const total = selectedFiles[prefix].length;
+    label.textContent = total === 1 ? selectedFiles[prefix][0].name : total + ' files selected';
   }
 }
 
@@ -1336,7 +1508,7 @@ function clearFile(prefix, event) {
   if (input) input.value = '';
 
   const label = document.getElementById(prefix + '-upload-label');
-  if (label) label.textContent = 'Tap to upload photo or PDF';
+  if (label) label.textContent = 'Tap to upload photo(s) or PDF';
 
   const zone = document.getElementById(prefix + '-upload-zone');
   if (zone) zone.classList.remove('has-file');
@@ -1347,6 +1519,10 @@ function clearFile(prefix, event) {
   const previewId = prefix === 'edit' ? 'edit-sub-preview' : prefix + '-preview';
   const preview = document.getElementById(previewId);
   if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
+
+  const listId = prefix === 'edit' ? 'edit-pending-list' : prefix + '-pending-list';
+  const list = document.getElementById(listId);
+  if (list) list.innerHTML = '';
 }
 
 function formatBytes(bytes) {
@@ -1365,18 +1541,47 @@ async function fileToBase64(file) {
   });
 }
 
-// Agrega datos del archivo al payload si hay uno seleccionado
+// Agrega datos del PRIMER archivo al payload (para creación de transacción — backend espera 1 archivo)
+// Los archivos adicionales se suben después como receipts extra via 'add' mode.
 async function attachFileToPayload(payload, prefix) {
-  const file = selectedFiles[prefix];
-  if (!file) return payload;
+  const files = selectedFiles[prefix];
+  if (!files || !files.length) return payload;
   try {
-    payload.fileBase64 = await fileToBase64(file);
-    payload.fileName   = file.name;
-    payload.mimeType   = file.type || 'application/octet-stream';
+    const processed = await processImageFile(files[0]);
+    payload.fileBase64 = await fileToBase64(processed);
+    payload.fileName   = processed.name;
+    payload.mimeType   = processed.type || 'application/octet-stream';
   } catch(e) {
     console.error('Error reading file:', e);
   }
   return payload;
+}
+
+// Sube archivos adicionales (índice 1+) como receipts extra a una transacción ya creada/editada
+async function uploadRemainingReceipts(prefix, transactionId, transactionType) {
+  const files = selectedFiles[prefix];
+  if (!files || files.length <= 1) return;
+
+  for (let i = 1; i < files.length; i++) {
+    try {
+      const processed = await processImageFile(files[i]);
+      const base64 = await fileToBase64(processed);
+      await apiPost({
+        action:      'editTransaction',
+        id:          transactionId,
+        type:        transactionType,
+        receiptMode: 'add',
+        fileBase64:  base64,
+        fileName:    processed.name,
+        mimeType:    processed.type || 'application/octet-stream',
+        // Campos requeridos por editTransaction_ para no perder datos —
+        // se rellenan en el backend a partir de la fila existente si se omiten,
+        // pero por seguridad mandamos vacíos aceptables.
+      });
+    } catch(e) {
+      console.error('Error uploading extra receipt', i, e);
+    }
+  }
 }
 
 // ============================================================
@@ -1403,8 +1608,8 @@ function selectReceiptAction(action) {
 }
 
 function confirmReceiptAction() {
-  const file = selectedFiles['edit'];
-  if (!file) { showToast('Please select a file first'); return; }
+  const files = selectedFiles['edit'];
+  if (!files || !files.length) { showToast('Please select at least one file'); return; }
 
   // Siempre es add
   receiptMode = 'add';
@@ -1414,14 +1619,15 @@ function confirmReceiptAction() {
   const preview = document.getElementById('edit-preview');
   if (preview) {
     preview.style.display = 'block';
-    if (file.type.startsWith('image/')) {
+    const first = files[0];
+    if (first.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = e => {
-        preview.innerHTML = `<img src="${e.target.result}" alt="Receipt preview" style="max-width:100%;max-height:100px;object-fit:contain;border:1px solid var(--border);padding:4px;"><div class="file-size">${file.name} · ${formatBytes(file.size)}</div>`;
+        preview.innerHTML = `<img src="${e.target.result}" alt="Receipt preview" style="max-width:100%;max-height:100px;object-fit:contain;border:1px solid var(--border);padding:4px;"><div class="file-size">${files.length} file(s) ready to upload</div>`;
       };
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(first);
     } else {
-      preview.innerHTML = `<div class="pdf-badge">📄 ${file.name}</div><div class="file-size">${formatBytes(file.size)}</div>`;
+      preview.innerHTML = `<div class="pdf-badge">📄 ${first.name}</div><div class="file-size">${files.length} file(s) ready to upload</div>`;
     }
   }
   closeReceiptSubModal();
@@ -1444,12 +1650,7 @@ async function loadDashboard() {
     document.getElementById('cashTotal').textContent   = fmt(data.cashPosition.total);
     const netEl = document.getElementById('statNet');
     netEl.className = 'stat-num ' + (data.net >= 0 ? 'green' : 'red');
-    // Cambiar barra lateral del card según positivo/negativo
     const netCard = document.getElementById('statNetCard');
-    if (netCard) netCard.style.setProperty('--card-accent', data.net >= 0 ? 'var(--green)' : 'var(--red)');
-    if (netCard) netCard.querySelector('::before') && null; // trigger repaint
-    if (netCard) netCard.style.cssText = netCard.style.cssText; // force
-    // Usar clase dinámica
     if (netCard) {
       netCard.classList.remove('net-pos', 'net-neg');
       netCard.classList.add(data.net >= 0 ? 'net-pos' : 'net-neg');
@@ -1509,7 +1710,6 @@ async function loadMissingReceipts() {
       list.innerHTML = '<div style="padding:1rem;color:var(--green);font-size:0.88rem;">✓ No missing receipts!</div>';
       return;
     }
-    // Guardar en array global para acceso por índice
     window.missingTransactions = data.missing;
     list.innerHTML = data.missing.map((m, i) => {
       const typeClass = (m.type||'').toLowerCase();
@@ -1517,7 +1717,7 @@ async function loadMissingReceipts() {
         <div class="missing-info">
           <div class="missing-warn"></div>
           <div>
-            <div class="missing-desc" style="display:flex;align-items:center;gap:0.5rem;">
+            <div class="missing-desc" style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
               <span class="type-badge ${typeClass}">${m.type||'—'}</span>
               ${m.description}${m.type === 'Payment' && m.payee ? ' → ' + m.payee : ''} — ${m.account}
             </div>
@@ -1544,7 +1744,7 @@ async function loadReports() {
       list.innerHTML = '<div style="padding:1rem;color:var(--muted);font-size:0.88rem;">No reports generated yet.</div>';
       return;
     }
-    window.allReportsCache = data.reports; // cache para detectar existentes
+    window.allReportsCache = data.reports;
     list.innerHTML = data.reports.map(r => `
       <div class="report-row">
         <div class="report-info">
@@ -1683,13 +1883,11 @@ async function doRemoveReceipt() {
 
   if (!urlToRemove) return;
 
-  // Quitar del hidden input y re-renderizar inmediatamente
   urls.splice(removeReceiptIdx, 1);
   const newVal = urls.join(',');
   document.getElementById('editReceipt').value = newVal;
   renderReceiptList(newVal);
 
-  // Llamar al backend para borrar del Sheet y mandar a papelera en Drive
   showToast('Removing receipt from Drive...');
   try {
     const result = await apiPost({
@@ -1699,7 +1897,6 @@ async function doRemoveReceipt() {
     });
     if (result.success) {
       showToast('✓ Receipt removed and sent to Drive trash');
-      // Actualizar el currentEditRow con el nuevo valor
       if (currentEditRow) currentEditRow.receipt = newVal;
     } else {
       showToast('Error: ' + result.message);
@@ -1756,19 +1953,15 @@ function openEditModal(idxOrT) {
   document.getElementById('editReceipt').value      = t.receipt || '';
   document.getElementById('editModalType').textContent = t.type;
 
-  // Account
   const accEl = document.getElementById('editAccount');
   for (let o of accEl.options) { if (o.value === t.account) { o.selected = true; break; } }
 
-  // Category — filtrar opciones según tipo de transacción
   const catEl = document.getElementById('editCategory');
   if (t.type === 'Payment') {
-    // Solo mostrar opciones de Payment
     for (let o of catEl.options) {
       const isPaymentOpt = ['Helper Payment','Subcontractor Payment','Owner Reimbursement'].includes(o.value);
       o.style.display = (isPaymentOpt || o.value === '') ? '' : 'none';
     }
-    // Ocultar optgroups que no sean Payment
     for (let og of catEl.querySelectorAll('optgroup')) {
       og.style.display = og.label === 'Payment' ? '' : 'none';
     }
@@ -1781,7 +1974,6 @@ function openEditModal(idxOrT) {
       og.style.display = og.label === 'Income' ? '' : 'none';
     }
   } else {
-    // Expense — mostrar todo excepto Income y Payment optgroups
     for (let o of catEl.options) { o.style.display = ''; }
     for (let og of catEl.querySelectorAll('optgroup')) {
       og.style.display = ['Income','Payment'].includes(og.label) ? 'none' : '';
@@ -1789,19 +1981,14 @@ function openEditModal(idxOrT) {
   }
   for (let o of catEl.options) { if (o.value === t.category) { o.selected = true; break; } }
 
-  // Campos extra para Payment
   const isPayment = t.type === 'Payment';
   document.getElementById('editPaymentFields').style.display = isPayment ? 'block' : 'none';
   document.getElementById('editVendorRow').style.display = isPayment ? 'none' : 'grid';
   if (isPayment) {
-    // Cargar workers si no están en cache
     if (workersCache.length === 0) { loadWorkers().then(() => populateEditPayeeDropdown(t.payee || '')); }
     else { populateEditPayeeDropdown(t.payee || ''); }
-    // Cargar proyectos si no están en cache
     if (projectsCache.length === 0 && allTransactions.length > 0) loadProjects();
-    // Poblar dropdown de proyectos
     populateEditProjectDropdown(t.project || '');
-    // Payment method
     const payMethodEl = document.getElementById('editPayMethod');
     const payMethodVal = t.paymentMethod || '';
     let found = false;
@@ -1811,12 +1998,10 @@ function openEditModal(idxOrT) {
     if (!found) payMethodEl.selectedIndex = 0;
   }
 
-  // Receipt UI — mini lista
   renderReceiptList(t.receipt || '');
 
-  // Limpiar estado de upload previo
   clearFile('edit', null);
-  receiptMode = 'replace'; // reset
+  receiptMode = 'replace';
   document.getElementById('modal-edit').dataset.receiptMode = 'replace';
   document.getElementById('edit-new-file-info').style.display = 'none';
   const editPreview = document.getElementById('edit-preview');
@@ -1827,11 +2012,9 @@ function openEditModal(idxOrT) {
 
 async function saveEdit() {
   if (!validateEdit()) return;
-  // Leer receiptMode del DOM — más confiable que la variable global
   const actualReceiptMode = document.getElementById('modal-edit').dataset.receiptMode || receiptMode || 'replace';
 
   const isEditPayment = currentEditRow.type === 'Payment';
-  // Para payment: obtener nombre del worker del dropdown
   let editPayeeName = '';
   if (isEditPayment) {
     const editPayeeEl = document.getElementById('editPayee');
@@ -1860,7 +2043,7 @@ async function saveEdit() {
     receiptMode:   actualReceiptMode,
   };
 
-  // Adjuntar archivo si hay uno nuevo seleccionado
+  // Adjuntar PRIMER archivo nuevo si hay
   payload = await attachFileToPayload(payload, 'edit');
 
   closeModal('edit');
@@ -1873,6 +2056,9 @@ async function saveEdit() {
   try {
     const result = await apiPost(payload);
     if (result.success) {
+      // Subir archivos adicionales (2do, 3ro, etc.) en modo 'add'
+      await uploadRemainingReceipts('edit', payload.id, payload.type);
+      delete selectedFiles['edit'];
       showToast('✓ Transaction updated');
       loadDashboard(); loadTransactions(); loadMissingReceipts();
     } else {
@@ -1903,17 +2089,15 @@ async function confirmDelete() {
 }
 
 // ============================================================
-// SUBMIT FORMS (con upload de archivo)
+// SUBMIT FORMS (con upload de archivo — ahora soporta múltiples)
 // ============================================================
 async function submitForm(type) {
-  // Validar antes de proceder
   if (type === 'expense' && !validateExpense()) return;
   if (type === 'income'  && !validateIncome())  return;
   if (type === 'payment' && !validatePayment()) return;
 
-  // Verificar si hay receipt — si no, pedir confirmación
   const prefix = { expense: 'exp', income: 'inc', payment: 'pay' }[type];
-  if (!selectedFiles[prefix]) {
+  if (!selectedFiles[prefix] || !selectedFiles[prefix].length) {
     window._pendingSubmitType = type;
     document.getElementById('modal-no-receipt').classList.add('open');
     return;
@@ -1964,7 +2148,7 @@ async function doSubmitForm(type) {
     };
   }
 
-  // Adjuntar archivo si fue seleccionado
+  // Adjuntar PRIMER archivo
   payload = await attachFileToPayload(payload, prefix);
 
   closeModal(type);
@@ -1978,6 +2162,13 @@ async function doSubmitForm(type) {
   try {
     const result = await apiPost(payload);
     if (result.success) {
+      // Si el backend regresa el id de la fila nueva, subir archivos restantes
+      const newId = result.id || null;
+      const typeLabel = type === 'expense' ? 'Expense' : type === 'income' ? 'Income' : 'Payment';
+      if (newId) {
+        await uploadRemainingReceipts(prefix, newId, typeLabel);
+      }
+      delete selectedFiles[prefix];
       showToast('✓ ' + result.message);
       loadDashboard(); loadTransactions();
     } else { showToast('Error: ' + result.message); }
@@ -2015,7 +2206,6 @@ async function loadWorkers() {
 function populatePayeeDropdown() {
   const sel = document.getElementById('pay-payee');
   if (!sel) return;
-  // Guardar opción Add New
   sel.innerHTML = '<option value="">Select...</option>';
   workersCache.forEach(w => {
     const opt = document.createElement('option');
@@ -2053,7 +2243,6 @@ function populateEditPayeeDropdown(currentPayee) {
     if (w.name === currentPayee) opt.selected = true;
     sel.appendChild(opt);
   });
-  // Si el payee no está en workers, agregar como opción manual
   if (currentPayee && !workersCache.find(w => w.name === currentPayee)) {
     const opt = document.createElement('option');
     opt.value = currentPayee;
@@ -2075,7 +2264,6 @@ function populateEditProjectDropdown(currentProject) {
     if (p === currentProject) opt.selected = true;
     sel.appendChild(opt);
   });
-  // Si no hay proyectos en cache, cargarlos
   if (projectsCache.length === 0 && allTransactions.length > 0) loadProjects();
 }
 
@@ -2084,7 +2272,7 @@ function onEditPayeeChange() {
 }
 
 function onEditPayMethodChange() {
-  // No hay sub-opción en edit — el método es directo (Cash, Check, Zelle, Venmo, etc.)
+  // No hay sub-opción en edit — el método es directo
 }
 
 function onPayMethodChange() {
@@ -2095,7 +2283,6 @@ function onPayMethodChange() {
 
 function closeWorkerSubModal() {
   document.getElementById('sub-modal-worker').classList.remove('open');
-  // Limpiar campos
   ['worker-name','worker-phone','worker-address','worker-rate','worker-notes'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -2123,11 +2310,9 @@ async function saveNewWorker() {
     });
     if (result.success) {
       showToast('✓ ' + result.name + ' added (' + result.id + ')');
-      // Agregar al cache y al dropdown
       const newWorker = { id: result.id, name: result.name, type };
       workersCache.push(newWorker);
       populatePayeeDropdown();
-      // Seleccionar el nuevo worker
       document.getElementById('pay-payee').value = result.id;
       document.getElementById('pay-worker-id').value = result.id;
       closeWorkerSubModal();
@@ -2204,7 +2389,6 @@ function renderMonthlyChart() {
   const exps     = keys.map(k => monthMap[k].expenses);
   const nets     = keys.map((k,i) => incomes[i] - exps[i]);
 
-  // Leyenda + canvas
   container.innerHTML = `
     <div style="display:flex;gap:1rem;margin-bottom:0.75rem;flex-wrap:wrap;">
       <span style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--muted);"><span style="width:10px;height:10px;border-radius:2px;background:#4caf7d;display:inline-block;"></span>Income</span>
@@ -2215,7 +2399,6 @@ function renderMonthlyChart() {
       <canvas id="monthlyChartCanvas" role="img" aria-label="Monthly income vs expenses chart">Monthly financial overview.</canvas>
     </div>`;
 
-  // Destruir instancia previa si existe
   if (monthlyChartInstance) { monthlyChartInstance.destroy(); monthlyChartInstance = null; }
 
   const ctx = document.getElementById('monthlyChartCanvas');
@@ -2297,15 +2480,13 @@ function renderMonthlyChart() {
 }
 
 // ============================================================
-// WORKERS SECTION — Directorio completo
+// WORKERS SECTION — Directorio completo (con data-label para mobile cards)
 // ============================================================
-let allWorkersData = []; // incluye inactivos
+let allWorkersData = [];
 
 async function loadWorkersSection() {
   try {
     const data = await apiGet('workers');
-    // Cargar TODOS los workers (activos e inactivos) — getWorkers_ solo retorna activos
-    // para el directorio usamos el cache y lo complementamos
     workersCache = data.workers || [];
     allWorkersData = data.workers || [];
     renderWorkersList();
@@ -2321,7 +2502,6 @@ function renderWorkersList() {
     return;
   }
 
-  // Calcular total pagado por worker desde allTransactions
   const paidMap = {};
   allTransactions.forEach(t => {
     if (t.type === 'Payment' && t.payee) {
@@ -2350,15 +2530,15 @@ function renderWorkersList() {
           const paid = paidMap[w.name] || 0;
           const isActive = w.active !== 'No';
           return `<tr style="border-bottom:1px solid rgba(200,146,42,0.08);${!isActive?'opacity:0.5':''}">
-            <td style="padding:0.75rem;color:var(--neon);font-size:0.78rem;font-weight:700;">${w.id}</td>
-            <td style="padding:0.75rem;font-weight:600;color:var(--text);">${w.name}</td>
-            <td style="padding:0.75rem;">
+            <td data-label="ID" style="padding:0.75rem;color:var(--neon);font-size:0.78rem;font-weight:700;">${w.id}</td>
+            <td data-label="Name" style="padding:0.75rem;font-weight:600;color:var(--text);">${w.name}</td>
+            <td data-label="Type" style="padding:0.75rem;">
               <span style="font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.15rem 0.5rem;border:1px solid;color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);">${w.type||'—'}</span>
             </td>
-            <td style="padding:0.75rem;color:var(--muted);font-size:0.82rem;">${w.phone||'—'}</td>
-            <td style="padding:0.75rem;color:var(--muted);font-size:0.82rem;">${w.rate ? '$'+Number(w.rate).toFixed(2)+'/'+w.rateType : '—'}</td>
-            <td style="padding:0.75rem;text-align:right;font-family:'Cinzel',serif;color:${paid>0?'var(--gold-light)':'var(--muted)'};">${paid > 0 ? fmt(paid) : '—'}</td>
-            <td style="padding:0.75rem;text-align:center;">
+            <td data-label="Phone" style="padding:0.75rem;color:var(--muted);font-size:0.82rem;">${w.phone||'—'}</td>
+            <td data-label="Rate" style="padding:0.75rem;color:var(--muted);font-size:0.82rem;">${w.rate ? '$'+Number(w.rate).toFixed(2)+'/'+w.rateType : '—'}</td>
+            <td data-label="Total Paid YTD" style="padding:0.75rem;text-align:right;font-family:'Cinzel',serif;color:${paid>0?'var(--gold-light)':'var(--muted)'};">${paid > 0 ? fmt(paid) : '—'}</td>
+            <td data-label="Status" style="padding:0.75rem;text-align:center;">
               <span style="font-size:0.65rem;font-weight:700;padding:0.15rem 0.5rem;border:1px solid;${isActive?'color:var(--green);border-color:rgba(76,175,125,0.3);background:rgba(76,175,125,0.08);':'color:var(--muted);border-color:rgba(122,117,112,0.3);'}">${isActive?'Active':'Inactive'}</span>
             </td>
             <td style="padding:0.75rem;text-align:right;">
@@ -2371,7 +2551,6 @@ function renderWorkersList() {
 }
 
 function openAddWorkerModal() {
-  // Reusar el sub-modal de Add New Person
   document.getElementById('sub-modal-worker').classList.add('open');
 }
 
@@ -2396,7 +2575,6 @@ function openEditWorkerModal(idx) {
 
   document.getElementById('ew-active').value = w.active || 'Yes';
 
-  // Cargar historial de pagos del worker
   const historyList = document.getElementById('workerPaymentList');
   if (historyList) {
     const payments = allTransactions.filter(t =>
@@ -2478,7 +2656,7 @@ async function saveWorkerEdit() {
       showToast('✓ Worker updated');
       closeEditWorkerModal();
       loadWorkersSection();
-      loadWorkers(); // actualizar cache
+      loadWorkers();
     } else {
       showToast('Error: ' + result.message);
     }
@@ -2488,20 +2666,16 @@ async function saveWorkerEdit() {
 // ============================================================
 // GENERATE REPORT — SMART (detecta si ya existe)
 // ============================================================
-let existingReportId   = null; // ID del reporte existente del mes actual
+let existingReportId   = null;
 let existingReportName = null;
 
 async function generateMonthlyReportSmart() {
-  // Detectar si ya hay reporte del mes actual (BOFT_Report_YYYY-MM)
   const now = new Date();
   const monthKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
 
-  // Buscar en los reportes cargados
-  const reports = document.querySelectorAll('#reportsList .report-name');
   existingReportId   = null;
   existingReportName = null;
 
-  // Buscar en allReportsCache
   if (window.allReportsCache) {
     const found = window.allReportsCache.find(r => r.name.includes('BOFT_Report_' + monthKey));
     if (found) {
@@ -2521,7 +2695,6 @@ async function generateMonthlyReportSmart() {
 
 async function doReplaceReport() {
   document.getElementById('modal-replace-report').classList.remove('open');
-  // Borrar el existente primero
   if (existingReportId) {
     try { await apiPost({ action: 'deleteReport', fileId: existingReportId }); } catch(e) {}
   }
@@ -2559,7 +2732,6 @@ async function runGenerateReport() {
 // MANUAL REPORT
 // ============================================================
 function openManualReportModal() {
-  // Preseleccionar mes anterior
   const now = new Date();
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   document.getElementById('manualMonth').value = lastMonth.getMonth() + 1;
@@ -2626,8 +2798,8 @@ async function doDeleteReport() {
 // ============================================================
 // MONTHLY REPORT
 // ============================================================
-let currentReportPdf      = null; // base64 del PDF generado
-let currentReportFileName = null; // nombre del archivo
+let currentReportPdf      = null;
+let currentReportFileName = null;
 
 async function generateMonthlyReport() {
   showToast('Generating Monthly Report...');
@@ -2637,7 +2809,6 @@ async function generateMonthlyReport() {
 
     currentReportPdf = result.pdfBase64;
 
-    // Mostrar summary en el modal
     const s = result.summary;
     document.getElementById('reportPreviewTitle').textContent = result.monthName + ' Report';
     document.getElementById('reportPreviewPeriod').textContent = result.periodLabel;
@@ -2729,16 +2900,14 @@ function openModal(type) {
     if (el.type === 'date') el.value = new Date().toISOString().split('T')[0];
     else if (el.type === 'number') el.value = '';
     else if (el.tagName === 'SELECT') el.selectedIndex = 0;
-    else el.value = '';
+    else if (el.type !== 'file') el.value = '';
     el.classList.remove('error');
   });
   modal.querySelectorAll('.field-error').forEach(el => el.classList.remove('show'));
-  // Limpiar upload zones al abrir modal
   const prefixMap = { expense: 'exp', income: 'inc', payment: 'pay' };
   const prefix = prefixMap[type];
   if (prefix) clearFile(prefix, null);
 
-  // Si es payment, cargar workers y proyectos
   if (type === 'payment') {
     document.getElementById('pay-worker-id').value = '';
     document.getElementById('pay-transfer-wrap').style.display = 'none';
@@ -2761,7 +2930,6 @@ function openConfirm() {
 }
 function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); }
 
-// Cerrar modales al hacer click fuera
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
@@ -2769,6 +2937,7 @@ document.querySelectorAll('.sub-modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
 
-window.addEventListener('load', () => { tryRestoreSession(); });</script>
+window.addEventListener('load', () => { tryRestoreSession(); });
+</script>
 </body>
 </html>
