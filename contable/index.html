@@ -7,6 +7,7 @@
 <script src="https://accounts.google.com/gsi/client"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -293,6 +294,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   /* SEARCH BAR */
   .search-bar{flex-direction:column;align-items:stretch;}
   .btn-search{width:100%;text-align:center;}
+  .search-bar .btn-action{width:100%;text-align:center;}
 
   /* SEARCH RESULTS — apilar en columna, sin traslape */
   .result-row{flex-direction:column;align-items:stretch;gap:0.6rem;padding:1rem 0;}
@@ -492,6 +494,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <div class="search-bar">
         <input type="text" class="search-input" id="searchInput" placeholder="Search by description, vendor, payee, project..." oninput="runSearch()">
         <button class="btn-search" onclick="runSearch()">Search</button>
+        <button class="btn-action gold" onclick="exportToExcel()" style="white-space:nowrap;">📥 Export to Excel</button>
       </div>
       <div class="filters-row">
         <select id="filterType" class="filter-select" onchange="runSearch()"><option value="">All Types</option><option>Expense</option><option>Income</option><option>Payment</option></select>
@@ -1782,7 +1785,7 @@ function runSearch() {
   renderResults();
 }
 
-function renderResults() {
+function getFilteredTransactions() {
   const query   = document.getElementById('searchInput').value.toLowerCase().trim();
   const fType    = document.getElementById('filterType')?.value    || '';
   const fAccount = document.getElementById('filterAccount')?.value || '';
@@ -1807,11 +1810,85 @@ function renderResults() {
   if (fProject) filtered = filtered.filter(t => (t.project||'').toLowerCase().includes(fProject.toLowerCase()));
   if (fMonth)   filtered = filtered.filter(t => (t.date||'').startsWith(fMonth));
 
+  return filtered;
+}
+
+function renderResults() {
+  const filtered = getFilteredTransactions();
+
   const visible = filtered.slice(0, currentPage * PAGE_SIZE);
   visibleTransactions = visible;
   document.getElementById('resultsCount').textContent = 'Showing ' + visible.length + ' of ' + filtered.length + ' transactions';
   document.getElementById('resultsList').innerHTML = visible.map((t, i) => renderRow(t, i)).join('');
   document.getElementById('showMoreBtn').style.display = visible.length < filtered.length ? 'block' : 'none';
+}
+
+// ============================================================
+// EXPORT TO EXCEL — respeta los filtros activos de Search
+// ============================================================
+function exportToExcel() {
+  const filtered = getFilteredTransactions();
+
+  if (!filtered.length) {
+    showToast('⚠ No transactions to export with current filters');
+    return;
+  }
+
+  // Ordenar por fecha ascendente para el reporte (más natural para revisar)
+  const sorted = [...filtered].sort((a, b) => a.date.localeCompare(b.date));
+
+  const rows = sorted.map(t => ({
+    'Date':            t.date || '',
+    'Type':            t.type || '',
+    'Account':         t.account || '',
+    'Category':        t.category || '',
+    'Description':     t.description || '',
+    'Vendor / Payee':  t.type === 'Payment' ? (t.payee || '') : (t.vendor || ''),
+    'Project':         t.project || '',
+    'Payment Method':  t.paymentMethod || '',
+    'Amount':          Number(t.amount) || 0,
+    'Has Receipt':     (t.receipt && t.receipt.trim().length > 5) ? 'Yes' : 'No',
+  }));
+
+  // Fila de totales al final
+  const totalIncome   = sorted.filter(t => t.type === 'Income').reduce((s,t)=>s+Math.abs(t.amount),0);
+  const totalExpense  = sorted.filter(t => t.type === 'Expense').reduce((s,t)=>s+Math.abs(t.amount),0);
+  const totalPayment  = sorted.filter(t => t.type === 'Payment').reduce((s,t)=>s+Math.abs(t.amount),0);
+  const netTotal       = totalIncome - totalExpense - totalPayment;
+
+  rows.push({}); // fila vacía como separador
+  rows.push({ 'Date': '', 'Type': '', 'Account': '', 'Category': '', 'Description': 'TOTAL INCOME',  'Vendor / Payee': '', 'Project': '', 'Payment Method': '', 'Amount': totalIncome,  'Has Receipt': '' });
+  rows.push({ 'Date': '', 'Type': '', 'Account': '', 'Category': '', 'Description': 'TOTAL EXPENSES','Vendor / Payee': '', 'Project': '', 'Payment Method': '', 'Amount': -totalExpense, 'Has Receipt': '' });
+  rows.push({ 'Date': '', 'Type': '', 'Account': '', 'Category': '', 'Description': 'TOTAL PAYMENTS','Vendor / Payee': '', 'Project': '', 'Payment Method': '', 'Amount': -totalPayment, 'Has Receipt': '' });
+  rows.push({ 'Date': '', 'Type': '', 'Account': '', 'Category': '', 'Description': 'NET TOTAL',     'Vendor / Payee': '', 'Project': '', 'Payment Method': '', 'Amount': netTotal,      'Has Receipt': '' });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+
+  // Ancho de columnas legible
+  ws['!cols'] = [
+    { wch: 11 }, // Date
+    { wch: 9 },  // Type
+    { wch: 12 }, // Account
+    { wch: 18 }, // Category
+    { wch: 32 }, // Description
+    { wch: 18 }, // Vendor/Payee
+    { wch: 16 }, // Project
+    { wch: 14 }, // Payment Method
+    { wch: 12 }, // Amount
+    { wch: 10 }, // Has Receipt
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+
+  // Nombre de archivo con fecha de exportación y filtro de mes si aplica
+  const fMonth = document.getElementById('filterMonth')?.value || '';
+  const now = new Date();
+  const stamp = now.toISOString().split('T')[0];
+  const fileName = 'BOFT_Transactions' + (fMonth ? '_' + fMonth : '') + '_' + stamp + '.xlsx';
+
+  XLSX.writeFile(wb, fileName);
+  showToast('✓ Exported ' + filtered.length + ' transactions to ' + fileName);
 }
 
 function renderRow(t, idx) {
