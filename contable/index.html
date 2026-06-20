@@ -351,6 +351,15 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   .stats-grid{grid-template-columns:1fr;}
   .filters-row{grid-template-columns:1fr;}
 }
+
+/* ════════════════════════════════════════════════════════
+   RBAC — ocultar acciones de escritura/borrado según rol
+   ════════════════════════════════════════════════════════ */
+body.role-no-write .btn-edit,
+body.role-no-write .add-receipt-btn,
+body.role-no-write .btn-receipt-edit{display:none!important;}
+
+body.role-no-delete .btn-delete{display:none!important;}
 </style>
 </head>
 <body>
@@ -393,6 +402,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="nav-right">
       <img class="nav-avatar" id="navAvatar" src="" alt="">
       <span class="nav-username" id="navUsername"></span>
+      <span id="navRoleBadge" style="display:none;font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:0.2rem 0.6rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);"></span>
       <button class="nav-sync" onclick="loadDashboard();loadMissingReceipts();loadReports();loadTransactions();loadWorkers();loadWorkersSection();loadProjects();">⟳ Sync</button>
       <a href="/hub" class="nav-hub-btn">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="margin-right:4px;"><polygon points="6,0.5 11,3 11,9 6,11.5 1,9 1,3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>Hub
@@ -416,6 +426,11 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div id="toast" class="success-toast">
       <span style="font-size:18px;color:var(--green);">✓</span>
       <span class="toast-text" id="toastText">Done.</span>
+    </div>
+
+    <div id="readOnlyBanner" style="display:none;align-items:center;gap:0.75rem;background:var(--black3);border:1px solid var(--border);border-left:3px solid var(--gold);padding:0.75rem 1rem;margin-bottom:1rem;">
+      <span style="font-size:18px;color:var(--gold-light);">👁</span>
+      <span style="font-size:0.85rem;color:var(--gold-light);font-weight:600;">View-only access — your role can see all data but cannot create, edit, or delete records.</span>
     </div>
 
     <!-- DASHBOARD -->
@@ -477,7 +492,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <div class="section-title">Reports & Monthly Close</div>
     </div>
     <div class="reports-section">
-      <div class="reports-actions">
+      <div class="reports-actions" id="reportsActionsBtns">
         <button class="btn-action gold" onclick="generateMonthlyReportSmart()">&#128202; Generate Report</button>
         <button class="btn-action outline" onclick="openManualReportModal()">&#128337; Manual Report</button>
       </div>
@@ -515,7 +530,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <div class="section-label">Quick Entry</div>
       <div class="section-title">New Transaction</div>
     </div>
-    <div class="forms-grid">
+    <div class="forms-grid" id="newEntryFormsGrid">
       <div class="form-card" onclick="openModal('expense')">
         <div class="form-icon" style="font-size:18px;color:var(--red);">&#8595;</div>
         <h4>Log Expense</h4>
@@ -543,7 +558,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div style="background:var(--black2);padding:1.5rem;margin-top:2px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
         <div style="font-size:0.82rem;color:var(--muted);" id="workersCount">—</div>
-        <button class="btn-action gold" onclick="openAddWorkerModal()">+ Add Worker</button>
+        <button class="btn-action gold" id="btnAddWorker" onclick="openAddWorkerModal()">+ Add Worker</button>
       </div>
       <div id="workersList">
         <div style="color:var(--muted);font-size:0.82rem;">Click Workers in the nav to load.</div>
@@ -1368,6 +1383,16 @@ function loginSuccess(user) {
     a.src = user.picture;
     a.style.display = 'block';
   }
+
+  const role = sessionStorage.getItem('boft_role') || 'Viewer';
+  CURRENT_ROLE = role;
+  const roleBadge = document.getElementById('navRoleBadge');
+  if (roleBadge) {
+    roleBadge.textContent = role;
+    roleBadge.style.display = 'inline-block';
+  }
+  applyRolePermissions(role);
+
   loadDashboard();
   loadMissingReceipts();
   loadReports();
@@ -1375,6 +1400,40 @@ function loginSuccess(user) {
   loadWorkers();
   loadWorkersSection();
   loadProjects();
+}
+
+// ============================================================
+// RBAC — aplicar permisos de UI según el rol guardado en sessionStorage
+// (el backend también valida en doPost — esto es solo para UX:
+// ocultar botones que de todos modos serían rechazados)
+// ============================================================
+let CURRENT_ROLE = 'Viewer';
+
+function applyRolePermissions(role) {
+  const isOwner   = role === 'Owner';
+  const isManager = role === 'Manager';
+  const canWrite  = isOwner || isManager; // crear/editar transacciones, workers, reports
+  const canDelete = isOwner;              // borrar transacciones/workers/reports
+
+  // Banner de solo lectura para roles sin permiso de escritura en Contable
+  const readOnlyBanner = document.getElementById('readOnlyBanner');
+  if (readOnlyBanner) readOnlyBanner.style.display = canWrite ? 'none' : 'flex';
+
+  // New Entry — Log Expense/Income/Payment cards
+  const formsGrid = document.getElementById('newEntryFormsGrid');
+  if (formsGrid) formsGrid.style.display = canWrite ? 'grid' : 'none';
+
+  // Workers — Add button
+  const btnAddWorker = document.getElementById('btnAddWorker');
+  if (btnAddWorker) btnAddWorker.style.display = canWrite ? 'inline-block' : 'none';
+
+  // Reports — Generate/Manual buttons
+  const reportsBtns = document.getElementById('reportsActionsBtns');
+  if (reportsBtns) reportsBtns.style.display = canWrite ? 'flex' : 'none';
+
+  // Edit/Delete en filas de transacciones — se ocultan vía CSS global
+  document.body.classList.toggle('role-no-write',  !canWrite);
+  document.body.classList.toggle('role-no-delete', !canDelete);
 }
 
 function doLogout() {
@@ -2154,6 +2213,7 @@ function openDeleteModal(idxOrT) {
 }
 
 async function confirmDelete() {
+  if (CURRENT_ROLE !== 'Owner') { showToast('⚠ Your role cannot delete transactions'); document.getElementById('modal-delete').classList.remove('open'); return; }
   document.getElementById('modal-delete').classList.remove('open');
   showToast('Deleting transaction...');
   try {
@@ -2695,6 +2755,7 @@ function confirmDeleteWorker() {
 }
 
 async function doDeleteWorker() {
+  if (CURRENT_ROLE !== 'Owner') { showToast('⚠ Your role cannot delete workers'); document.getElementById('modal-delete-worker').classList.remove('open'); return; }
   document.getElementById('modal-delete-worker').classList.remove('open');
   const id = document.getElementById('editWorkerId').value;
   showToast('Deleting worker...');
