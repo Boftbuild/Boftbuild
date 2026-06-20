@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,11 +18,11 @@
 html,body{min-height:100vh;background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif;}
 
 /* NAV */
-.sticky-nav{position:sticky;top:0;z-index:50;background:rgba(10,11,13,0.97);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:var(--nav-h);}
+.sticky-nav{position:sticky;top:0;z-index:50;background:rgba(10,11,13,0.97);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:var(--nav-h);flex-wrap:wrap;row-gap:0.4rem;}
 .nav-logo{font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:var(--gold-light);}
 .nav-logo span{color:var(--neon);}
 .nav-links{display:flex;align-items:center;gap:0.25rem;}
-.nav-link{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:0.4rem 0.75rem;border-bottom:2px solid transparent;text-decoration:none;transition:color 0.2s;}
+.nav-link{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:0.4rem 0.75rem;border-bottom:2px solid transparent;text-decoration:none;transition:color 0.2s;background:none;border-left:none;border-right:none;border-top:none;cursor:pointer;}
 .nav-link:hover{color:var(--gold-light);}
 .nav-link.active{color:var(--gold-light);border-bottom-color:var(--gold);}
 .nav-right{display:flex;align-items:center;gap:0.75rem;}
@@ -96,6 +95,8 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
   .quick-grid{grid-template-columns:repeat(3,1fr);}
   .sticky-nav{padding:0 1rem;}
   .page{padding:1.5rem 1rem 3rem;}
+  .nav-links{order:3;width:100%;border-top:1px solid var(--border);padding-top:0.4rem;margin-top:0.2rem;}
+  .nav-username{display:none;}
 }
 </style>
 </head>
@@ -104,6 +105,8 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
 <nav class="sticky-nav">
   <div class="nav-logo">BOFT<span>.</span></div>
   <div class="nav-links">
+    <a class="nav-link" href="/contable">Contable</a>
+    <a class="nav-link" href="/proyectos">Projects</a>
     <span class="nav-link active">Finder</span>
   </div>
   <div class="nav-right">
