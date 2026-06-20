@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOFT — Activity Log</title>
+<script src="https://accounts.google.com/gsi/client"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --black:#0a0b0d;--black2:#0f1114;--black3:#141618;
+  --neon:#00b4ff;--neon-dim:rgba(0,180,255,0.1);
+  --gold:#c8922a;--gold-light:#e8b84b;--gold-dim:rgba(200,146,42,0.12);
+  --text:#e8e2d4;--muted:#7a7570;
+  --border:rgba(200,146,42,0.2);--border-neon:rgba(0,180,255,0.25);
+  --red:#e05555;--green:#4caf7d;--purple:#a78bfa;--purple-dim:rgba(167,139,250,0.12);
+  --nav-h:52px;
+}
+html{scroll-behavior:smooth;}
+body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;}
+
+/* LOGIN */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--black);position:relative;overflow:hidden;}
+.login-box{background:var(--black2);border:1px solid var(--border);padding:2.5rem 2rem;width:100%;max-width:380px;position:relative;z-index:1;text-align:center;}
+.login-logo{font-family:'Cinzel',serif;font-size:2rem;font-weight:700;color:var(--gold-light);margin-bottom:0.25rem;}
+.login-logo span{color:var(--neon);}
+.login-sub{font-size:0.72rem;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
+.login-desc{font-size:0.82rem;color:var(--muted);margin-bottom:2rem;line-height:1.5;}
+.login-desc strong{color:var(--text);}
+
+/* NAV */
+.app{display:none;}
+.sticky-nav{position:sticky;top:0;z-index:50;background:rgba(10,11,13,0.97);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:var(--nav-h);gap:1rem;flex-wrap:wrap;row-gap:0.4rem;}
+.nav-logo-sm{font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:var(--gold-light);white-space:nowrap;}
+.nav-logo-sm span{color:var(--neon);}
+.nav-links-sm{display:flex;align-items:center;gap:0.25rem;}
+.nav-link{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;padding:0.4rem 0.75rem;transition:color 0.2s;white-space:nowrap;border-bottom:2px solid transparent;}
+.nav-link.active{color:var(--gold-light);border-bottom-color:var(--gold);}
+.nav-right{display:flex;align-items:center;gap:0.75rem;}
+.nav-avatar{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);display:none;}
+.nav-username{font-size:0.75rem;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.nav-role-badge{font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:0.2rem 0.6rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);display:none;}
+.nav-sync{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.35rem 1rem;cursor:pointer;clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);white-space:nowrap;}
+.nav-hub-btn{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--neon);background:none;border:1px solid rgba(0,180,255,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:all 0.2s;text-decoration:none;display:inline-flex;align-items:center;}
+.nav-hub-btn:hover{color:var(--gold-light);border-color:var(--border);}
+.nav-logout{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid rgba(122,117,112,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:color 0.2s;}
+.nav-logout:hover{color:var(--red);border-color:rgba(224,85,85,0.4);}
+
+/* PAGE */
+.page{max-width:1100px;margin:0 auto;padding:1.5rem 2rem 3rem;}
+.section-label{font-size:0.68rem;font-weight:700;letter-spacing:0.35em;text-transform:uppercase;color:var(--purple);margin-bottom:0.5rem;}
+.section-title{font-family:'Cinzel',serif;font-size:1.2rem;font-weight:700;color:var(--gold-light);margin-bottom:1.5rem;}
+
+/* TOAST */
+.success-toast{display:none;align-items:center;gap:0.75rem;background:var(--black3);border:1px solid rgba(76,175,125,0.4);border-left:3px solid var(--green);padding:0.75rem 1rem;margin-bottom:1rem;position:sticky;top:calc(var(--nav-h) + 8px);z-index:40;}
+.success-toast.show{display:flex;}
+.toast-text{font-size:0.85rem;color:var(--green);font-weight:600;}
+
+/* DENIED STATE */
+.denied-screen{display:none;min-height:80vh;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;}
+.denied-icon{font-size:3rem;margin-bottom:1rem;opacity:0.4;}
+.denied-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold-light);margin-bottom:0.5rem;}
+.denied-text{font-size:0.9rem;color:var(--muted);max-width:360px;line-height:1.5;}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);margin-bottom:2px;}
+.stat-card{background:var(--black2);padding:1.25rem 1.2rem;}
+.stat-label{font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem;}
+.stat-num{font-family:'Cinzel',serif;font-size:1.4rem;font-weight:700;color:var(--purple);}
+
+/* FILTERS */
+.filters-bar{background:var(--black2);padding:1.25rem;margin-top:2px;display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;}
+.filter-select{background:var(--black);border:1px solid var(--border);color:var(--muted);padding:0.5rem 0.75rem;font-family:'Rajdhani',sans-serif;font-size:0.82rem;outline:none;}
+.filter-select option{background:var(--black2);}
+.btn-clear-filters{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid var(--border);padding:0.5rem 0.9rem;cursor:pointer;transition:color 0.2s;}
+.btn-clear-filters:hover{color:var(--gold-light);}
+
+/* LOG LIST */
+.log-section{background:var(--black2);padding:1.5rem;margin-top:2px;}
+.log-count{font-size:0.78rem;color:var(--muted);margin-bottom:1rem;}
+.log-row{display:flex;gap:1rem;align-items:flex-start;padding:0.85rem 0;border-bottom:1px solid rgba(200,146,42,0.08);}
+.log-row:last-child{border-bottom:none;}
+.log-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:0.45rem;}
+.log-dot.create{background:var(--green);}
+.log-dot.edit{background:var(--neon);}
+.log-dot.delete{background:var(--red);}
+.log-dot.upload{background:var(--purple);}
+.log-content{flex:1;min-width:0;}
+.log-desc{font-size:0.88rem;color:var(--text);font-weight:600;}
+.log-meta{font-size:0.75rem;color:var(--muted);margin-top:0.2rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;}
+.log-role-tag{font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.1rem 0.5rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);}
+.log-action-tag{font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.1rem 0.5rem;border:1px solid;}
+.log-action-tag.create{color:var(--green);border-color:rgba(76,175,125,0.3);background:rgba(76,175,125,0.08);}
+.log-action-tag.edit{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
+.log-action-tag.delete{color:var(--red);border-color:rgba(224,85,85,0.3);background:rgba(224,85,85,0.08);}
+.log-action-tag.upload{color:var(--purple);border-color:rgba(167,139,250,0.3);background:var(--purple-dim);}
+.log-timestamp{font-size:0.72rem;color:var(--muted);flex-shrink:0;text-align:right;white-space:nowrap;}
+.log-details-btn{font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;margin-top:0.3rem;}
+.log-details-json{display:none;font-family:monospace;font-size:0.72rem;color:var(--muted);background:var(--black);padding:0.5rem 0.75rem;margin-top:0.4rem;white-space:pre-wrap;word-break:break-all;border-left:2px solid var(--border);}
+.log-details-json.show{display:block;}
+
+/* EMPTY STATE */
+.empty-log{text-align:center;padding:3rem 2rem;color:var(--muted);}
+.empty-log .icon{font-size:2rem;margin-bottom:0.75rem;opacity:0.3;}
+
+@media(max-width:700px){
+  .page{padding:1rem 1rem 2.5rem;}
+  .sticky-nav{padding:0 0.85rem;}
+  .nav-username{display:none;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .filters-bar{flex-direction:column;align-items:stretch;}
+  .filter-select{width:100%;}
+  .log-row{flex-direction:column;gap:0.4rem;}
+  .log-timestamp{text-align:left;}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN (no debería verse — Activity redirige al Hub si no hay sesión) -->
+<div class="login-screen" id="loginScreen" style="display:none;">
+  <div class="login-box">
+    <div class="login-logo">BOFT<span>.</span></div>
+    <div class="login-sub">Activity Log</div>
+    <div class="login-desc">Redirecting to Hub...</div>
+  </div>
+</div>
+
+<!-- ACCESS DENIED (rol != Owner) -->
+<div class="denied-screen" id="deniedScreen">
+  <div class="denied-icon">🔒</div>
+  <div class="denied-title">Owner Access Only</div>
+  <div class="denied-text">The Activity Log is only available to the Owner role. If you believe this is a mistake, contact your administrator.</div>
+  <a href="/hub" style="margin-top:1.5rem;font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--neon);text-decoration:none;border:1px solid rgba(0,180,255,0.3);padding:0.6rem 1.5rem;">← Back to Hub</a>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <nav class="sticky-nav">
+    <div class="nav-logo-sm">BOFT<span>.</span></div>
+    <div class="nav-links-sm">
+      <span class="nav-link active">Activity Log</span>
+    </div>
+    <div class="nav-right">
+      <img class="nav-avatar" id="navAvatar" src="" alt="">
+      <span class="nav-username" id="navUsername"></span>
+      <span class="nav-role-badge" id="navRoleBadge"></span>
+      <button class="nav-sync" onclick="loadActivityLog()">⟳ Sync</button>
+      <a href="/hub" class="nav-hub-btn">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="margin-right:4px;"><polygon points="6,0.5 11,3 11,9 6,11.5 1,9 1,3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>Hub
+      </a>
+      <button class="nav-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </nav>
+
+  <div class="page">
+    <div id="toast" class="success-toast">
+      <span style="font-size:18px;color:var(--green);">✓</span>
+      <span class="toast-text" id="toastText">Done.</span>
+    </div>
+
+    <div class="section-label">Audit Trail</div>
+    <div class="section-title">Activity Log — Last 90 Days</div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Total Actions</div><div class="stat-num" id="statTotal">—</div></div>
+      <div class="stat-card"><div class="stat-label">Team Members</div><div class="stat-num" id="statUsers">—</div></div>
+      <div class="stat-card"><div class="stat-label">Most Active</div><div class="stat-num" id="statMostActive" style="font-size:0.95rem;">—</div></div>
+      <div class="stat-card"><div class="stat-label">Last Action</div><div class="stat-num" id="statLastAction" style="font-size:0.85rem;">—</div></div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filters-bar">
+      <select class="filter-select" id="filterUser" onchange="renderLog()">
+        <option value="">All Team Members</option>
+      </select>
+      <select class="filter-select" id="filterAction" onchange="renderLog()">
+        <option value="">All Actions</option>
+        <option value="addExpense">Add Expense</option>
+        <option value="addIncome">Add Income</option>
+        <option value="addPayment">Add Payment</option>
+        <option value="editTransaction">Edit Transaction</option>
+        <option value="deleteTransaction">Delete Transaction</option>
+        <option value="createProject">Create Project</option>
+        <option value="editProject">Edit Project</option>
+        <option value="deleteProject">Delete Project</option>
+        <option value="uploadProjectPhoto">Upload Photo</option>
+        <option value="addWorker">Add Worker</option>
+        <option value="editWorker">Edit Worker</option>
+        <option value="deleteWorker">Delete Worker</option>
+      </select>
+      <select class="filter-select" id="filterEntityType" onchange="renderLog()">
+        <option value="">All Entity Types</option>
+        <option value="Transaction">Transactions</option>
+        <option value="Project">Projects</option>
+        <option value="Worker">Workers</option>
+      </select>
+      <button class="btn-clear-filters" onclick="clearLogFilters()">Clear Filters</button>
+    </div>
+
+    <!-- LOG LIST -->
+    <div class="log-section">
+      <div class="log-count" id="logCount"></div>
+      <div id="logList"><div style="padding:1rem;color:var(--muted);font-size:0.82rem;">Loading...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const API_URL = '/api/proxy';
+let ACCESS_TOKEN = null;
+let CURRENT_ROLE = null;
+let allLogs = [];
+
+// ============================================================
+// AUTH — lee token y rol del Hub, no tiene login propio
+// ============================================================
+function tryRestoreSession() {
+  const token   = sessionStorage.getItem('boft_token');
+  const exp     = parseInt(sessionStorage.getItem('boft_token_exp') || '0');
+  const userStr = sessionStorage.getItem('boft_user');
+  const role    = sessionStorage.getItem('boft_role') || 'Viewer';
+
+  if (token && exp > Date.now() && userStr) {
+    ACCESS_TOKEN = token;
+    CURRENT_ROLE = role;
+    const user = JSON.parse(userStr);
+
+    if (role !== 'Owner') {
+      showAccessDenied();
+      return false;
+    }
+
+    loginSuccess(user, role);
+    return true;
+  }
+  sessionStorage.clear();
+  window.location.href = '/hub';
+  return false;
+}
+
+function showAccessDenied() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('deniedScreen').style.display = 'flex';
+}
+
+function loginSuccess(user, role) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('deniedScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('navUsername').textContent = user.name || user.email;
+  if (user.picture) {
+    const a = document.getElementById('navAvatar');
+    a.src = user.picture;
+    a.style.display = 'block';
+  }
+  const roleBadge = document.getElementById('navRoleBadge');
+  if (roleBadge) {
+    roleBadge.textContent = role;
+    roleBadge.style.display = 'inline-block';
+  }
+  loadActivityLog();
+}
+
+function doLogout() {
+  ACCESS_TOKEN = null;
+  sessionStorage.clear();
+  window.location.href = '/hub';
+}
+
+// ============================================================
+// API
+// ============================================================
+async function apiGet(action, params = {}) {
+  const qs = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(API_URL + '?' + qs, { headers: { Authorization: 'Bearer ' + ACCESS_TOKEN } });
+  const data = await res.json();
+  if (data.error === 'Unauthorized' || data.code === 403) { doLogout(); return {}; }
+  return data;
+}
+
+// ============================================================
+// LOAD ACTIVITY LOG
+// ============================================================
+async function loadActivityLog() {
+  try {
+    showToast('Loading activity log...');
+    const data = await apiGet('activityLog');
+    allLogs = data.logs || [];
+    populateUserFilter();
+    renderStats();
+    renderLog();
+    showToast('Activity log updated ✓');
+  } catch(e) {
+    console.error(e);
+    showToast('Error loading activity log');
+  }
+}
+
+function populateUserFilter() {
+  const sel = document.getElementById('filterUser');
+  const currentVal = sel.value;
+  const uniqueUsers = [...new Map(allLogs.map(l => [l.email, l.name || l.email])).entries()];
+  sel.innerHTML = '<option value="">All Team Members</option>' +
+    uniqueUsers.map(([email, name]) => `<option value="${email}">${name}</option>`).join('');
+  sel.value = currentVal;
+}
+
+function renderStats() {
+  document.getElementById('statTotal').textContent = allLogs.length;
+
+  const uniqueEmails = new Set(allLogs.map(l => l.email));
+  document.getElementById('statUsers').textContent = uniqueEmails.size;
+
+  const countByUser = {};
+  allLogs.forEach(l => { countByUser[l.name || l.email] = (countByUser[l.name || l.email] || 0) + 1; });
+  const mostActive = Object.entries(countByUser).sort((a,b) => b[1]-a[1])[0];
+  document.getElementById('statMostActive').textContent = mostActive ? mostActive[0] : '—';
+
+  if (allLogs.length) {
+    const sorted = [...allLogs].sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+    const lastDate = sorted[0].timestamp.split(' ')[0];
+    document.getElementById('statLastAction').textContent = lastDate;
+  } else {
+    document.getElementById('statLastAction').textContent = '—';
+  }
+}
+
+function clearLogFilters() {
+  document.getElementById('filterUser').value = '';
+  document.getElementById('filterAction').value = '';
+  document.getElementById('filterEntityType').value = '';
+  renderLog();
+}
+
+function renderLog() {
+  const fUser   = document.getElementById('filterUser').value;
+  const fAction = document.getElementById('filterAction').value;
+  const fEntity = document.getElementById('filterEntityType').value;
+
+  let filtered = allLogs;
+  if (fUser)   filtered = filtered.filter(l => l.email === fUser);
+  if (fAction) filtered = filtered.filter(l => l.action === fAction);
+  if (fEntity) filtered = filtered.filter(l => l.entityType === fEntity);
+
+  filtered.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+  document.getElementById('logCount').textContent =
+    filtered.length + ' action' + (filtered.length !== 1 ? 's' : '') + ' recorded';
+
+  const list = document.getElementById('logList');
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-log"><div class="icon">📋</div><p>No activity recorded yet for this filter.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map((log, i) => {
+    const actionClass = getActionClass(log.action);
+    const actionLabel = getActionLabel(log.action);
+    const hasDetails = log.details && log.details.trim().length > 2;
+    return `<div class="log-row">
+      <div class="log-dot ${actionClass}"></div>
+      <div class="log-content">
+        <div class="log-desc">${escHtml(log.description)}</div>
+        <div class="log-meta">
+          <span>${escHtml(log.name || log.email)}</span>
+          <span class="log-role-tag">${escHtml(log.role)}</span>
+          <span class="log-action-tag ${actionClass}">${actionLabel}</span>
+        </div>
+        ${hasDetails ? `<button class="log-details-btn" onclick="toggleDetails(${i})">View details</button>
+        <div class="log-details-json" id="details-${i}">${escHtml(formatDetails(log.details))}</div>` : ''}
+      </div>
+      <div class="log-timestamp">${log.timestamp}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDetails(idx) {
+  const el = document.getElementById('details-' + idx);
+  if (el) el.classList.toggle('show');
+}
+
+function formatDetails(jsonStr) {
+  try {
+    const obj = JSON.parse(jsonStr);
+    return JSON.stringify(obj, null, 2);
+  } catch(e) { return jsonStr; }
+}
+
+function getActionClass(action) {
+  if (action.startsWith('add') || action.startsWith('create')) return 'create';
+  if (action.startsWith('edit')) return 'edit';
+  if (action.startsWith('delete')) return 'delete';
+  if (action.startsWith('upload')) return 'upload';
+  return 'edit';
+}
+
+function getActionLabel(action) {
+  const labels = {
+    addExpense: 'Add Expense', addIncome: 'Add Income', addPayment: 'Add Payment',
+    editTransaction: 'Edit Transaction', deleteTransaction: 'Delete Transaction',
+    createProject: 'Create Project', editProject: 'Edit Project', deleteProject: 'Delete Project',
+    uploadProjectPhoto: 'Upload Photo', addWorker: 'Add Worker', editWorker: 'Edit Worker', deleteWorker: 'Delete Worker',
+  };
+  return labels[action] || action;
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function showToast(msg) {
+  document.getElementById('toastText').textContent = msg;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+window.addEventListener('load', () => { tryRestoreSession(); });
+</script>
+</body>
+</html>
