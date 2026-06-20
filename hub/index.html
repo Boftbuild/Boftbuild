@@ -51,14 +51,16 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
 .hub-title{font-family:'Cinzel',serif;font-size:1.8rem;font-weight:700;color:var(--gold-light);text-align:center;margin-bottom:3rem;}
 
 /* CARDS */
-.hub-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--border);width:100%;max-width:860px;}
+.hub-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);width:100%;max-width:1100px;}
 .hub-card{background:var(--black2);padding:2.5rem 1.5rem;display:flex;flex-direction:column;align-items:center;gap:1rem;cursor:pointer;text-decoration:none;position:relative;overflow:hidden;transition:background 0.2s;border:none;}
 .hub-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;transition:opacity 0.2s;}
 .hub-card.contable::before{background:linear-gradient(90deg,var(--green),rgba(76,175,125,0.3));}
 .hub-card.proyectos::before{background:linear-gradient(90deg,var(--neon),rgba(0,180,255,0.3));}
 .hub-card.finder::before{background:linear-gradient(90deg,var(--gold),rgba(200,146,42,0.3));}
+.hub-card.activity::before{background:linear-gradient(90deg,#a78bfa,rgba(167,139,250,0.3));}
 .hub-card:hover{background:var(--black3);}
 .hub-card.disabled{opacity:0.35;cursor:not-allowed;pointer-events:none;}
+.hub-card.hidden{display:none;}
 .hub-card-icon{width:72px;height:72px;display:flex;align-items:center;justify-content:center;position:relative;}
 .hub-card-name{font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;color:var(--gold-light);}
 .hub-card-desc{font-size:0.78rem;color:var(--muted);text-align:center;line-height:1.5;max-width:180px;}
@@ -66,10 +68,14 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
 .hub-card.contable .hub-card-tag{color:var(--green);border-color:rgba(76,175,125,0.35);}
 .hub-card.proyectos .hub-card-tag{color:var(--neon);border-color:rgba(0,180,255,0.35);}
 .hub-card.finder .hub-card-tag{color:var(--gold-light);border-color:var(--border);}
+.hub-card.activity .hub-card-tag{color:#a78bfa;border-color:rgba(167,139,250,0.35);}
 
 /* Footer */
 .hub-footer{text-align:center;padding:1.5rem;font-size:0.68rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;}
 
+@media(max-width:900px){
+  .hub-cards{grid-template-columns:repeat(2,1fr);}
+}
 @media(max-width:640px){
   .hub-cards{grid-template-columns:1fr;}
   .hub-title{font-size:1.3rem;}
@@ -180,6 +186,23 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
         <div class="hub-card-name">Finder</div>
         <div class="hub-card-desc">Search and access any file in Drive instantly</div>
         <span class="hub-card-tag">Documents</span>
+      </a>
+
+      <!-- ACTIVITY LOG — solo visible para Owner -->
+      <a class="hub-card activity hidden" href="/activity" id="cardActivity">
+        <div class="hub-card-icon">
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+            <circle cx="36" cy="36" r="26" stroke="#a78bfa" stroke-width="1.5" fill="none" opacity="0.4"/>
+            <path d="M36 22 V36 L46 44" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.9"/>
+            <circle cx="36" cy="36" r="3" fill="#a78bfa" opacity="0.9"/>
+            <circle cx="36" cy="14" r="2.5" fill="#e8b84b" opacity="0.8"/>
+            <circle cx="58" cy="36" r="2.5" fill="#e8b84b" opacity="0.5"/>
+            <circle cx="14" cy="36" r="2.5" fill="#e8b84b" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="hub-card-name">Activity Log</div>
+        <div class="hub-card-desc">Audit trail of all team actions across the system</div>
+        <span class="hub-card-tag">Owner Only</span>
       </a>
 
     </div>
@@ -329,11 +352,13 @@ function showHub(user, role) {
 }
 
 // Oculta/atenúa cards del Hub según el rol — Helper y Field Lead
-// solo deberían entrar a Projects, no a Contable ni Finder
+// solo deberían entrar a Projects, no a Contable ni Finder.
+// La card de Activity Log SOLO se muestra para Owner.
 function applyRolePermissions(role) {
   const cardContable  = document.getElementById('cardContable');
   const cardProyectos = document.getElementById('cardProyectos');
   const cardFinder    = document.getElementById('cardFinder');
+  const cardActivity  = document.getElementById('cardActivity');
 
   // Reset — todo habilitado por default (Owner, Manager, Viewer entran a todo)
   [cardContable, cardProyectos, cardFinder].forEach(c => {
@@ -348,6 +373,11 @@ function applyRolePermissions(role) {
   }
   // Viewer entra a todo pero de solo lectura — eso se controla dentro
   // de cada página (Contable/Projects), no aquí en el Hub.
+
+  // Activity Log — visible únicamente para Owner
+  if (cardActivity) {
+    cardActivity.classList.toggle('hidden', role !== 'Owner');
+  }
 }
 
 function doLogout() {
