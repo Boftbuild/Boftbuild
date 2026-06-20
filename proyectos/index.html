@@ -65,7 +65,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .toast-text{font-size:0.85rem;color:var(--green);font-weight:600;}
 
 /* PROJECTS LIST */
-.projects-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;}
+.projects-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.75rem;}
 .btn-action{font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;border:none;padding:0.55rem 1.4rem;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all 0.2s;}
 .btn-action.gold{color:var(--black);background:var(--gold);}
 .btn-action.gold:hover{background:var(--gold-light);}
@@ -210,7 +210,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .timeline-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;}
 .timeline-project-name{font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;color:var(--gold-light);}
 .timeline-project-sub{font-size:0.78rem;color:var(--muted);margin-top:0.15rem;}
-.timeline-actions{display:flex;gap:0.5rem;}
+.timeline-actions{display:flex;gap:0.5rem;flex-wrap:wrap;}
 .timeline-body{padding:1.25rem 1.5rem;}
 .timeline-section{margin-bottom:1.5rem;}
 .timeline-section-label{font-size:0.65rem;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:var(--neon);margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:1px solid rgba(0,180,255,0.15);}
@@ -257,6 +257,14 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .upload-clear{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:0.2rem 0.4rem;flex-shrink:0;z-index:2;position:relative;}
 .upload-clear:hover{color:var(--red);}
 
+/* MULTI-FILE PENDING LIST */
+.pending-files-list{margin-top:0.5rem;display:flex;flex-direction:column;gap:4px;}
+.pending-file-chip{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;background:rgba(76,175,125,0.06);border:1px solid rgba(76,175,125,0.3);padding:0.4rem 0.6rem;font-size:0.78rem;}
+.pending-file-chip .name{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}
+.pending-file-chip .size{color:var(--muted);font-size:0.7rem;flex-shrink:0;}
+.pending-file-chip .remove-chip{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.8rem;flex-shrink:0;}
+.pending-file-chip .remove-chip:hover{color:var(--red);}
+
 .btn-sm{font-family:'Rajdhani',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:0.28rem 0.75rem;cursor:pointer;border:1px solid;background:transparent;transition:all 0.2s;}
 .btn-sm.view{color:var(--neon);border-color:var(--border-neon);}
 
@@ -281,12 +289,57 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .upload-progress{font-size:0.7rem;color:var(--neon);margin-top:0.3rem;display:none;}
 .upload-progress.show{display:block;}
 
+/* ════════════════════════════════════════════════════════
+   MOBILE OPTIMIZATION
+   ════════════════════════════════════════════════════════ */
+@media(max-width:860px){
+  .split-layout{grid-template-columns:1fr;min-height:auto;}
+  .split-left{max-height:280px;}
+  .split-right{max-height:none;min-height:400px;}
+}
+
 @media(max-width:700px){
+  body{font-size:15px;}
+  .page{padding:1rem 1rem 2.5rem;}
+  .sticky-nav{padding:0 0.85rem;height:auto;min-height:var(--nav-h);flex-wrap:wrap;row-gap:0.4rem;padding-top:0.4rem;padding-bottom:0.4rem;}
+  .nav-logo-sm{order:1;}
+  .nav-links-sm{order:3;width:100%;border-top:1px solid var(--border);padding-top:0.4rem;margin-top:0.2rem;}
+  .nav-right{order:2;margin-left:auto;gap:0.4rem;}
+  .nav-username{display:none;}
+  .nav-sync{padding:0.32rem 0.6rem;font-size:0.62rem;}
+  .nav-hub-btn{padding:0.32rem 0.55rem;font-size:0.62rem;}
+  .nav-hub-btn svg{display:none;}
+  .nav-logout{padding:0.32rem 0.55rem;font-size:0.62rem;}
+
+  .projects-header{flex-direction:column;align-items:stretch;}
+  .projects-header .btn-action{width:100%;text-align:center;}
+
   .info-grid{grid-template-columns:1fr;}
   .fin-grid{grid-template-columns:1fr 1fr;}
+  .stats-mini{grid-template-columns:1fr 1fr;}
   .projects-grid{grid-template-columns:1fr;}
   .field-row{grid-template-columns:1fr;}
-  .sticky-nav{padding:0 1rem;}
+
+  .split-left{max-height:260px;}
+
+  .timeline-header{flex-direction:column;align-items:stretch;gap:0.6rem;}
+  .timeline-actions{width:100%;justify-content:flex-start;}
+  .timeline-actions .btn-action{flex:1;text-align:center;}
+
+  #grid-antes, #grid-proceso, #grid-terminado{grid-template-columns:repeat(auto-fill,minmax(64px,1fr))!important;}
+
+  .modal-overlay{padding:0.75rem 0.5rem;align-items:flex-start;}
+  .modal{max-width:100%;}
+  .modal-header{padding:1rem 1.1rem;flex-wrap:wrap;gap:0.5rem;}
+  .modal-body{padding:1.1rem;max-height:75vh;overflow-y:auto;}
+  .modal-footer{padding:0.85rem 1.1rem;flex-direction:column-reverse;gap:0.6rem;align-items:stretch;}
+  .modal-footer > *{width:100%;text-align:center;}
+  .btn-submit, .btn-cancel{width:100%;}
+}
+
+@media(max-width:420px){
+  .stats-mini{grid-template-columns:1fr;}
+  .fin-grid{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -453,14 +506,15 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <div class="field-group">
         <label class="field-label">Documentation</label>
         <div class="receipt-upload-zone" id="np-doc-zone">
-          <input type="file" id="np-doc-file" accept=".pdf,image/*,.doc,.docx" onchange="onNpDocSelect()">
+          <input type="file" id="np-doc-file" accept=".pdf,image/*,.doc,.docx,.heic,.heif" multiple onchange="onNpDocSelect()">
           <span class="upload-icon">📎</span>
           <div class="upload-text">
-            <div class="upload-label" id="np-doc-label">Tap to upload contract, permit or document</div>
-            <div class="upload-sublabel">PDF, JPG, PNG, DOC — max 10MB</div>
+            <div class="upload-label" id="np-doc-label">Tap to upload contract(s), permit(s) or document(s)</div>
+            <div class="upload-sublabel">PDF, JPG, PNG, DOC — max 10MB each, multiple allowed</div>
           </div>
           <button class="upload-clear" id="np-doc-clear" onclick="clearNpDoc(event)" style="display:none;">✕</button>
         </div>
+        <div class="pending-files-list" id="np-doc-pending-list"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -513,14 +567,15 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div id="ep-doc-current" style="margin-bottom:0.75rem;"></div>
         <!-- Upload nuevo -->
         <div class="receipt-upload-zone" id="ep-doc-zone">
-          <input type="file" id="ep-doc-file" accept=".pdf,image/*,.doc,.docx" multiple onchange="onEpDocSelect()">
+          <input type="file" id="ep-doc-file" accept=".pdf,image/*,.doc,.docx,.heic,.heif" multiple onchange="onEpDocSelect()">
           <span class="upload-icon">📎</span>
           <div class="upload-text">
             <div class="upload-label" id="ep-doc-label">Tap to add document(s)</div>
-            <div class="upload-sublabel">PDF, JPG, PNG, DOC — max 10MB each</div>
+            <div class="upload-sublabel">PDF, JPG, PNG, DOC — max 10MB each, multiple allowed</div>
           </div>
           <button class="upload-clear" id="ep-doc-clear" onclick="clearEpDoc(event)" style="display:none;">✕</button>
         </div>
+        <div class="pending-files-list" id="ep-doc-pending-list"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -563,17 +618,17 @@ let allProjects  = [];
 let currentProject = null;
 let currentFilter  = 'all';
 
+// Archivos pendientes para New Project y Edit Project (multi-file)
+let npDocFiles = [];
+let epDocFiles = [];
+
 // ============================================================
 // IMAGE PROCESSING — HEIC → JPEG + compresión via Canvas
 // ============================================================
-// Convierte cualquier archivo de imagen (incluyendo HEIC del iPhone) a un
-// Blob JPEG listo para subir. Si no es imagen (PDF, DOC), lo deja igual.
 async function processImageFile(file) {
   const isHeic = /\.(heic|heif)$/i.test(file.name) || file.type === 'image/heic' || file.type === 'image/heif';
-
   let workingFile = file;
 
-  // 1. Si es HEIC/HEIF, convertir a JPEG primero con heic2any
   if (isHeic) {
     try {
       const convertedBlob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
@@ -585,16 +640,12 @@ async function processImageFile(file) {
       );
     } catch (err) {
       console.error('HEIC conversion failed:', err);
-      throw new Error('No se pudo convertir la foto HEIC. Intenta tomar la foto en otro formato.');
+      return file;
     }
   }
 
-  // 2. Si no es imagen (PDF, DOC, etc.), no tocar — regresar tal cual
-  if (!workingFile.type.startsWith('image/')) {
-    return workingFile;
-  }
+  if (!workingFile.type.startsWith('image/')) return workingFile;
 
-  // 3. Re-comprimir/normalizar vía Canvas (también arregla orientación EXIF en la mayoría de navegadores)
   try {
     const resizedBlob = await resizeImageViaCanvas(workingFile, 1920, 0.82);
     return new File(
@@ -641,7 +692,6 @@ function resizeImageViaCanvas(file, maxDimension, quality) {
 // ============================================================
 // GOOGLE AUTH
 // ============================================================
-// ── AUTH: lee token del Hub, no tiene login propio ──
 function tryRestoreSession() {
   const token   = sessionStorage.getItem('boft_token');
   const exp     = parseInt(sessionStorage.getItem('boft_token_exp') || '0');
@@ -961,33 +1011,98 @@ function renderActivityFeed() {
 }
 
 // ============================================================
-// DOCUMENTATION — Modal handlers
+// DOCUMENTATION — Modal handlers (multi-file)
 // ============================================================
 function onNpDocSelect() {
   const input = document.getElementById('np-doc-file');
-  const file  = input.files[0];
-  if (!file) return;
-  document.getElementById('np-doc-label').textContent = file.name;
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  npDocFiles.push(...files);
+  renderNpPendingList();
   document.getElementById('np-doc-zone').classList.add('has-file');
   document.getElementById('np-doc-clear').style.display = 'block';
+  const label = document.getElementById('np-doc-label');
+  label.textContent = npDocFiles.length === 1 ? npDocFiles[0].name : npDocFiles.length + ' files selected';
+  input.value = '';
+}
+
+function renderNpPendingList() {
+  const list = document.getElementById('np-doc-pending-list');
+  if (!list) return;
+  if (!npDocFiles.length) { list.innerHTML = ''; return; }
+  list.innerHTML = npDocFiles.map((f, i) => `
+    <div class="pending-file-chip">
+      <span class="name">📎 ${f.name}</span>
+      <span class="size">${formatBytes(f.size)}</span>
+      <button class="remove-chip" onclick="removeNpDoc(${i})">✕</button>
+    </div>`).join('');
+}
+
+function removeNpDoc(idx) {
+  npDocFiles.splice(idx, 1);
+  renderNpPendingList();
+  const label = document.getElementById('np-doc-label');
+  if (!npDocFiles.length) {
+    label.textContent = 'Tap to upload contract(s), permit(s) or document(s)';
+    document.getElementById('np-doc-zone').classList.remove('has-file');
+    document.getElementById('np-doc-clear').style.display = 'none';
+  } else {
+    label.textContent = npDocFiles.length === 1 ? npDocFiles[0].name : npDocFiles.length + ' files selected';
+  }
 }
 
 function clearNpDoc(e) {
   if (e) { e.preventDefault(); e.stopPropagation(); }
+  npDocFiles = [];
   document.getElementById('np-doc-file').value = '';
-  document.getElementById('np-doc-label').textContent = 'Tap to upload contract, permit or document';
+  document.getElementById('np-doc-label').textContent = 'Tap to upload contract(s), permit(s) or document(s)';
   document.getElementById('np-doc-zone').classList.remove('has-file');
   document.getElementById('np-doc-clear').style.display = 'none';
+  renderNpPendingList();
 }
 
 function onEpDocSelect() {
   const input = document.getElementById('ep-doc-file');
   const files = Array.from(input.files);
   if (!files.length) return;
-  const label = files.length === 1 ? files[0].name : files.length + ' files selected';
-  document.getElementById('ep-doc-label').textContent = label;
+  epDocFiles.push(...files);
+  renderEpPendingList();
   document.getElementById('ep-doc-zone').classList.add('has-file');
   document.getElementById('ep-doc-clear').style.display = 'block';
+  const label = document.getElementById('ep-doc-label');
+  label.textContent = epDocFiles.length === 1 ? epDocFiles[0].name : epDocFiles.length + ' files selected';
+  input.value = '';
+}
+
+function renderEpPendingList() {
+  const list = document.getElementById('ep-doc-pending-list');
+  if (!list) return;
+  if (!epDocFiles.length) { list.innerHTML = ''; return; }
+  list.innerHTML = epDocFiles.map((f, i) => `
+    <div class="pending-file-chip">
+      <span class="name">📎 ${f.name}</span>
+      <span class="size">${formatBytes(f.size)}</span>
+      <button class="remove-chip" onclick="removeEpDoc(${i})">✕</button>
+    </div>`).join('');
+}
+
+function removeEpDoc(idx) {
+  epDocFiles.splice(idx, 1);
+  renderEpPendingList();
+  const label = document.getElementById('ep-doc-label');
+  if (!epDocFiles.length) {
+    label.textContent = 'Tap to add document(s)';
+    document.getElementById('ep-doc-zone').classList.remove('has-file');
+    document.getElementById('ep-doc-clear').style.display = 'none';
+  } else {
+    label.textContent = epDocFiles.length === 1 ? epDocFiles[0].name : epDocFiles.length + ' files selected';
+  }
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
 // Docs se guardan como "nombre|url" separados por coma
@@ -1030,62 +1145,9 @@ function removeEditDocByIndex(idx) {
   renderEditDocList();
 }
 
-function clearEpDoc(e) {
-  if (e) { e.preventDefault(); e.stopPropagation(); }
-  document.getElementById('ep-doc-file').value = '';
-  document.getElementById('ep-doc-label').textContent = 'Tap to upload new document';
-  document.getElementById('ep-doc-zone').classList.remove('has-file');
-  document.getElementById('ep-doc-clear').style.display = 'none';
-}
-
-function removeEditDoc() {
-  // Marcar para eliminar al guardar
-  window._removeDoc = true;
-  document.getElementById('ep-doc-current').style.display = 'none';
-  document.getElementById('ep-doc-name').textContent = 'Document will be removed on save';
-  document.getElementById('ep-doc-name').style.color = 'var(--red)';
-}
-
 // ============================================================
-// OBJECTIVE INLINE EDIT
+// OBJECTIVE
 // ============================================================
-function startEditObjective() {
-  const display  = document.getElementById('objectiveDisplay');
-  const editWrap = document.getElementById('objectiveEdit');
-  const textarea = document.getElementById('objectiveTextarea');
-  textarea.value = currentProject.objective || '';
-  display.style.display  = 'none';
-  editWrap.style.display = 'block';
-  textarea.focus();
-}
-
-function cancelEditObjective() {
-  document.getElementById('objectiveDisplay').style.display = 'block';
-  document.getElementById('objectiveEdit').style.display   = 'none';
-}
-
-async function saveObjective() {
-  const val = document.getElementById('objectiveTextarea').value.trim();
-  try {
-    const result = await apiPost({
-      action: 'editProject', id: currentProject.id,
-      objective: val,
-      name: currentProject.name, client: currentProject.client,
-      address: currentProject.address, city: currentProject.city,
-      startDate: currentProject.startDate, endDate: currentProject.endDate,
-      contractValue: currentProject.contractValue, status: currentProject.status,
-      notes: currentProject.notes || '',
-      documentationFileUrl: currentProject.documentationFileUrl || '',
-    });
-    if (result.success) {
-      currentProject.objective = val;
-      renderObjective();
-      cancelEditObjective();
-      showToast('✓ Objective saved');
-    }
-  } catch(e) { showToast('Connection error'); }
-}
-
 function renderObjective() {
   const display = document.getElementById('objectiveDisplay');
   if (!display) return;
@@ -1117,60 +1179,6 @@ function renderDocumentationFile() {
       <button class="btn-sm view" onclick="window.open('${url}','_blank')">View ↗</button>
     </div>`;
   }).join('');
-}
-
-async function removeDocument(idx) {
-  const urls = (currentProject.contractFileUrl || '').split(',').map(u => u.trim()).filter(Boolean);
-  urls.splice(idx, 1);
-  const newVal = urls.join(',');
-  try {
-    await apiPost({
-      action: 'editProject', id: currentProject.id,
-      contractFileUrl: newVal,
-      name: currentProject.name, client: currentProject.client,
-      address: currentProject.address, city: currentProject.city,
-      startDate: currentProject.startDate, endDate: currentProject.endDate,
-      contractValue: currentProject.contractValue, status: currentProject.status,
-      notes: currentProject.notes || '', objective: currentProject.objective || '',
-    });
-    currentProject.contractFileUrl = newVal;
-    renderDocumentationFile();
-    showToast('✓ Document removed');
-  } catch(e) { showToast('Connection error'); }
-}
-
-async function uploadDocumentation() {
-  const input = document.getElementById('upload-documentation');
-  const file  = input.files[0];
-  if (!file || !currentProject) return;
-  showToast('Uploading document...');
-  try {
-    const base64 = await fileToBase64(file);
-    const result = await apiPost({
-      action:   'uploadContractFile',
-      folderId: currentProject.driveFolderId,
-      fileBase64: base64,
-      fileName:   file.name,
-      mimeType:   file.type,
-      projectId:  currentProject.id,
-      name: currentProject.name, client: currentProject.client,
-      address: currentProject.address, city: currentProject.city,
-      startDate: currentProject.startDate, endDate: currentProject.endDate,
-      contractValue: currentProject.contractValue, status: currentProject.status,
-      notes: currentProject.notes || '',
-      objective: currentProject.objective || '',
-    });
-    if (result.success) {
-      // Agregar nueva URL a las existentes (separadas por coma)
-      const existing = currentProject.contractFileUrl || '';
-      currentProject.contractFileUrl = existing ? existing + ',' + result.fileUrl : result.fileUrl;
-      renderDocumentationFile();
-      showToast('✓ Document uploaded');
-    } else {
-      showToast('Error: ' + result.message);
-    }
-  } catch(e) { showToast('Connection error'); }
-  input.value = '';
 }
 
 async function addQuickNote() {
@@ -1238,7 +1246,7 @@ function triggerUpload(phase) {
 }
 
 // ============================================================
-// UPLOAD PHOTOS — ahora con conversión HEIC→JPEG automática
+// UPLOAD PHOTOS — con conversión HEIC→JPEG automática
 // ============================================================
 async function uploadPhotos(phase) {
   const input = document.getElementById('upload-' + phase);
@@ -1259,7 +1267,6 @@ async function uploadPhotos(phase) {
     showToast(`Processing photo ${i + 1} of ${files.length}...`);
 
     try {
-      // Convertir HEIC→JPEG y comprimir antes de subir
       const processedFile = await processImageFile(originalFile);
       const base64 = await fileToBase64(processedFile);
 
@@ -1302,22 +1309,17 @@ async function uploadPhotos(phase) {
 }
 
 function openLightbox(url, thumbUrl) {
-  // Drive URLs directas no funcionan en img — usar thumbnail o abrir en Drive
-  const displayUrl = thumbUrl || url.replace('/view', '/preview');
   const lightbox = document.getElementById('lightbox');
   const img = document.getElementById('lightboxImg');
-  
-  // Si es imagen de Drive usar thumbnail grande, si no abrir en nueva pestaña
+
   const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(url) || url.includes('thumbnail') || thumbUrl;
-  
+
   if (isImg && thumbUrl) {
-    // Mostrar imagen en lightbox con thumbnail grande
     const bigThumb = thumbUrl.replace('sz=w300', 'sz=w1200');
     img.src = bigThumb;
     img.style.display = 'block';
     lightbox.classList.add('open');
   } else {
-    // Abrir en Drive en nueva pestaña
     window.open(url, '_blank');
   }
 }
@@ -1327,7 +1329,7 @@ function closeLightbox() {
 }
 
 // ============================================================
-// CREATE PROJECT
+// CREATE PROJECT — ahora sube múltiples documentos
 // ============================================================
 function openNewProjectModal() {
   document.getElementById('np-start').value = new Date().toISOString().split('T')[0];
@@ -1344,15 +1346,6 @@ async function createProject() {
   closeModal('new-project');
   showToast('Creating project & Drive folder...');
 
-  // Leer archivo de doc si hay
-  let npDocBase64 = '', npDocName = '', npDocMime = '';
-  const npDocFile = document.getElementById('np-doc-file').files[0];
-  if (npDocFile) {
-    npDocBase64 = await fileToBase64(npDocFile);
-    npDocName   = npDocFile.name;
-    npDocMime   = npDocFile.type;
-  }
-
   try {
     const result = await apiPost({
       action:        'createProject',
@@ -1366,13 +1359,56 @@ async function createProject() {
       status:        document.getElementById('np-status').value,
       scope:         document.getElementById('np-scope').value.trim(),
       notes:         document.getElementById('np-notes').value.trim(),
-      docBase64:     npDocBase64,
-      docFileName:   npDocName,
-      docMimeType:   npDocMime,
       templateId:    TEMPLATE_FOLDER_ID,
       parentId:      PROJECTS_PARENT_ID,
     });
     if (result.success) {
+      // Subir todos los documentos pendientes (uno por uno, concatenando URLs)
+      if (npDocFiles.length > 0 && result.driveFolderId) {
+        showToast('Uploading ' + npDocFiles.length + ' document(s)...');
+        let existingUrls = '';
+        for (const file of npDocFiles) {
+          try {
+            const processed = file.type.startsWith('image/') ? await processImageFile(file) : file;
+            const base64 = await fileToBase64(processed);
+            const uploadResult = await apiPost({
+              action:     'uploadContractFile',
+              folderId:   result.driveFolderId,
+              fileBase64: base64,
+              fileName:   processed.name,
+              mimeType:   processed.type || file.type,
+              projectId:  result.id,
+              name, client,
+              address:       document.getElementById('np-address').value.trim(),
+              city:          document.getElementById('np-city').value.trim(),
+              startDate:     start,
+              endDate:       document.getElementById('np-end').value,
+              contractValue: document.getElementById('np-value').value,
+              status:        document.getElementById('np-status').value,
+              objective:     document.getElementById('np-scope').value.trim(),
+            });
+            if (uploadResult.success) {
+              const entry = processed.name + '|' + uploadResult.fileUrl;
+              existingUrls = existingUrls ? existingUrls + ',' + entry : entry;
+            }
+          } catch(e) { console.error('Doc upload error:', e); }
+        }
+        if (existingUrls) {
+          await apiPost({
+            action: 'editProject', id: result.id,
+            contractFileUrl: existingUrls,
+            name, client,
+            address:       document.getElementById('np-address').value.trim(),
+            city:          document.getElementById('np-city').value.trim(),
+            startDate:     start,
+            endDate:       document.getElementById('np-end').value,
+            contractValue: document.getElementById('np-value').value,
+            status:        document.getElementById('np-status').value,
+            objective:     document.getElementById('np-scope').value.trim(),
+          });
+        }
+      }
+      clearNpDoc(null);
       showToast('✓ Project created — ' + result.id);
       loadProjects();
     } else {
@@ -1404,14 +1440,20 @@ function openEditProjectModal() {
   document.getElementById('modal-edit-project').classList.add('open');
 }
 
+function clearEpDoc(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  epDocFiles = [];
+  document.getElementById('ep-doc-file').value = '';
+  document.getElementById('ep-doc-label').textContent = 'Tap to add document(s)';
+  document.getElementById('ep-doc-zone').classList.remove('has-file');
+  document.getElementById('ep-doc-clear').style.display = 'none';
+  renderEpPendingList();
+}
+
 async function saveEditProject() {
   const id = document.getElementById('ep-id').value;
   closeModal('edit-project');
   showToast('Saving...');
-
-  // Leer nuevos archivos de doc si hay (múltiples)
-  const epDocFiles = Array.from(document.getElementById('ep-doc-file').files);
-  window._removeDoc = false;
 
   try {
     const result = await apiPost({
@@ -1431,21 +1473,21 @@ async function saveEditProject() {
       folderId:        currentProject.driveFolderId || '',
     });
     if (result.success) {
-      // Subir nuevos documentos si los hay
+      // Subir nuevos documentos si los hay (múltiples)
       if (epDocFiles.length > 0 && currentProject.driveFolderId) {
         showToast('Uploading ' + epDocFiles.length + ' document(s)...');
         let existingUrls = result.contractFileUrl || currentProject.contractFileUrl || '';
         for (const file of epDocFiles) {
           try {
-            const base64 = await fileToBase64(file);
+            const processed = file.type.startsWith('image/') ? await processImageFile(file) : file;
+            const base64 = await fileToBase64(processed);
             const uploadResult = await apiPost({
               action: 'uploadContractFile',
               folderId: currentProject.driveFolderId,
               fileBase64: base64,
-              fileName: file.name,
-              mimeType: file.type,
+              fileName: processed.name,
+              mimeType: processed.type || file.type,
               projectId: id,
-              // Mantener campos del proyecto
               name: document.getElementById('ep-name').value.trim(),
               client: document.getElementById('ep-client').value.trim(),
               address: document.getElementById('ep-address').value.trim(),
@@ -1458,7 +1500,7 @@ async function saveEditProject() {
               existingUrls,
             });
             if (uploadResult.success) {
-              const entry = file.name + '|' + uploadResult.fileUrl;
+              const entry = processed.name + '|' + uploadResult.fileUrl;
               existingUrls = existingUrls ? existingUrls + ',' + entry : entry;
             }
           } catch(e) { console.error(e); }
@@ -1478,6 +1520,7 @@ async function saveEditProject() {
           objective: document.getElementById('ep-scope').value.trim(),
         });
       }
+      clearEpDoc(null);
       showToast('✓ Project updated');
       await loadProjects();
       currentProject = allProjects.find(p => p.id === id);
@@ -1510,8 +1553,6 @@ async function doDeleteProject() {
     } else { showToast('Error: ' + result.message); }
   } catch(e) { showToast('Connection error'); }
 }
-
-// saveNotes ahora se maneja por addQuickNote en el timeline
 
 // ============================================================
 // HELPERS
