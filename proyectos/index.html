@@ -378,6 +378,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="nav-right">
       <img class="nav-avatar" id="navAvatar" src="" alt="">
       <span class="nav-username" id="navUsername"></span>
+      <span id="navRoleBadge" style="display:none;font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:0.2rem 0.6rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);"></span>
       <button class="nav-sync" onclick="loadProjects()">⟳ Sync</button>
       <a href="/hub" class="nav-hub-btn">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="margin-right:4px;"><polygon points="6,0.5 11,3 11,9 6,11.5 1,9 1,3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>Hub
@@ -392,13 +393,18 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <span class="toast-text" id="toastText">Done.</span>
     </div>
 
+    <div id="readOnlyBanner" style="display:none;align-items:center;gap:0.75rem;background:var(--black3);border:1px solid var(--border);border-left:3px solid var(--gold);padding:0.75rem 1rem;margin-bottom:1rem;">
+      <span style="font-size:18px;color:var(--gold-light);">👁</span>
+      <span style="font-size:0.85rem;color:var(--gold-light);font-weight:600;" id="readOnlyBannerText">View-only access — your role can see all data but cannot create, edit, or delete projects.</span>
+    </div>
+
     <!-- HEADER -->
     <div class="projects-header">
       <div>
         <div class="section-label">Project Management</div>
         <div class="section-title" style="margin-bottom:0;">Projects</div>
       </div>
-      <button class="btn-action gold" onclick="openNewProjectModal()">+ New Project</button>
+      <button class="btn-action gold" id="btnNewProject" onclick="openNewProjectModal()">+ New Project</button>
     </div>
 
     <div class="filter-tabs">
@@ -714,7 +720,72 @@ function loginSuccess(user) {
     const a = document.getElementById('navAvatar');
     a.src = user.picture; a.style.display = 'block';
   }
+
+  const role = sessionStorage.getItem('boft_role') || 'Viewer';
+  CURRENT_ROLE = role;
+  const roleBadge = document.getElementById('navRoleBadge');
+  if (roleBadge) {
+    roleBadge.textContent = role;
+    roleBadge.style.display = 'inline-block';
+  }
+  applyRolePermissions(role);
+
   loadProjects();
+}
+
+// ============================================================
+// RBAC — aplicar permisos de UI según el rol guardado en sessionStorage
+// Roles en Projects:
+//   Owner/Manager  → todo (Manager no puede borrar)
+//   Field Lead     → solo editar Scope of Work + Activity Feed notes, subir fotos
+//   Helper         → solo subir fotos
+//   Viewer         → solo lectura
+// (el backend también valida en doPost — esto es solo para UX)
+// ============================================================
+let CURRENT_ROLE = 'Viewer';
+
+function applyRolePermissions(role) {
+  const isOwner     = role === 'Owner';
+  const isManager    = role === 'Manager';
+  const isFieldLead  = role === 'Field Lead';
+  const isHelper     = role === 'Helper';
+
+  const canCreateProject = isOwner || isManager;             // + New Project
+  const canDeleteProject  = isOwner;                          // 🗑 Delete project
+  const canFullEditProject = isOwner || isManager;            // Edit modal completo (todos los campos)
+  const canLimitedEdit     = isFieldLead;                      // Edit modal limitado (solo Scope/Notes)
+  const canUploadPhotos    = isOwner || isManager || isFieldLead || isHelper; // todos excepto Viewer
+  const canAddNote         = isOwner || isManager || isFieldLead;
+
+  const readOnlyBanner = document.getElementById('readOnlyBanner');
+  const bannerText = document.getElementById('readOnlyBannerText');
+  if (readOnlyBanner) {
+    if (isHelper) {
+      bannerText.textContent = 'Field access — you can upload photos to projects but cannot edit project details.';
+      readOnlyBanner.style.display = 'flex';
+    } else if (isFieldLead) {
+      bannerText.textContent = 'Field Lead access — you can update Scope of Work, Activity Feed notes, and upload photos.';
+      readOnlyBanner.style.display = 'flex';
+    } else if (!canFullEditProject) {
+      bannerText.textContent = 'View-only access — your role can see all data but cannot create, edit, or delete projects.';
+      readOnlyBanner.style.display = 'flex';
+    } else {
+      readOnlyBanner.style.display = 'none';
+    }
+  }
+
+  // + New Project
+  const btnNewProject = document.getElementById('btnNewProject');
+  if (btnNewProject) btnNewProject.style.display = canCreateProject ? 'inline-block' : 'none';
+
+  // Clases en body para ocultar/restringir vía CSS dentro del timeline
+  // (el timeline se re-renderiza dinámicamente, así que estas clases se
+  // consultan también dentro de openProject() para decidir qué botones pintar)
+  document.body.classList.toggle('role-no-delete-project', !canDeleteProject);
+  document.body.classList.toggle('role-no-edit-project',   !canFullEditProject && !canLimitedEdit);
+  document.body.classList.toggle('role-limited-edit',       canLimitedEdit);
+  document.body.classList.toggle('role-no-upload-photos',  !canUploadPhotos);
+  document.body.classList.toggle('role-no-add-note',       !canAddNote);
 }
 
 function doLogout() {
@@ -804,6 +875,11 @@ async function openProject(id) {
   const panel = document.getElementById('projectPanel');
   const sc = (currentProject.status || 'active').toLowerCase().replace(' ', '-');
 
+  const canDeleteProject    = CURRENT_ROLE === 'Owner';
+  const canEditProjectAtAll = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE);
+  const canUploadPhotos     = ['Owner','Manager','Field Lead','Helper'].includes(CURRENT_ROLE);
+  const canAddNote          = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE);
+
   panel.innerHTML = `
     <div class="timeline-header">
       <div>
@@ -812,8 +888,8 @@ async function openProject(id) {
       </div>
       <div class="timeline-actions">
         <span class="project-status ${sc}">${currentProject.status || 'Active'}</span>
-        <button class="btn-action outline" onclick="openEditProjectModal()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">✏️ Edit</button>
-        <button class="btn-action danger" onclick="confirmDeleteProject()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">🗑</button>
+        ${canEditProjectAtAll ? `<button class="btn-action outline" onclick="openEditProjectModal()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">✏️ Edit</button>` : ''}
+        ${canDeleteProject ? `<button class="btn-action danger" onclick="confirmDeleteProject()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">🗑</button>` : ''}
       </div>
     </div>
     <div class="timeline-body">
@@ -864,6 +940,7 @@ async function openProject(id) {
         <div id="activityFeed"><div style="color:var(--muted);font-size:0.82rem;">Loading...</div></div>
       </div>
 
+      ${canAddNote ? `
       <!-- ADD NOTE -->
       <div class="timeline-section">
         <div class="timeline-section-label">Add Note</div>
@@ -871,7 +948,7 @@ async function openProject(id) {
           <input type="text" class="add-note-input" id="quickNoteInput" placeholder="Framed south wall, installed LVL beam...">
           <button class="btn-add-note" onclick="addQuickNote()">Add</button>
         </div>
-      </div>
+      </div>` : ''}
 
       <!-- PHOTOS BY PHASE -->
       <div class="timeline-section">
@@ -881,7 +958,7 @@ async function openProject(id) {
         <div style="margin-bottom:1rem;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
             <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">📷 Before</span>
-            <button class="btn-upload-phase" id="btn-upload-antes" onclick="triggerUpload('antes')" style="font-size:0.58rem;">+ Add</button>
+            ${canUploadPhotos ? `<button class="btn-upload-phase" id="btn-upload-antes" onclick="triggerUpload('antes')" style="font-size:0.58rem;">+ Add</button>` : ''}
           </div>
           <div id="grid-antes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:3px;"></div>
           <div class="upload-progress" id="progress-antes"></div>
@@ -891,7 +968,7 @@ async function openProject(id) {
         <div style="margin-bottom:1rem;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
             <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">🔨 In Progress</span>
-            <button class="btn-upload-phase" id="btn-upload-proceso" onclick="triggerUpload('proceso')" style="font-size:0.58rem;">+ Add</button>
+            ${canUploadPhotos ? `<button class="btn-upload-phase" id="btn-upload-proceso" onclick="triggerUpload('proceso')" style="font-size:0.58rem;">+ Add</button>` : ''}
           </div>
           <div id="grid-proceso" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:3px;"></div>
           <div class="upload-progress" id="progress-proceso"></div>
@@ -901,7 +978,7 @@ async function openProject(id) {
         <div style="margin-bottom:0.5rem;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
             <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">✅ Completed</span>
-            <button class="btn-upload-phase" id="btn-upload-terminado" onclick="triggerUpload('terminado')" style="font-size:0.58rem;">+ Add</button>
+            ${canUploadPhotos ? `<button class="btn-upload-phase" id="btn-upload-terminado" onclick="triggerUpload('terminado')" style="font-size:0.58rem;">+ Add</button>` : ''}
           </div>
           <div id="grid-terminado" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:3px;"></div>
           <div class="upload-progress" id="progress-terminado"></div>
@@ -1338,6 +1415,7 @@ function openNewProjectModal() {
 }
 
 async function createProject() {
+  if (!['Owner','Manager'].includes(CURRENT_ROLE)) { showToast('⚠ Your role cannot create projects'); closeModal('new-project'); return; }
   const name   = document.getElementById('np-name').value.trim();
   const client = document.getElementById('np-client').value.trim();
   const start  = document.getElementById('np-start').value;
@@ -1437,6 +1515,22 @@ function openEditProjectModal() {
   window._updatedDocUrls = undefined;
   renderEditDocList();
   clearEpDoc(null);
+
+  // Field Lead solo puede editar Scope of Work + Activity Feed notes —
+  // deshabilitar visualmente el resto de campos (el backend también lo valida)
+  const isFieldLead = CURRENT_ROLE === 'Field Lead';
+  const restrictedFieldIds = ['ep-name','ep-client','ep-address','ep-city','ep-start','ep-end','ep-value','ep-status'];
+  restrictedFieldIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.disabled = isFieldLead;
+      el.style.opacity = isFieldLead ? '0.5' : '1';
+    }
+  });
+  // También deshabilitar el upload de documentos para Field Lead (no está en su lista de campos permitidos)
+  const epDocZone = document.getElementById('ep-doc-zone');
+  if (epDocZone) epDocZone.style.display = isFieldLead ? 'none' : 'flex';
+
   document.getElementById('modal-edit-project').classList.add('open');
 }
 
@@ -1455,26 +1549,39 @@ async function saveEditProject() {
   closeModal('edit-project');
   showToast('Saving...');
 
+  const isFieldLead = CURRENT_ROLE === 'Field Lead';
+
   try {
-    const result = await apiPost({
-      action:        'editProject',
-      id,
-      name:          document.getElementById('ep-name').value.trim(),
-      client:        document.getElementById('ep-client').value.trim(),
-      address:       document.getElementById('ep-address').value.trim(),
-      city:          document.getElementById('ep-city').value.trim(),
-      startDate:     document.getElementById('ep-start').value,
-      endDate:       document.getElementById('ep-end').value,
-      contractValue:   document.getElementById('ep-value').value,
-      status:          document.getElementById('ep-status').value,
-      objective:       document.getElementById('ep-scope').value.trim(),
-      notes:           document.getElementById('ep-notes').value,
-      contractFileUrl: window._updatedDocUrls !== undefined ? window._updatedDocUrls : (currentProject.contractFileUrl || ''),
-      folderId:        currentProject.driveFolderId || '',
-    });
+    // Field Lead solo puede mandar notes + objective — el resto del payload
+    // se omite porque el backend lo rechazaría de todos modos
+    const payload = isFieldLead
+      ? {
+          action: 'editProject',
+          id,
+          notes:     document.getElementById('ep-notes').value,
+          objective: document.getElementById('ep-scope').value.trim(),
+        }
+      : {
+          action:        'editProject',
+          id,
+          name:          document.getElementById('ep-name').value.trim(),
+          client:        document.getElementById('ep-client').value.trim(),
+          address:       document.getElementById('ep-address').value.trim(),
+          city:          document.getElementById('ep-city').value.trim(),
+          startDate:     document.getElementById('ep-start').value,
+          endDate:       document.getElementById('ep-end').value,
+          contractValue:   document.getElementById('ep-value').value,
+          status:          document.getElementById('ep-status').value,
+          objective:       document.getElementById('ep-scope').value.trim(),
+          notes:           document.getElementById('ep-notes').value,
+          contractFileUrl: window._updatedDocUrls !== undefined ? window._updatedDocUrls : (currentProject.contractFileUrl || ''),
+          folderId:        currentProject.driveFolderId || '',
+        };
+
+    const result = await apiPost(payload);
     if (result.success) {
-      // Subir nuevos documentos si los hay (múltiples)
-      if (epDocFiles.length > 0 && currentProject.driveFolderId) {
+      // Subir nuevos documentos si los hay (múltiples) — no aplica para Field Lead
+      if (!isFieldLead && epDocFiles.length > 0 && currentProject.driveFolderId) {
         showToast('Uploading ' + epDocFiles.length + ' document(s)...');
         let existingUrls = result.contractFileUrl || currentProject.contractFileUrl || '';
         for (const file of epDocFiles) {
@@ -1542,6 +1649,7 @@ function confirmDeleteProject() {
 }
 
 async function doDeleteProject() {
+  if (CURRENT_ROLE !== 'Owner') { showToast('⚠ Your role cannot delete projects'); document.getElementById('confirm-delete').classList.remove('open'); return; }
   document.getElementById('confirm-delete').classList.remove('open');
   showToast('Deleting project...');
   try {
