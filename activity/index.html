@@ -104,6 +104,51 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .empty-log{text-align:center;padding:3rem 2rem;color:var(--muted);}
 .empty-log .icon{font-size:2rem;margin-bottom:0.75rem;opacity:0.3;}
 
+/* TABS */
+.tabs-row{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1.5rem;}
+.tab-btn{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:0.65rem 1.25rem;cursor:pointer;transition:all 0.2s;margin-bottom:-1px;}
+.tab-btn:hover{color:var(--gold-light);}
+.tab-btn.active{color:var(--gold-light);border-bottom-color:var(--gold);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* TEAM TABLE */
+.team-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.75rem;}
+.btn-action{font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;border:none;padding:0.55rem 1.4rem;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all 0.2s;}
+.btn-action.gold{color:var(--black);background:var(--gold);}
+.btn-action.gold:hover{background:var(--gold-light);}
+.team-section{background:var(--black2);padding:1.5rem;}
+.team-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+.team-table th{font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);padding:0.6rem 0.75rem;text-align:left;border-bottom:1px solid var(--border);}
+.team-table td{padding:0.75rem;border-bottom:1px solid rgba(200,146,42,0.08);color:var(--text);}
+.team-table tr:last-child td{border-bottom:none;}
+.team-table tr.inactive-row{opacity:0.45;}
+.role-select{background:var(--black);border:1px solid var(--border);color:var(--text);padding:0.4rem 0.6rem;font-family:'Rajdhani',sans-serif;font-size:0.78rem;outline:none;cursor:pointer;}
+.role-select option{background:var(--black2);}
+.active-toggle{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.2rem 0.6rem;border:1px solid;cursor:pointer;transition:all 0.2s;}
+.active-toggle.active{color:var(--green);border-color:rgba(76,175,125,0.3);background:rgba(76,175,125,0.08);}
+.active-toggle.inactive{color:var(--red);border-color:rgba(224,85,85,0.3);background:rgba(224,85,85,0.08);}
+.btn-save-row{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-light);border:1px solid var(--border);background:var(--gold-dim);padding:0.25rem 0.7rem;cursor:pointer;display:none;}
+.btn-save-row.show{display:inline-block;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(5,6,8,0.96);z-index:100;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--black2);border:1px solid var(--border);width:100%;max-width:460px;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);}
+.modal-title{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold-light);}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;line-height:1;padding:0.2rem;}
+.modal-body{padding:1.5rem;}
+.field-group{margin-bottom:1rem;}
+.field-label{font-size:0.68rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:0.4rem;}
+.field-label span{color:var(--red);margin-left:2px;}
+.field-input{width:100%;background:var(--black);border:1px solid var(--border);color:var(--text);padding:0.65rem 0.9rem;font-family:'Rajdhani',sans-serif;font-size:0.92rem;outline:none;transition:border-color 0.2s;}
+.field-input:focus{border-color:rgba(0,180,255,0.5);}
+.field-input option{background:var(--black2);}
+.modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:flex-end;gap:0.75rem;}
+.btn-submit{font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.65rem 1.8rem;cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
+.btn-cancel{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;}
+
 @media(max-width:700px){
   .page{padding:1rem 1rem 2.5rem;}
   .sticky-nav{padding:0 0.85rem;}
@@ -113,6 +158,21 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   .filter-select{width:100%;}
   .log-row{flex-direction:column;gap:0.4rem;}
   .log-timestamp{text-align:left;}
+
+  .team-header{flex-direction:column;align-items:stretch;}
+  .team-header .btn-action{width:100%;text-align:center;}
+  .team-table thead{display:none;}
+  .team-table tr{display:flex;flex-direction:column;padding:0.85rem 0.25rem;border-bottom:1px solid rgba(200,146,42,0.12);gap:0.4rem;}
+  .team-table td{display:flex;justify-content:space-between;align-items:center;padding:0.15rem 0;border-bottom:none;}
+  .team-table td:not(:last-child)::before{
+    content:attr(data-label);
+    font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);
+    margin-right:0.75rem;flex-shrink:0;
+  }
+  .modal-overlay{padding:0.75rem 0.5rem;align-items:flex-start;}
+  .modal{max-width:100%;}
+  .modal-footer{flex-direction:column-reverse;gap:0.6rem;}
+  .modal-footer > *{width:100%;text-align:center;}
 }
 </style>
 </head>
@@ -163,6 +223,15 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="section-label">Audit Trail</div>
     <div class="section-title">Activity Log — Last 90 Days</div>
 
+    <!-- TABS -->
+    <div class="tabs-row">
+      <button class="tab-btn active" onclick="switchTab('log', this)">Activity Log</button>
+      <button class="tab-btn" onclick="switchTab('team', this)">Team</button>
+    </div>
+
+    <!-- TAB: ACTIVITY LOG -->
+    <div class="tab-panel active" id="tab-log">
+
     <!-- STATS -->
     <div class="stats-row">
       <div class="stat-card"><div class="stat-label">Total Actions</div><div class="stat-num" id="statTotal">—</div></div>
@@ -206,6 +275,68 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <div id="logList"><div style="padding:1rem;color:var(--muted);font-size:0.82rem;">Loading...</div></div>
     </div>
 
+    </div>
+
+    <!-- TAB: TEAM -->
+    <div class="tab-panel" id="tab-team">
+      <div class="team-header">
+        <div style="font-size:0.82rem;color:var(--muted);" id="teamCount">—</div>
+        <button class="btn-action gold" onclick="openAddUserModal()">+ Add User</button>
+      </div>
+      <div class="team-section">
+        <table class="team-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Added</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="teamList">
+            <tr><td colspan="6" style="color:var(--muted);font-size:0.82rem;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL ADD USER -->
+<div id="modal-add-user" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add Team Member</span>
+      <button class="modal-close" onclick="closeAddUserModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label class="field-label">Email <span>*</span></label>
+        <input type="email" class="field-input" id="au-email" placeholder="name@boftbuild.com">
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;">Must be a @boftbuild.com address</div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Name</label>
+        <input type="text" class="field-input" id="au-name" placeholder="John Smith (optional)">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Role <span>*</span></label>
+        <select class="field-input" id="au-role">
+          <option value="Viewer">Viewer — read only</option>
+          <option value="Helper">Helper — upload photos only</option>
+          <option value="Field Lead">Field Lead — Projects scope/notes/photos</option>
+          <option value="Manager">Manager — full access, no delete</option>
+          <option value="Owner">Owner — full access</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAddUserModal()">Cancel</button>
+      <button class="btn-submit" onclick="submitAddUser()">Add User</button>
+    </div>
   </div>
 </div>
 
@@ -267,6 +398,17 @@ function loginSuccess(user, role) {
     roleBadge.style.display = 'inline-block';
   }
   loadActivityLog();
+  loadTeam();
+}
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
 }
 
 function doLogout() {
@@ -425,6 +567,150 @@ function showToast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
 }
+
+// ============================================================
+// TEAM — gestión de usuarios (rol, activo/inactivo, agregar)
+// ============================================================
+let allUsers = [];
+
+async function loadTeam() {
+  try {
+    const data = await apiGet('getAllUsers');
+    allUsers = data.users || [];
+    renderTeam();
+  } catch(e) { console.error('Team load error:', e); }
+}
+
+function renderTeam() {
+  const list  = document.getElementById('teamList');
+  const count = document.getElementById('teamCount');
+
+  if (!allUsers.length) {
+    list.innerHTML = '<tr><td colspan="6" style="color:var(--muted);font-size:0.82rem;">No users found.</td></tr>';
+    count.textContent = '0 users';
+    return;
+  }
+
+  count.textContent = allUsers.length + ' user' + (allUsers.length !== 1 ? 's' : '');
+
+  const roleOptions = ['Owner','Manager','Field Lead','Helper','Viewer'];
+
+  list.innerHTML = allUsers.map((u, i) => {
+    const isActive = u.active !== 'No';
+    const safeEmail = u.email.replace(/'/g, "\\'");
+    return `<tr class="${!isActive ? 'inactive-row' : ''}" data-email="${escHtml(u.email)}">
+      <td data-label="Name">${escHtml(u.name || '—')}</td>
+      <td data-label="Email" style="color:var(--muted);font-size:0.8rem;">${escHtml(u.email)}</td>
+      <td data-label="Role">
+        <select class="role-select" id="role-${i}" onchange="onRoleOrStatusChange(${i})">
+          ${roleOptions.map(r => `<option value="${r}" ${r === u.role ? 'selected' : ''}>${r}</option>`).join('')}
+        </select>
+      </td>
+      <td data-label="Status">
+        <span class="active-toggle ${isActive ? 'active' : 'inactive'}" id="status-${i}" onclick="toggleUserActive(${i})">${isActive ? 'Active' : 'Inactive'}</span>
+      </td>
+      <td data-label="Added" style="color:var(--muted);font-size:0.78rem;">${u.dateAdded || '—'}</td>
+      <td style="text-align:right;">
+        <button class="btn-save-row" id="save-${i}" onclick="saveUserRow(${i})">Save</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function onRoleOrStatusChange(idx) {
+  const saveBtn = document.getElementById('save-' + idx);
+  if (saveBtn) saveBtn.classList.add('show');
+}
+
+function toggleUserActive(idx) {
+  const statusEl = document.getElementById('status-' + idx);
+  const isCurrentlyActive = statusEl.classList.contains('active');
+  statusEl.classList.toggle('active', !isCurrentlyActive);
+  statusEl.classList.toggle('inactive', isCurrentlyActive);
+  statusEl.textContent = isCurrentlyActive ? 'Inactive' : 'Active';
+  onRoleOrStatusChange(idx);
+}
+
+async function saveUserRow(idx) {
+  const user = allUsers[idx];
+  if (!user) return;
+
+  const roleSelect = document.getElementById('role-' + idx);
+  const statusEl   = document.getElementById('status-' + idx);
+  const newRole    = roleSelect.value;
+  const newActive  = statusEl.classList.contains('active') ? 'Yes' : 'No';
+
+  showToast('Updating ' + user.email + '...');
+  try {
+    const result = await apiPost({
+      action: 'updateUserRole',
+      email:  user.email,
+      role:   newRole,
+      active: newActive,
+    });
+    if (result.success) {
+      showToast('✓ User updated');
+      const saveBtn = document.getElementById('save-' + idx);
+      if (saveBtn) saveBtn.classList.remove('show');
+      await loadTeam();
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
+}
+
+function openAddUserModal() {
+  document.getElementById('au-email').value = '';
+  document.getElementById('au-name').value  = '';
+  document.getElementById('au-role').value  = 'Viewer';
+  document.getElementById('modal-add-user').classList.add('open');
+}
+
+function closeAddUserModal() {
+  document.getElementById('modal-add-user').classList.remove('open');
+}
+
+async function submitAddUser() {
+  const email = document.getElementById('au-email').value.trim().toLowerCase();
+  const name  = document.getElementById('au-name').value.trim();
+  const role  = document.getElementById('au-role').value;
+
+  if (!email) { showToast('⚠ Email is required'); return; }
+  if (!email.endsWith('@boftbuild.com')) { showToast('⚠ Email must be @boftbuild.com'); return; }
+
+  closeAddUserModal();
+  showToast('Adding user...');
+  try {
+    const result = await apiPost({
+      action: 'addUserManually',
+      email, name, role,
+    });
+    if (result.success) {
+      showToast('✓ ' + email + ' added as ' + role);
+      await loadTeam();
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
+}
+
+// ============================================================
+// API POST (faltaba — Activity Log original solo tenía apiGet)
+// ============================================================
+async function apiPost(payload) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ACCESS_TOKEN },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (data.error === 'Unauthorized' || data.code === 403) { doLogout(); return {}; }
+  return data;
+}
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
 
 window.addEventListener('load', () => { tryRestoreSession(); });
 </script>
