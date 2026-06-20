@@ -27,6 +27,7 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
 .login-desc strong{color:var(--text);}
 .g-signin-btn{display:flex;align-items:center;justify-content:center;gap:0.75rem;width:100%;padding:0.9rem 1.5rem;background:white;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.95rem;font-weight:700;letter-spacing:0.05em;color:#333;transition:background 0.2s,transform 0.15s;}
 .g-signin-btn:hover{background:#f5f5f5;transform:translateY(-1px);}
+.g-signin-btn:disabled{opacity:0.6;cursor:wait;}
 .login-error{font-size:0.8rem;color:var(--red);margin-top:1rem;display:none;padding:0.75rem;border:1px solid rgba(224,85,85,0.3);background:rgba(224,85,85,0.05);}
 .login-error.show{display:block;}
 
@@ -40,6 +41,7 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
 .nav-right{display:flex;align-items:center;gap:0.75rem;}
 .nav-avatar{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);display:none;}
 .nav-username{font-size:0.75rem;color:var(--muted);}
+.nav-role-badge{font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:0.2rem 0.6rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);display:none;}
 .btn-logout{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid rgba(122,117,112,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:color 0.2s;}
 .btn-logout:hover{color:var(--red);border-color:rgba(224,85,85,0.4);}
 
@@ -56,6 +58,7 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
 .hub-card.proyectos::before{background:linear-gradient(90deg,var(--neon),rgba(0,180,255,0.3));}
 .hub-card.finder::before{background:linear-gradient(90deg,var(--gold),rgba(200,146,42,0.3));}
 .hub-card:hover{background:var(--black3);}
+.hub-card.disabled{opacity:0.35;cursor:not-allowed;pointer-events:none;}
 .hub-card-icon{width:72px;height:72px;display:flex;align-items:center;justify-content:center;position:relative;}
 .hub-card-name{font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;color:var(--gold-light);}
 .hub-card-desc{font-size:0.78rem;color:var(--muted);text-align:center;line-height:1.5;max-width:180px;}
@@ -117,6 +120,7 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
     <div class="nav-right">
       <img class="nav-avatar" id="navAvatar" src="" alt="">
       <span class="nav-username" id="navUsername"></span>
+      <span class="nav-role-badge" id="navRoleBadge"></span>
       <button class="btn-logout" onclick="doLogout()">Logout</button>
     </div>
   </nav>
@@ -128,7 +132,7 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
     <div class="hub-cards">
 
       <!-- CONTABLE -->
-      <a class="hub-card contable" href="/contable">
+      <a class="hub-card contable" href="/contable" id="cardContable">
         <div class="hub-card-icon">
           <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
             <rect x="8" y="12" width="40" height="48" rx="2" stroke="#4caf7d" stroke-width="1.5" fill="none" opacity="0.3"/>
@@ -145,7 +149,7 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
       </a>
 
       <!-- PROJECTS -->
-      <a class="hub-card proyectos" href="/proyectos">
+      <a class="hub-card proyectos" href="/proyectos" id="cardProyectos">
         <div class="hub-card-icon">
           <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
             <polygon points="36,8 64,24 64,56 36,64 8,56 8,24" stroke="#00b4ff" stroke-width="1.5" fill="none" opacity="0.3"/>
@@ -163,7 +167,7 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
       </a>
 
       <!-- FINDER -->
-      <a class="hub-card finder" href="/finder">
+      <a class="hub-card finder" href="/finder" id="cardFinder">
         <div class="hub-card-icon">
           <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
             <circle cx="30" cy="30" r="18" stroke="#c8922a" stroke-width="1.5" fill="none" opacity="0.5"/>
@@ -187,6 +191,7 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
 <script>
 const CLIENT_ID      = '139648063899-tq9arpo1817e20a1qtmm5dm0jl35u4sm.apps.googleusercontent.com';
 const ALLOWED_DOMAIN = 'boftbuild.com';
+const API_URL        = '/api/proxy';
 
 let gsiClient = null;
 
@@ -204,22 +209,65 @@ function initGoogleClient() {
 }
 
 function handleTokenResponse(response) {
-  if (!response.access_token) return;
+  if (!response.access_token) {
+    setSignInLoading(false);
+    return;
+  }
   fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
     headers: { Authorization: 'Bearer ' + response.access_token }
   })
   .then(r => r.json())
-  .then(user => {
+  .then(async user => {
     if (user.email && user.email.split('@')[1] === ALLOWED_DOMAIN) {
       const expiresAt = Date.now() + 3500 * 1000;
       sessionStorage.setItem('boft_token',     response.access_token);
       sessionStorage.setItem('boft_token_exp', expiresAt);
       sessionStorage.setItem('boft_user',      JSON.stringify(user));
-      showHub(user);
+
+      // Resolver rol del usuario (lo crea automáticamente en USERS si no existe)
+      const roleInfo = await fetchUserRole(response.access_token, user);
+      sessionStorage.setItem('boft_role', roleInfo.role || 'Viewer');
+      sessionStorage.setItem('boft_role_name', roleInfo.name || user.name || '');
+
+      setSignInLoading(false);
+      showHub(user, roleInfo.role || 'Viewer');
     } else {
+      setSignInLoading(false);
       document.getElementById('loginError').classList.add('show');
     }
-  });
+  })
+  .catch(() => setSignInLoading(false));
+}
+
+// Llama al endpoint getUserRole del backend — crea el registro en USERS
+// automáticamente la primera vez que este usuario entra (Owner si es el
+// primer usuario del sistema, Viewer por default después de eso)
+async function fetchUserRole(accessToken, user) {
+  try {
+    const params = new URLSearchParams({
+      action: 'getUserRole',
+      token:  accessToken,
+      name:   user.name || '',
+    });
+    const res  = await fetch(API_URL + '?' + params, {
+      headers: { Authorization: 'Bearer ' + accessToken }
+    });
+    const data = await res.json();
+    if (data.error) {
+      console.error('getUserRole error:', data.error);
+      return { role: 'Viewer', name: user.name || '' };
+    }
+    return data;
+  } catch(e) {
+    console.error('fetchUserRole failed:', e);
+    return { role: 'Viewer', name: user.name || '' };
+  }
+}
+
+function setSignInLoading(loading) {
+  const btn = document.getElementById('googleSignInBtn');
+  if (!btn) return;
+  btn.disabled = loading;
 }
 
 function signInWithGoogle() {
@@ -229,6 +277,7 @@ function signInWithGoogle() {
     return;
   }
   document.getElementById('loginError').classList.remove('show');
+  setSignInLoading(true);
   gsiClient.requestAccessToken();
 }
 
@@ -237,18 +286,21 @@ function tryRestoreSession() {
   const token   = sessionStorage.getItem('boft_token');
   const exp     = parseInt(sessionStorage.getItem('boft_token_exp') || '0');
   const userStr = sessionStorage.getItem('boft_user');
+  const role    = sessionStorage.getItem('boft_role') || 'Viewer';
   if (token && exp > Date.now() && userStr) {
-    showHub(JSON.parse(userStr));
+    showHub(JSON.parse(userStr), role);
     return true;
   }
   sessionStorage.removeItem('boft_token');
   sessionStorage.removeItem('boft_token_exp');
   sessionStorage.removeItem('boft_user');
+  sessionStorage.removeItem('boft_role');
+  sessionStorage.removeItem('boft_role_name');
   return false;
 }
 
 // ── UI ──
-function showHub(user) {
+function showHub(user, role) {
   document.getElementById('loginScreen').style.display = 'none';
   const hub = document.getElementById('hub');
   hub.style.display = 'flex';
@@ -265,6 +317,37 @@ function showHub(user) {
     av.src = user.picture;
     av.style.display = 'block';
   }
+
+  // Badge de rol
+  const roleBadge = document.getElementById('navRoleBadge');
+  if (role) {
+    roleBadge.textContent = role;
+    roleBadge.style.display = 'inline-block';
+  }
+
+  applyRolePermissions(role);
+}
+
+// Oculta/atenúa cards del Hub según el rol — Helper y Field Lead
+// solo deberían entrar a Projects, no a Contable ni Finder
+function applyRolePermissions(role) {
+  const cardContable  = document.getElementById('cardContable');
+  const cardProyectos = document.getElementById('cardProyectos');
+  const cardFinder    = document.getElementById('cardFinder');
+
+  // Reset — todo habilitado por default (Owner, Manager, Viewer entran a todo)
+  [cardContable, cardProyectos, cardFinder].forEach(c => {
+    c.classList.remove('disabled');
+    c.removeAttribute('aria-disabled');
+  });
+
+  if (role === 'Field Lead' || role === 'Helper') {
+    // Solo Projects — Contable y Finder bloqueados visualmente
+    cardContable.classList.add('disabled');
+    cardFinder.classList.add('disabled');
+  }
+  // Viewer entra a todo pero de solo lectura — eso se controla dentro
+  // de cada página (Contable/Projects), no aquí en el Hub.
 }
 
 function doLogout() {
