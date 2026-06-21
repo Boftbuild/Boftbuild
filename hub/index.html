@@ -51,13 +51,14 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
 .hub-title{font-family:'Cinzel',serif;font-size:1.8rem;font-weight:700;color:var(--gold-light);text-align:center;margin-bottom:3rem;}
 
 /* CARDS */
-.hub-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);width:100%;max-width:1100px;}
+.hub-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;background:var(--border);width:100%;max-width:1260px;}
 .hub-card{background:var(--black2);padding:2.5rem 1.5rem;display:flex;flex-direction:column;align-items:center;gap:1rem;cursor:pointer;text-decoration:none;position:relative;overflow:hidden;transition:background 0.2s;border:none;}
 .hub-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;transition:opacity 0.2s;}
 .hub-card.contable::before{background:linear-gradient(90deg,var(--green),rgba(76,175,125,0.3));}
 .hub-card.proyectos::before{background:linear-gradient(90deg,var(--neon),rgba(0,180,255,0.3));}
 .hub-card.finder::before{background:linear-gradient(90deg,var(--gold),rgba(200,146,42,0.3));}
 .hub-card.activity::before{background:linear-gradient(90deg,#a78bfa,rgba(167,139,250,0.3));}
+.hub-card.requests::before{background:linear-gradient(90deg,var(--gold-light),rgba(0,180,255,0.35));}
 .hub-card:hover{background:var(--black3);}
 .hub-card.disabled{opacity:0.35;cursor:not-allowed;pointer-events:none;}
 .hub-card.hidden{display:none;}
@@ -69,6 +70,7 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
 .hub-card.proyectos .hub-card-tag{color:var(--neon);border-color:rgba(0,180,255,0.35);}
 .hub-card.finder .hub-card-tag{color:var(--gold-light);border-color:var(--border);}
 .hub-card.activity .hub-card-tag{color:#a78bfa;border-color:rgba(167,139,250,0.35);}
+.hub-card.requests .hub-card-tag{color:var(--neon);border-color:rgba(0,180,255,0.35);}
 
 /* Footer */
 .hub-footer{text-align:center;padding:1.5rem;font-size:0.68rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;}
@@ -170,6 +172,24 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
         <div class="hub-card-name">Projects</div>
         <div class="hub-card-desc">Track progress, photos, documents and activity</div>
         <span class="hub-card-tag">Field Ops</span>
+      </a>
+
+      <!-- REQUESTS -->
+      <a class="hub-card requests hidden" href="/requests" id="cardRequests">
+        <div class="hub-card-icon">
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+            <polygon points="36,7 62,22 62,50 36,65 10,50 10,22" stroke="#e8b84b" stroke-width="1.5" fill="none" opacity="0.35"/>
+            <path d="M23 28h26" stroke="#00b4ff" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
+            <path d="M23 36h18" stroke="#00b4ff" stroke-width="1.2" stroke-linecap="round" opacity="0.55"/>
+            <path d="M23 44h22" stroke="#00b4ff" stroke-width="1.2" stroke-linecap="round" opacity="0.55"/>
+            <path d="M19 27l2 2 4-5" stroke="#c8922a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M19 43l2 2 4-5" stroke="#c8922a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
+            <circle cx="50" cy="48" r="5" stroke="#e8b84b" stroke-width="1.4" fill="rgba(200,146,42,0.08)"/>
+          </svg>
+        </div>
+        <div class="hub-card-name">Requests</div>
+        <div class="hub-card-desc">Material, office and field supply requests</div>
+        <span class="hub-card-tag">Materials</span>
       </a>
 
       <!-- FINDER -->
@@ -359,20 +379,31 @@ function applyRolePermissions(role) {
   const cardProyectos = document.getElementById('cardProyectos');
   const cardFinder    = document.getElementById('cardFinder');
   const cardActivity  = document.getElementById('cardActivity');
+  const cardRequests  = document.getElementById('cardRequests');
 
   // Reset — todo habilitado por default (Owner, Manager, Viewer entran a todo)
   [cardContable, cardProyectos, cardFinder].forEach(c => {
     c.classList.remove('disabled');
     c.removeAttribute('aria-disabled');
   });
+  if (cardRequests) cardRequests.classList.add('hidden');
 
   if (role === 'Field Lead' || role === 'Helper') {
     // Solo Projects — Contable y Finder bloqueados visualmente
     cardContable.classList.add('disabled');
     cardFinder.classList.add('disabled');
   }
+  if (role === 'Planner') {
+    cardContable.classList.add('disabled');
+    cardProyectos.classList.add('disabled');
+    cardFinder.classList.add('disabled');
+  }
   // Viewer entra a todo pero de solo lectura — eso se controla dentro
   // de cada página (Contable/Projects), no aquí en el Hub.
+
+  if (cardRequests) {
+    cardRequests.classList.toggle('hidden', !['Owner','Manager','Planner'].includes(role));
+  }
 
   // Activity Log — visible únicamente para Owner
   if (cardActivity) {
