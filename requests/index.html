@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOFT — Requests</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --black:#0a0b0d;--black2:#0f1114;--black3:#141618;
+  --neon:#00b4ff;--neon-dim:rgba(0,180,255,0.1);
+  --gold:#c8922a;--gold-light:#e8b84b;--gold-dim:rgba(200,146,42,0.12);
+  --text:#e8e2d4;--muted:#7a7570;
+  --border:rgba(200,146,42,0.2);--border-neon:rgba(0,180,255,0.25);
+  --red:#e05555;--green:#4caf7d;--nav-h:52px;
+}
+html{scroll-behavior:smooth;}
+body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;}
+.app{display:none;}
+.sticky-nav{position:sticky;top:0;z-index:50;background:rgba(10,11,13,0.97);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:var(--nav-h);gap:1rem;}
+.nav-logo-sm{font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:var(--gold-light);white-space:nowrap;}
+.nav-logo-sm span{color:var(--neon);}
+.nav-links-sm{display:flex;align-items:center;gap:0.25rem;}
+.nav-link{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;padding:0.4rem 0.75rem;white-space:nowrap;border-bottom:2px solid transparent;text-decoration:none;display:inline-block;}
+.nav-link.active{color:var(--gold-light);border-bottom-color:var(--gold);}
+.nav-right{display:flex;align-items:center;gap:0.75rem;}
+.nav-avatar{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);display:none;}
+.nav-username{font-size:0.75rem;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.nav-role-badge{font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:0.2rem 0.6rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);display:none;}
+.nav-sync{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.35rem 0.9rem;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);}
+.nav-hub-btn{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--neon);background:none;border:1px solid rgba(0,180,255,0.3);padding:0.35rem 0.9rem;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;}
+.nav-logout{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid rgba(122,117,112,0.3);padding:0.35rem 0.9rem;cursor:pointer;}
+.nav-logout:hover{color:var(--red);border-color:rgba(224,85,85,0.4);}
+.page{max-width:1180px;margin:0 auto;padding:1.5rem 2rem 3rem;}
+.section-label{font-size:0.68rem;font-weight:700;letter-spacing:0.35em;text-transform:uppercase;color:var(--neon);margin-bottom:0.5rem;}
+.section-title{font-family:'Cinzel',serif;font-size:1.2rem;font-weight:700;color:var(--gold-light);margin-bottom:1.5rem;}
+.success-toast{display:none;align-items:center;gap:0.75rem;background:var(--black3);border:1px solid rgba(76,175,125,0.4);border-left:3px solid var(--green);padding:0.75rem 1rem;margin-bottom:1rem;position:sticky;top:calc(var(--nav-h) + 8px);z-index:40;}
+.success-toast.show{display:flex;}
+.toast-text{font-size:0.85rem;color:var(--green);font-weight:600;}
+.denied-screen{display:none;min-height:80vh;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;}
+.denied-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold-light);margin-bottom:0.5rem;}
+.denied-text{font-size:0.9rem;color:var(--muted);max-width:380px;line-height:1.5;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);margin-bottom:2px;}
+.stat-card{background:var(--black2);padding:1.25rem 1.2rem;}
+.stat-label{font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem;}
+.stat-num{font-family:'Cinzel',serif;font-size:1.25rem;font-weight:700;color:var(--gold-light);}
+.toolbar{background:var(--black2);padding:1.25rem;margin-top:2px;display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;justify-content:space-between;}
+.filters{display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;}
+.filter-select{background:var(--black);border:1px solid var(--border);color:var(--muted);padding:0.5rem 0.75rem;font-family:'Rajdhani',sans-serif;font-size:0.82rem;outline:none;}
+.filter-select option{background:var(--black2);}
+.btn-action{font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;border:none;padding:0.55rem 1.4rem;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);}
+.btn-action.gold{color:var(--black);background:var(--gold);}
+.btn-action.outline{color:var(--neon);background:transparent;border:1px solid var(--neon);clip-path:none;}
+.btn-action.danger{color:var(--red);background:transparent;border:1px solid rgba(224,85,85,0.4);clip-path:none;}
+.requests-list{background:var(--black2);margin-top:2px;padding:1.5rem;}
+.request-count{font-size:0.78rem;color:var(--muted);margin-bottom:1rem;}
+.request-row{display:grid;grid-template-columns:1fr auto;gap:1rem;padding:1rem 0;border-bottom:1px solid rgba(200,146,42,0.08);}
+.request-row:last-child{border-bottom:none;}
+.request-title{font-size:0.95rem;color:var(--text);font-weight:700;}
+.request-sub{font-size:0.76rem;color:var(--muted);margin-top:0.18rem;}
+.request-meta{display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.55rem;}
+.tag{font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:0.12rem 0.55rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);}
+.tag.normal{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
+.tag.urgent{color:var(--red);border-color:rgba(224,85,85,0.35);background:rgba(224,85,85,0.08);}
+.tag.pending{color:var(--gold-light);}
+.tag.approved{color:var(--green);border-color:rgba(76,175,125,0.35);background:rgba(76,175,125,0.08);}
+.tag.rejected{color:var(--red);border-color:rgba(224,85,85,0.35);background:rgba(224,85,85,0.08);}
+.tag.ordered{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
+.tag.completed{color:var(--muted);border-color:rgba(122,117,112,0.35);background:rgba(122,117,112,0.08);}
+.request-actions{display:flex;gap:0.45rem;align-items:flex-start;justify-content:flex-end;flex-wrap:wrap;}
+.btn-sm{font-family:'Rajdhani',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:0.28rem 0.7rem;cursor:pointer;border:1px solid;background:transparent;}
+.btn-sm.good{color:var(--green);border-color:rgba(76,175,125,0.4);}
+.btn-sm.warn{color:var(--gold-light);border-color:var(--border);}
+.btn-sm.bad{color:var(--red);border-color:rgba(224,85,85,0.4);}
+.btn-sm.info{color:var(--neon);border-color:var(--border-neon);}
+.empty-state{text-align:center;padding:3rem 2rem;color:var(--muted);}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(5,6,8,0.96);z-index:100;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--black2);border:1px solid var(--border);width:100%;max-width:560px;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);}
+.modal-title{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold-light);}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;line-height:1;padding:0.2rem;}
+.modal-body{padding:1.5rem;}
+.modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.field-group{margin-bottom:1rem;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;}
+.field-label{font-size:0.68rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:0.4rem;}
+.field-label span{color:var(--red);margin-left:2px;}
+.field-input{width:100%;background:var(--black);border:1px solid var(--border);color:var(--text);padding:0.65rem 0.9rem;font-family:'Rajdhani',sans-serif;font-size:0.92rem;outline:none;}
+.field-input option{background:var(--black2);}
+.btn-submit{font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.65rem 1.8rem;cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
+.btn-cancel{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;}
+@media(max-width:800px){.sticky-nav{height:auto;min-height:var(--nav-h);flex-wrap:wrap;padding:0.55rem 0.85rem;}.nav-username{display:none;}.page{padding:1rem;}.stats-row{grid-template-columns:1fr 1fr;}.request-row{grid-template-columns:1fr;}.request-actions{justify-content:flex-start;}.field-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="denied-screen" id="deniedScreen">
+  <div class="denied-title">Requests Access</div>
+  <div class="denied-text">The central Requests board is available to Owner, Manager, and Planner roles.</div>
+  <a href="/hub" class="nav-hub-btn" style="margin-top:1rem;">Back to Hub</a>
+</div>
+
+<div class="app" id="app">
+  <nav class="sticky-nav">
+    <div class="nav-logo-sm">BOFT<span>.</span></div>
+    <div class="nav-links-sm"><span class="nav-link active">Requests</span></div>
+    <div class="nav-right">
+      <img class="nav-avatar" id="navAvatar" src="" alt="">
+      <span class="nav-username" id="navUsername"></span>
+      <span class="nav-role-badge" id="navRoleBadge"></span>
+      <button class="nav-sync" onclick="loadRequests()">⟳ Sync</button>
+      <a href="/hub" class="nav-hub-btn">Hub</a>
+      <button class="nav-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </nav>
+
+  <div class="page">
+    <div id="toast" class="success-toast"><span style="font-size:18px;color:var(--green);">✓</span><span class="toast-text" id="toastText">Done.</span></div>
+    <div class="section-label">Materials</div>
+    <div class="section-title">Requests Board</div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-num" id="statPending">—</div></div>
+      <div class="stat-card"><div class="stat-label">Approved</div><div class="stat-num" id="statApproved">—</div></div>
+      <div class="stat-card"><div class="stat-label">Ordered</div><div class="stat-num" id="statOrdered">—</div></div>
+      <div class="stat-card"><div class="stat-label">Completed</div><div class="stat-num" id="statCompleted">—</div></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="filters">
+        <select class="filter-select" id="filterStatus" onchange="renderRequests()">
+          <option value="">All Status</option><option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option><option value="Ordered">Ordered</option><option value="Completed">Completed</option>
+        </select>
+        <select class="filter-select" id="filterType" onchange="renderRequests()">
+          <option value="">All Types</option><option value="Project">Project</option><option value="Office">Office</option>
+        </select>
+        <button class="btn-action outline" onclick="clearFilters()" style="font-size:0.65rem;padding:0.45rem 0.9rem;">Clear</button>
+      </div>
+      <button class="btn-action gold" onclick="openCreateModal()">+ New Request</button>
+    </div>
+
+    <div class="requests-list">
+      <div class="request-count" id="requestCount">Loading...</div>
+      <div id="requestList"><div style="padding:1rem;color:var(--muted);font-size:0.82rem;">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="modal-create" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">New Request</span><button class="modal-close" onclick="closeModal('create')">✕</button></div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div><label class="field-label">Type <span>*</span></label><select class="field-input" id="cr-type" onchange="toggleProjectFields()"><option value="Office">Office</option><option value="Project">Project</option></select></div>
+        <div><label class="field-label">Priority <span>*</span></label><select class="field-input" id="cr-priority"><option value="Normal">Normal</option><option value="Urgent">Urgent</option></select></div>
+      </div>
+      <div class="field-row" id="projectFields" style="display:none;">
+        <div><label class="field-label">Project ID</label><input class="field-input" id="cr-project-id" placeholder="P003"></div>
+        <div><label class="field-label">Project Name</label><input class="field-input" id="cr-project-name" placeholder="Chimney Repair"></div>
+      </div>
+      <div class="field-group"><label class="field-label">Description <span>*</span></label><textarea class="field-input" id="cr-description" rows="3" placeholder="16d nails, Simpson hangers, saw blades..."></textarea></div>
+      <div class="field-row">
+        <div><label class="field-label">Quantity</label><input class="field-input" id="cr-quantity" placeholder="3 boxes"></div>
+        <div><label class="field-label">Notes</label><input class="field-input" id="cr-notes" placeholder="Need by Monday"></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('create')">Cancel</button><button class="btn-submit" onclick="submitCreateRequest()">Create</button></div>
+  </div>
+</div>
+
+<div id="modal-status" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="statusModalTitle">Update Request</span><button class="modal-close" onclick="closeModal('status')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="status-id"><input type="hidden" id="status-value">
+      <div class="field-group"><label class="field-label">Actual Cost</label><input type="number" class="field-input" id="status-cost" step="0.01" placeholder="0.00"></div>
+      <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="status-notes" rows="3" placeholder="Optional notes"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('status')">Cancel</button><button class="btn-submit" onclick="submitStatusUpdate()">Save</button></div>
+  </div>
+</div>
+
+<script>
+const API_URL = '/api/proxy';
+let ACCESS_TOKEN = null;
+let CURRENT_ROLE = 'Viewer';
+let allRequests = [];
+
+function tryRestoreSession() {
+  const token = sessionStorage.getItem('boft_token');
+  const exp = parseInt(sessionStorage.getItem('boft_token_exp') || '0');
+  const userStr = sessionStorage.getItem('boft_user');
+  const role = sessionStorage.getItem('boft_role') || 'Viewer';
+  if (!token || exp <= Date.now() || !userStr) { window.location.href = '/hub'; return false; }
+  ACCESS_TOKEN = token; CURRENT_ROLE = role;
+  const user = JSON.parse(userStr);
+  if (!['Owner','Manager','Planner'].includes(role)) {
+    document.getElementById('deniedScreen').style.display = 'flex';
+    return false;
+  }
+  loginSuccess(user, role);
+  return true;
+}
+
+function loginSuccess(user, role) {
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('navUsername').textContent = user.name || user.email;
+  if (user.picture) { const a = document.getElementById('navAvatar'); a.src = user.picture; a.style.display = 'block'; }
+  const badge = document.getElementById('navRoleBadge'); badge.textContent = role; badge.style.display = 'inline-block';
+  loadRequests();
+}
+
+async function apiGet(action, params = {}) {
+  params.action = action;
+  const qs = new URLSearchParams(params);
+  const res = await fetch(API_URL + '?' + qs, { headers: { Authorization: 'Bearer ' + ACCESS_TOKEN } });
+  return res.json();
+}
+async function apiPost(payload) {
+  const res = await fetch(API_URL, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + ACCESS_TOKEN }, body:JSON.stringify(payload) });
+  return res.json();
+}
+
+async function loadRequests() {
+  try {
+    showToast('Loading requests...');
+    const data = await apiGet('allMaterialRequests');
+    allRequests = data.requests || [];
+    renderRequests();
+    showToast('Requests loaded');
+  } catch(e) { showToast('Error loading requests'); }
+}
+
+function renderRequests() {
+  const status = document.getElementById('filterStatus').value;
+  const type = document.getElementById('filterType').value;
+  let rows = allRequests;
+  if (status) rows = rows.filter(r => r.status === status);
+  if (type) rows = rows.filter(r => r.type === type);
+  document.getElementById('requestCount').textContent = rows.length + ' requests shown';
+  updateStats();
+  const list = document.getElementById('requestList');
+  if (!rows.length) { list.innerHTML = '<div class="empty-state">No requests found.</div>'; return; }
+  list.innerHTML = rows.map(r => renderRequestRow(r)).join('');
+}
+
+function updateStats() {
+  const count = s => allRequests.filter(r => r.status === s).length;
+  document.getElementById('statPending').textContent = count('Pending');
+  document.getElementById('statApproved').textContent = count('Approved');
+  document.getElementById('statOrdered').textContent = count('Ordered');
+  document.getElementById('statCompleted').textContent = count('Completed');
+}
+
+function renderRequestRow(r) {
+  const statusClass = (r.status || '').toLowerCase();
+  const priorityClass = (r.priority || '').toLowerCase();
+  const projectLine = r.type === 'Project' ? `${esc(r.projectName || r.projectId)} · ${esc(r.projectId)}` : 'Office / Operations';
+  const cost = r.actualCost !== '' ? ` · Cost $${Number(r.actualCost).toFixed(2)}` : '';
+  return `<div class="request-row">
+    <div>
+      <div class="request-title">${esc(r.description)}</div>
+      <div class="request-sub">${projectLine} · ${esc(r.quantity || 'No qty')} · Requested by ${esc(r.requestedByName || r.requestedByEmail)}${cost}</div>
+      ${r.notes ? `<div class="request-sub">Notes: ${esc(r.notes)}</div>` : ''}
+      <div class="request-meta"><span class="tag ${statusClass}">${esc(r.status)}</span><span class="tag ${priorityClass}">${esc(r.priority)}</span><span class="tag">${esc(r.type)}</span><span class="tag">${esc(r.timestamp)}</span></div>
+    </div>
+    <div class="request-actions">${renderActions(r)}</div>
+  </div>`;
+}
+
+function renderActions(r) {
+  const actions = [];
+  if (['Owner','Manager'].includes(CURRENT_ROLE) && r.status === 'Pending') {
+    actions.push(`<button class="btn-sm good" onclick="quickStatus('${r.id}','Approved')">Approve</button>`);
+    actions.push(`<button class="btn-sm bad" onclick="quickStatus('${r.id}','Rejected')">Reject</button>`);
+  }
+  if (['Owner','Manager','Planner'].includes(CURRENT_ROLE) && r.status === 'Approved') actions.push(`<button class="btn-sm info" onclick="openStatusModal('${r.id}','Ordered')">Ordered</button>`);
+  if (['Owner','Manager','Planner'].includes(CURRENT_ROLE) && r.status === 'Ordered') actions.push(`<button class="btn-sm good" onclick="openStatusModal('${r.id}','Completed')">Completed</button>`);
+  return actions.join('');
+}
+
+function clearFilters() { document.getElementById('filterStatus').value = ''; document.getElementById('filterType').value = ''; renderRequests(); }
+function openCreateModal() { document.getElementById('cr-type').value = 'Office'; toggleProjectFields(); document.getElementById('modal-create').classList.add('open'); }
+function toggleProjectFields() { document.getElementById('projectFields').style.display = document.getElementById('cr-type').value === 'Project' ? 'grid' : 'none'; }
+function closeModal(id) { document.getElementById('modal-' + id).classList.remove('open'); }
+
+async function submitCreateRequest() {
+  const payload = {
+    action:'createMaterialRequest',
+    type:document.getElementById('cr-type').value,
+    priority:document.getElementById('cr-priority').value,
+    projectId:document.getElementById('cr-project-id').value.trim(),
+    projectName:document.getElementById('cr-project-name').value.trim(),
+    description:document.getElementById('cr-description').value.trim(),
+    quantity:document.getElementById('cr-quantity').value.trim(),
+    notes:document.getElementById('cr-notes').value.trim(),
+  };
+  if (!payload.description) { showToast('Description required'); return; }
+  if (payload.type === 'Project' && !payload.projectId) { showToast('Project ID required'); return; }
+  const result = await apiPost(payload);
+  if (result.success) { closeModal('create'); clearCreateForm(); showToast('Request created'); loadRequests(); }
+  else showToast('Error: ' + result.message);
+}
+
+function clearCreateForm() {
+  ['cr-project-id','cr-project-name','cr-description','cr-quantity','cr-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('cr-priority').value = 'Normal';
+}
+
+async function quickStatus(id, status) {
+  const result = await apiPost({ action:'updateMaterialRequestStatus', id, status });
+  if (result.success) { showToast('Request updated'); loadRequests(); }
+  else showToast('Error: ' + result.message);
+}
+
+function openStatusModal(id, status) {
+  const req = allRequests.find(r => r.id === id);
+  document.getElementById('status-id').value = id;
+  document.getElementById('status-value').value = status;
+  document.getElementById('status-cost').value = req && req.actualCost !== '' ? req.actualCost : '';
+  document.getElementById('status-notes').value = req ? (req.notes || '') : '';
+  document.getElementById('statusModalTitle').textContent = 'Mark ' + status;
+  document.getElementById('modal-status').classList.add('open');
+}
+
+async function submitStatusUpdate() {
+  const payload = {
+    action:'updateMaterialRequestStatus',
+    id:document.getElementById('status-id').value,
+    status:document.getElementById('status-value').value,
+    actualCost:document.getElementById('status-cost').value,
+    notes:document.getElementById('status-notes').value,
+  };
+  const result = await apiPost(payload);
+  if (result.success) { closeModal('status'); showToast('Request updated'); loadRequests(); }
+  else showToast('Error: ' + result.message);
+}
+
+function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function showToast(msg) { document.getElementById('toastText').textContent = msg; const t = document.getElementById('toast'); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+function doLogout() { sessionStorage.clear(); window.location.href = '/hub'; }
+
+document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); }));
+tryRestoreSession();
+</script>
+</body>
+</html>
