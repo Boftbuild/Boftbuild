@@ -207,7 +207,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .pli-date{font-size:0.72rem;color:var(--muted);}
 
 /* TIMELINE */
-.timeline-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;}
+.timeline-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;position:sticky;top:0;z-index:20;background:rgba(15,17,20,0.98);backdrop-filter:blur(10px);}
 .timeline-project-name{font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;color:var(--gold-light);}
 .timeline-project-sub{font-size:0.78rem;color:var(--muted);margin-top:0.15rem;}
 .timeline-actions{display:flex;gap:0.5rem;flex-wrap:wrap;}
@@ -231,6 +231,12 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .feed-dot.note{background:var(--neon);}
 .feed-dot.start{background:var(--gold);}
 .feed-dot.photo{background:#a78bfa;}
+.feed-dot.request{background:var(--gold-light);}
+.feed-dot.request-pending{background:var(--gold-light);}
+.feed-dot.request-approved{background:var(--green);}
+.feed-dot.request-rejected{background:var(--red);}
+.feed-dot.request-ordered{background:var(--neon);}
+.feed-dot.request-completed{background:var(--muted);}
 .feed-content{flex:1;min-width:0;}
 .feed-title{font-size:0.85rem;color:var(--text);font-weight:600;}
 .feed-sub{font-size:0.72rem;color:var(--muted);margin-top:0.1rem;}
@@ -618,6 +624,50 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   </div>
 </div>
 
+<!-- MODAL PROJECT REQUEST -->
+<div id="modal-project-request" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">New Request</span>
+      <button class="modal-close" onclick="closeModal('project-request')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div>
+          <label class="field-label">Category <span>*</span></label>
+          <select class="field-input" id="pr-subtype">
+            <option value="Material">Material</option>
+            <option value="Nails">Nails</option>
+            <option value="Hardware">Hardware</option>
+            <option value="Lumber">Lumber</option>
+            <option value="Tool Needed">Tool Needed</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Priority <span>*</span></label>
+          <select class="field-input" id="pr-priority">
+            <option value="Normal">Normal</option>
+            <option value="Urgent">Urgent</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Description <span>*</span></label>
+        <textarea class="field-input" id="pr-description" rows="3" placeholder="16d nails, Simpson hangers, saw blades..." style="resize:vertical;"></textarea>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Quantity</label><input class="field-input" id="pr-quantity" placeholder="3 boxes"></div>
+        <div><label class="field-label">Notes</label><input class="field-input" id="pr-notes" placeholder="Need by Monday"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('project-request')">Cancel</button>
+      <button class="btn-submit" onclick="submitProjectRequest()">Create Request</button>
+    </div>
+  </div>
+</div>
+
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lightbox-close" onclick="closeLightbox()">✕</button>
@@ -892,6 +942,7 @@ function filterProjects(filter, btn) {
 // OPEN PROJECT — renderiza timeline en panel derecho
 // ============================================================
 let projectTransactions = [];
+let projectMaterialRequests = [];
 
 async function openProject(id) {
   currentProject = allProjects.find(p => p.id === id);
@@ -966,7 +1017,10 @@ async function openProject(id) {
 
       <!-- ACTIVITY FEED -->
       <div class="timeline-section">
-        <div class="timeline-section-label">Activity Feed</div>
+        <div class="timeline-section-label" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+          <span>Activity Feed</span>
+          ${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) ? `<button class="btn-upload-phase" onclick="openProjectRequestModal()" style="font-size:0.58rem;">+ Request</button>` : ''}
+        </div>
         <div id="activityFeed"><div style="color:var(--muted);font-size:0.82rem;">Loading...</div></div>
       </div>
 
@@ -1029,6 +1083,12 @@ async function loadTimelineData() {
     projectTransactions = (data.transactions || []).filter(t =>
       (t.project || '').toLowerCase() === (currentProject.name || '').toLowerCase()
     );
+    try {
+      const requestData = await apiGet('projectMaterialRequests', { projectId: currentProject.id });
+      projectMaterialRequests = requestData.requests || [];
+    } catch(e) {
+      projectMaterialRequests = [];
+    }
 
     // Stats
     let income = 0, expenses = 0, payments = 0;
@@ -1105,6 +1165,26 @@ function buildActivityFeedItems() {
     });
   });
 
+  projectMaterialRequests.forEach(r => {
+    const status = r.status || 'Pending';
+    const statusClass = status.toLowerCase();
+    const displayDate = String(r.completedAt || r.orderedAt || r.approvedAt || r.timestamp || '').slice(0, 10);
+    const statusText = status === 'Approved' ? 'Approved'
+      : status === 'Rejected' ? 'Rejected'
+      : status === 'Ordered' ? 'Ordered'
+      : status === 'Completed' ? 'Completed'
+      : 'Pending';
+    items.push({
+      date: displayDate || getLocalDateString(),
+      type: 'request-' + statusClass,
+      title: 'Request ' + statusText + ': ' + (r.description || r.id),
+      sub: [r.id, r.subtype || r.type, r.quantity || '', r.requestedByName ? 'by ' + r.requestedByName : ''].filter(Boolean).join(' · '),
+      amount: null,
+      pinned: status === 'Pending',
+      seq: seq++
+    });
+  });
+
   // Notas del campo notes (líneas con timestamp si tienen formato "YYYY-MM-DD: texto")
   const notesRaw = currentProject.notes || '';
   notesRaw.split('\n').forEach(line => {
@@ -1114,8 +1194,9 @@ function buildActivityFeedItems() {
     }
   });
 
-  // Ordenar por fecha desc; cuando la fecha es igual, lo más reciente agregado va arriba.
+  // Requests Pending se quedan arriba; lo demás va por fecha desc.
   items.sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
     const byDate = b.date.localeCompare(a.date);
     return byDate || ((b.seq || 0) - (a.seq || 0));
   });
@@ -1148,6 +1229,45 @@ function openFullActivityFeed() {
     ? renderFeedItems_(items)
     : '<div style="color:var(--muted);font-size:0.82rem;">No activity yet.</div>';
   document.getElementById('modal-activity-feed').classList.add('open');
+}
+
+function openProjectRequestModal() {
+  if (!currentProject) return;
+  document.getElementById('pr-subtype').value = 'Material';
+  document.getElementById('pr-priority').value = 'Normal';
+  document.getElementById('pr-description').value = '';
+  document.getElementById('pr-quantity').value = '';
+  document.getElementById('pr-notes').value = '';
+  document.getElementById('modal-project-request').classList.add('open');
+}
+
+async function submitProjectRequest() {
+  if (!currentProject) return;
+  const description = document.getElementById('pr-description').value.trim();
+  if (!description) { showToast('Description required'); return; }
+
+  try {
+    const result = await apiPost({
+      action: 'createMaterialRequest',
+      type: 'Project',
+      subtype: document.getElementById('pr-subtype').value,
+      priority: document.getElementById('pr-priority').value,
+      projectId: currentProject.id,
+      projectName: currentProject.name || '',
+      description,
+      quantity: document.getElementById('pr-quantity').value.trim(),
+      notes: document.getElementById('pr-notes').value.trim(),
+    });
+    if (result.success) {
+      closeModal('project-request');
+      showToast('✓ Request created');
+      const requestData = await apiGet('projectMaterialRequests', { projectId: currentProject.id });
+      projectMaterialRequests = requestData.requests || [];
+      renderActivityFeed();
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
 }
 
 // ============================================================
