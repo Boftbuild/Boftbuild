@@ -238,6 +238,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .feed-amount.green{color:var(--green);}
 .feed-amount.red{color:var(--red);}
 .feed-amount.gold{color:var(--gold-light);}
+.feed-more{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--neon);background:transparent;border:1px solid var(--border-neon);padding:0.42rem 0.9rem;cursor:pointer;margin-top:0.75rem;}
+.feed-more:hover{color:var(--gold-light);border-color:var(--border);}
 
 /* ADD NOTE */
 .add-note-wrap{display:flex;gap:0.5rem;margin-top:0.75rem;}
@@ -498,7 +500,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div><label class="field-label">Est. End Date</label><input type="date" class="field-input" id="np-end"></div>
       </div>
       <div class="field-row">
-        <div><label class="field-label">Documentation Value ($)</label><input type="number" class="field-input" id="np-value" placeholder="0.00" step="0.01"></div>
+        <div><label class="field-label">Price ($)</label><input type="number" class="field-input" id="np-value" placeholder="0.00" step="0.01"></div>
         <div><label class="field-label">Status <span>*</span></label>
           <select class="field-input" id="np-status">
             <option value="Active">Active</option>
@@ -552,7 +554,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div><label class="field-label">Est. End Date</label><input type="date" class="field-input" id="ep-end"></div>
       </div>
       <div class="field-row">
-        <div><label class="field-label">Documentation Value ($)</label><input type="number" class="field-input" id="ep-value" step="0.01"></div>
+        <div><label class="field-label">Price ($)</label><input type="number" class="field-input" id="ep-value" step="0.01"></div>
         <div><label class="field-label">Status</label>
           <select class="field-input" id="ep-status">
             <option value="Active">Active</option>
@@ -564,8 +566,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <div class="field-group"><label class="field-label">Scope of Work</label><textarea class="field-input" id="ep-scope" rows="3" placeholder="Describe what will be done..." style="resize:vertical;"></textarea></div>
       <div class="field-group">
         <label class="field-label">Activity Feed / Notes</label>
-        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.4rem;">Format: YYYY-MM-DD: note text (one per line)</div>
-        <textarea class="field-input" id="ep-notes" rows="4" placeholder="2026-06-13: Framed south wall&#10;2026-06-14: Installed LVL beam..." style="resize:vertical;font-family:monospace;font-size:0.82rem;"></textarea>
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.4rem;">New lines without a date will be stamped automatically.</div>
+        <textarea class="field-input" id="ep-notes" rows="4" placeholder="Framed south wall&#10;Installed LVL beam..." style="resize:vertical;font-family:monospace;font-size:0.82rem;"></textarea>
       </div>
       <div class="field-group">
         <label class="field-label">Documentation</label>
@@ -599,6 +601,19 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="confirm-btns">
       <button class="btn-action danger" onclick="document.getElementById('confirm-delete').classList.remove('open')">Cancel</button>
       <button class="btn-action gold" onclick="doDeleteProject()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FULL ACTIVITY FEED -->
+<div id="modal-activity-feed" class="modal-overlay">
+  <div class="modal" style="max-width:720px;">
+    <div class="modal-header">
+      <span class="modal-title">Activity Feed</span>
+      <button class="modal-close" onclick="closeModal('activity-feed')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="fullActivityFeed"><div style="color:var(--muted);font-size:0.82rem;">No activity yet.</div></div>
     </div>
   </div>
 </div>
@@ -744,6 +759,18 @@ function loginSuccess(user) {
 // ============================================================
 let CURRENT_ROLE = 'Viewer';
 
+function canSeeProjectMoney() {
+  return !['Field Lead','Helper'].includes(CURRENT_ROLE);
+}
+
+function canViewEstimateDocs() {
+  return !['Field Lead','Helper'].includes(CURRENT_ROLE);
+}
+
+function isEstimateDoc(name, url) {
+  return /estimate/i.test(String(name || '') + ' ' + String(url || ''));
+}
+
 function applyRolePermissions(role) {
   const isOwner     = role === 'Owner';
   const isManager    = role === 'Manager';
@@ -842,11 +869,12 @@ function renderProjects() {
   list.innerHTML = filtered.map(p => {
     const sc = (p.status || 'active').toLowerCase().replace(' ', '-');
     const isSelected = currentProject && currentProject.id === p.id ? 'selected' : '';
+    const priceText = canSeeProjectMoney() ? (p.contractValue ? fmt(p.contractValue) : '—') : 'Restricted';
     return `<div class="project-list-item ${sc}-status ${isSelected}" onclick="openProject('${p.id}')">
       <div class="pli-name">${p.name}</div>
       <div class="pli-client">${p.client || '—'} ${p.city ? '· ' + p.city : ''}</div>
       <div class="pli-footer">
-        <span class="pli-value">${p.contractValue ? fmt(p.contractValue) : '—'}</span>
+        <span class="pli-value">${priceText}</span>
         <span class="pli-date">${p.startDate || '—'}</span>
       </div>
     </div>`;
@@ -879,6 +907,8 @@ async function openProject(id) {
   const canEditProjectAtAll = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE);
   const canUploadPhotos     = ['Owner','Manager','Field Lead','Helper'].includes(CURRENT_ROLE);
   const canAddNote          = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE);
+  const showMoney           = canSeeProjectMoney();
+  const priceText           = showMoney ? (currentProject.contractValue ? fmt(currentProject.contractValue) : '—') : 'Restricted';
 
   panel.innerHTML = `
     <div class="timeline-header">
@@ -894,13 +924,13 @@ async function openProject(id) {
     </div>
     <div class="timeline-body">
 
-      <!-- STATS MINI -->
+      ${showMoney ? `<!-- STATS MINI -->
       <div class="stats-mini" id="statsMinI">
         <div class="stat-mini"><div class="stat-mini-label">Income</div><div class="stat-mini-val green" id="tm-income">—</div></div>
         <div class="stat-mini"><div class="stat-mini-label">Expenses</div><div class="stat-mini-val red" id="tm-expenses">—</div></div>
         <div class="stat-mini"><div class="stat-mini-label">Payments</div><div class="stat-mini-val red" id="tm-payments">—</div></div>
         <div class="stat-mini"><div class="stat-mini-label">Net</div><div class="stat-mini-val" id="tm-net">—</div></div>
-      </div>
+      </div>` : ''}
 
       <!-- INFO RÁPIDA -->
       <div class="timeline-section">
@@ -908,7 +938,7 @@ async function openProject(id) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:0.82rem;">
           <div><span style="color:var(--muted);">Start:</span> <span style="color:var(--text);">${currentProject.startDate || '—'}</span></div>
           <div><span style="color:var(--muted);">Est. End:</span> <span style="color:var(--text);">${currentProject.endDate || '—'}</span></div>
-          <div><span style="color:var(--muted);">Documentation:</span> <span style="color:var(--green);font-weight:700;">${currentProject.contractValue ? fmt(currentProject.contractValue) : '—'}</span></div>
+          <div><span style="color:var(--muted);">Price:</span> <span style="color:var(--green);font-weight:700;">${priceText}</span></div>
           <div><span style="color:var(--muted);">Drive:</span> ${currentProject.driveFolderId ? '<a href="https://drive.google.com/drive/folders/' + currentProject.driveFolderId + '" target="_blank" style="color:var(--neon);">Open ↗</a>' : '<span style="color:var(--muted);">—</span>'}</div>
         </div>
       </div>
@@ -1008,12 +1038,17 @@ async function loadTimelineData() {
       if (t.type === 'Payment') payments += Math.abs(t.amount);
     });
     const net = income - expenses - payments;
-    document.getElementById('tm-income').textContent   = fmt(income);
-    document.getElementById('tm-expenses').textContent = fmt(expenses);
-    document.getElementById('tm-payments').textContent = fmt(payments);
+    const incomeEl = document.getElementById('tm-income');
+    const expensesEl = document.getElementById('tm-expenses');
+    const paymentsEl = document.getElementById('tm-payments');
     const netEl = document.getElementById('tm-net');
-    netEl.textContent = fmt(net);
-    netEl.className = 'stat-mini-val ' + (net >= 0 ? 'green' : 'red');
+    if (incomeEl) incomeEl.textContent = fmt(income);
+    if (expensesEl) expensesEl.textContent = fmt(expenses);
+    if (paymentsEl) paymentsEl.textContent = fmt(payments);
+    if (netEl) {
+      netEl.textContent = fmt(net);
+      netEl.className = 'stat-mini-val ' + (net >= 0 ? 'green' : 'red');
+    }
 
     // Build activity feed
     renderActivityFeed();
@@ -1027,8 +1062,22 @@ function renderActivityFeed() {
   const feed = document.getElementById('activityFeed');
   if (!feed) return;
 
-  // Construir items del feed
+  const items = buildActivityFeedItems();
+
+  if (!items.length) {
+    feed.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">No activity yet. Add a note or log a transaction for this project.</div>';
+    return;
+  }
+
+  const visibleItems = items.slice(0, 5);
+  feed.innerHTML = renderFeedItems_(visibleItems) +
+    (items.length > 5 ? `<button class="feed-more" onclick="openFullActivityFeed()">View Full Feed</button>` : '');
+}
+
+function buildActivityFeedItems() {
   const items = [];
+  const showMoney = canSeeProjectMoney();
+  let seq = 0;
 
   // Inicio del proyecto
   if (currentProject.startDate) {
@@ -1037,12 +1086,13 @@ function renderActivityFeed() {
       type: 'start',
       title: 'Project started',
       sub: currentProject.name + (currentProject.client ? ' · ' + currentProject.client : ''),
-      amount: null
+      amount: null,
+      seq: seq++
     });
   }
 
   // Transacciones
-  projectTransactions.forEach(t => {
+  if (showMoney) projectTransactions.forEach(t => {
     const typeMap = { Income: 'income', Expense: 'expense', Payment: 'payment' };
     items.push({
       date: t.date,
@@ -1050,7 +1100,8 @@ function renderActivityFeed() {
       title: t.description,
       sub: t.type + (t.payee ? ' → ' + t.payee : '') + ' · ' + t.account,
       amount: t.amount,
-      txType: t.type
+      txType: t.type,
+      seq: seq++
     });
   });
 
@@ -1059,19 +1110,21 @@ function renderActivityFeed() {
   notesRaw.split('\n').forEach(line => {
     const match = line.match(/^(\d{4}-\d{2}-\d{2}):\s*(.+)/);
     if (match) {
-      items.push({ date: match[1], type: 'note', title: match[2], sub: 'Note', amount: null });
+      items.push({ date: match[1], type: 'note', title: match[2], sub: 'Note', amount: null, seq: seq++ });
     }
   });
 
-  // Ordenar por fecha desc
-  items.sort((a, b) => b.date.localeCompare(a.date));
+  // Ordenar por fecha desc; cuando la fecha es igual, lo más reciente agregado va arriba.
+  items.sort((a, b) => {
+    const byDate = b.date.localeCompare(a.date);
+    return byDate || ((b.seq || 0) - (a.seq || 0));
+  });
 
-  if (!items.length) {
-    feed.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">No activity yet. Add a note or log a transaction for this project.</div>';
-    return;
-  }
+  return items;
+}
 
-  feed.innerHTML = items.map(item => {
+function renderFeedItems_(items) {
+  return items.map(item => {
     const amtColor = item.txType === 'Income' ? 'green' : 'red';
     const amtStr   = item.amount != null
       ? `<span class="feed-amount ${amtColor}">${item.txType === 'Income' ? '+' : '-'}${fmt(Math.abs(item.amount))}</span>`
@@ -1085,6 +1138,16 @@ function renderActivityFeed() {
       ${amtStr}
     </div>`;
   }).join('');
+}
+
+function openFullActivityFeed() {
+  const el = document.getElementById('fullActivityFeed');
+  if (!el) return;
+  const items = buildActivityFeedItems();
+  el.innerHTML = items.length
+    ? renderFeedItems_(items)
+    : '<div style="color:var(--muted);font-size:0.82rem;">No activity yet.</div>';
+  document.getElementById('modal-activity-feed').classList.add('open');
 }
 
 // ============================================================
@@ -1201,14 +1264,16 @@ function renderEditDocList() {
     const {name, url} = parseDocEntry(entry);
     const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(url);
     const label = name || (isImg ? 'Image ' + (i+1) : 'Document ' + (i+1));
+    const allowView = canViewEstimateDocs() || !isEstimateDoc(label, url);
+    const allowEditDocs = ['Owner','Manager'].includes(CURRENT_ROLE);
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid rgba(200,146,42,0.08);gap:0.5rem;">
       <div style="display:flex;align-items:center;gap:0.5rem;min-width:0;flex:1;">
         <span style="font-size:1rem;">${isImg ? '🖼️' : '📄'}</span>
         <span style="font-size:0.82rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label}</span>
       </div>
       <div style="display:flex;gap:0.4rem;flex-shrink:0;">
-        <button class="btn-sm view" onclick="window.open('${url}','_blank')">View ↗</button>
-        <button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="removeEditDocByIndex(${i})">🗑</button>
+        ${allowView ? `<button class="btn-sm view" onclick="window.open('${url}','_blank')">View ↗</button>` : '<span style="font-size:0.68rem;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;">Restricted</span>'}
+        ${allowEditDocs ? `<button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="removeEditDocByIndex(${i})">🗑</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -1248,12 +1313,13 @@ function renderDocumentationFile() {
     const {name, url} = parseDocEntry(entry);
     const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(url);
     const label = name || (isImg ? 'Image ' + (i+1) : 'Document ' + (i+1));
+    const allowView = canViewEstimateDocs() || !isEstimateDoc(label, url);
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid rgba(200,146,42,0.08);gap:0.5rem;">
       <div style="display:flex;align-items:center;gap:0.5rem;min-width:0;flex:1;">
         <span style="font-size:1rem;">${isImg ? '🖼️' : '📄'}</span>
         <span style="font-size:0.82rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label}</span>
       </div>
-      <button class="btn-sm view" onclick="window.open('${url}','_blank')">View ↗</button>
+      ${allowView ? `<button class="btn-sm view" onclick="window.open('${url}','_blank')">View ↗</button>` : '<span style="font-size:0.68rem;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;">Restricted</span>'}
     </div>`;
   }).join('');
 }
@@ -1530,6 +1596,7 @@ function openEditProjectModal() {
   // Field Lead solo puede editar Scope of Work + Activity Feed notes —
   // deshabilitar visualmente el resto de campos (el backend también lo valida)
   const isFieldLead = CURRENT_ROLE === 'Field Lead';
+  const hideMoney = !canSeeProjectMoney();
   const restrictedFieldIds = ['ep-name','ep-client','ep-address','ep-city','ep-start','ep-end','ep-value','ep-status'];
   restrictedFieldIds.forEach(id => {
     const el = document.getElementById(id);
@@ -1538,6 +1605,8 @@ function openEditProjectModal() {
       el.style.opacity = isFieldLead ? '0.5' : '1';
     }
   });
+  const epValue = document.getElementById('ep-value');
+  if (epValue && epValue.parentElement) epValue.parentElement.style.display = hideMoney ? 'none' : '';
   // También deshabilitar el upload de documentos para Field Lead (no está en su lista de campos permitidos)
   const epDocZone = document.getElementById('ep-doc-zone');
   if (epDocZone) epDocZone.style.display = isFieldLead ? 'none' : 'flex';
@@ -1561,6 +1630,7 @@ async function saveEditProject() {
   showToast('Saving...');
 
   const isFieldLead = CURRENT_ROLE === 'Field Lead';
+  const normalizedNotes = normalizeProjectNotes(document.getElementById('ep-notes').value);
 
   try {
     // Field Lead solo puede mandar notes + objective — el resto del payload
@@ -1569,7 +1639,7 @@ async function saveEditProject() {
       ? {
           action: 'editProject',
           id,
-          notes:     document.getElementById('ep-notes').value,
+          notes:     normalizedNotes,
           objective: document.getElementById('ep-scope').value.trim(),
         }
       : {
@@ -1584,7 +1654,7 @@ async function saveEditProject() {
           contractValue:   document.getElementById('ep-value').value,
           status:          document.getElementById('ep-status').value,
           objective:       document.getElementById('ep-scope').value.trim(),
-          notes:           document.getElementById('ep-notes').value,
+          notes:           normalizedNotes,
           contractFileUrl: window._updatedDocUrls !== undefined ? window._updatedDocUrls : (currentProject.contractFileUrl || ''),
           folderId:        currentProject.driveFolderId || '',
         };
@@ -1687,6 +1757,19 @@ function getLocalDateString() {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return yyyy + '-' + mm + '-' + dd;
+}
+
+function normalizeProjectNotes(raw) {
+  const today = getLocalDateString();
+  return String(raw || '')
+    .split('\n')
+    .map(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return '';
+      return /^\d{4}-\d{2}-\d{2}:\s*/.test(trimmed) ? trimmed : today + ': ' + trimmed;
+    })
+    .filter(Boolean)
+    .join('\n');
 }
 
 function showToast(msg) {
