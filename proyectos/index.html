@@ -1263,23 +1263,34 @@ async function addQuickNote() {
   const text = input.value.trim();
   if (!text || !currentProject) return;
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   const newNote = (currentProject.notes ? currentProject.notes + '\n' : '') + today + ': ' + text;
+  const isFieldLead = CURRENT_ROLE === 'Field Lead';
 
   try {
-    const result = await apiPost({
-      action: 'editProject', id: currentProject.id,
-      notes: newNote,
-      name: currentProject.name, client: currentProject.client,
-      address: currentProject.address, city: currentProject.city,
-      startDate: currentProject.startDate, endDate: currentProject.endDate,
-      contractValue: currentProject.contractValue, status: currentProject.status,
-    });
+    const payload = isFieldLead
+      ? {
+          action: 'editProject',
+          id: currentProject.id,
+          notes: newNote,
+        }
+      : {
+          action: 'editProject', id: currentProject.id,
+          notes: newNote,
+          name: currentProject.name, client: currentProject.client,
+          address: currentProject.address, city: currentProject.city,
+          startDate: currentProject.startDate, endDate: currentProject.endDate,
+          contractValue: currentProject.contractValue, status: currentProject.status,
+        };
+
+    const result = await apiPost(payload);
     if (result.success) {
       currentProject.notes = newNote;
       input.value = '';
       renderActivityFeed();
       showToast('✓ Note added');
+    } else {
+      showToast('Error: ' + result.message);
     }
   } catch(e) { showToast('Connection error'); }
 }
@@ -1409,7 +1420,7 @@ function closeLightbox() {
 // CREATE PROJECT — ahora sube múltiples documentos
 // ============================================================
 function openNewProjectModal() {
-  document.getElementById('np-start').value = new Date().toISOString().split('T')[0];
+  document.getElementById('np-start').value = getLocalDateString();
   clearNpDoc(null);
   document.getElementById('modal-new-project').classList.add('open');
 }
@@ -1668,6 +1679,14 @@ async function doDeleteProject() {
 function fmt(n) {
   const num = Number(n) || 0;
   return (num < 0 ? '-' : '') + '$' + Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function getLocalDateString() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return yyyy + '-' + mm + '-' + dd;
 }
 
 function showToast(msg) {
