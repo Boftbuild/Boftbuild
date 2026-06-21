@@ -958,6 +958,7 @@ async function openProject(id) {
   const canEditProjectAtAll = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE);
   const canUploadPhotos     = ['Owner','Manager','Field Lead','Helper'].includes(CURRENT_ROLE);
   const canAddNote          = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE);
+  const canCreateRequest    = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE);
   const showMoney           = canSeeProjectMoney();
   const priceText           = showMoney ? (currentProject.contractValue ? fmt(currentProject.contractValue) : '—') : 'Restricted';
 
@@ -969,6 +970,7 @@ async function openProject(id) {
       </div>
       <div class="timeline-actions">
         <span class="project-status ${sc}">${currentProject.status || 'Active'}</span>
+        ${canCreateRequest ? `<button class="btn-action outline" onclick="openProjectRequestModal()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">+ Request</button>` : ''}
         ${canEditProjectAtAll ? `<button class="btn-action outline" onclick="openEditProjectModal()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">✏️ Edit</button>` : ''}
         ${canDeleteProject ? `<button class="btn-action danger" onclick="confirmDeleteProject()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">🗑</button>` : ''}
       </div>
@@ -1017,10 +1019,7 @@ async function openProject(id) {
 
       <!-- ACTIVITY FEED -->
       <div class="timeline-section">
-        <div class="timeline-section-label" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
-          <span>Activity Feed</span>
-          ${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) ? `<button class="btn-upload-phase" onclick="openProjectRequestModal()" style="font-size:0.58rem;">+ Request</button>` : ''}
-        </div>
+        <div class="timeline-section-label">Activity Feed</div>
         <div id="activityFeed"><div style="color:var(--muted);font-size:0.82rem;">Loading...</div></div>
       </div>
 
