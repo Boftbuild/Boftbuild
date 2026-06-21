@@ -328,6 +328,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
           <option value="Viewer">Viewer — read only</option>
           <option value="Helper">Helper — upload photos only</option>
           <option value="Field Lead">Field Lead — Projects scope/notes/photos</option>
+          <option value="Planner">Planner — material requests</option>
           <option value="Manager">Manager — full access, no delete</option>
           <option value="Owner">Owner — full access</option>
         </select>
@@ -593,7 +594,7 @@ function renderTeam() {
 
   count.textContent = allUsers.length + ' user' + (allUsers.length !== 1 ? 's' : '');
 
-  const roleOptions = ['Owner','Manager','Field Lead','Helper','Viewer'];
+  const roleOptions = ['Owner','Manager','Planner','Field Lead','Helper','Viewer'];
 
   list.innerHTML = allUsers.map((u, i) => {
     const isActive = u.active !== 'No';
