@@ -134,7 +134,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
           <option value="">All Status</option><option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option><option value="Ordered">Ordered</option><option value="Completed">Completed</option>
         </select>
         <select class="filter-select" id="filterType" onchange="renderRequests()">
-          <option value="">All Types</option><option value="Project">Project</option><option value="Office">Office</option>
+          <option value="">All Types</option><option value="Project">Project</option><option value="Office">Office</option><option value="Service">Service</option><option value="Tool">Tool</option>
         </select>
         <button class="btn-action outline" onclick="clearFilters()" style="font-size:0.65rem;padding:0.45rem 0.9rem;">Clear</button>
       </div>
@@ -153,12 +153,15 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="modal-header"><span class="modal-title">New Request</span><button class="modal-close" onclick="closeModal('create')">✕</button></div>
     <div class="modal-body">
       <div class="field-row">
-        <div><label class="field-label">Type <span>*</span></label><select class="field-input" id="cr-type" onchange="toggleProjectFields()"><option value="Office">Office</option><option value="Project">Project</option></select></div>
+        <div><label class="field-label">Type <span>*</span></label><select class="field-input" id="cr-type" onchange="updateCreateRequestFields()"></select></div>
         <div><label class="field-label">Priority <span>*</span></label><select class="field-input" id="cr-priority"><option value="Normal">Normal</option><option value="Urgent">Urgent</option></select></div>
       </div>
+      <div class="field-group" id="subtypeField">
+        <label class="field-label" id="subtypeLabel">Category</label>
+        <select class="field-input" id="cr-subtype"></select>
+      </div>
       <div class="field-row" id="projectFields" style="display:none;">
-        <div><label class="field-label">Project ID</label><input class="field-input" id="cr-project-id" placeholder="P003"></div>
-        <div><label class="field-label">Project Name</label><input class="field-input" id="cr-project-name" placeholder="Chimney Repair"></div>
+        <div style="grid-column:1 / -1;"><label class="field-label">Project <span>*</span></label><select class="field-input" id="cr-project-select"></select></div>
       </div>
       <div class="field-group"><label class="field-label">Description <span>*</span></label><textarea class="field-input" id="cr-description" rows="3" placeholder="16d nails, Simpson hangers, saw blades..."></textarea></div>
       <div class="field-row">
@@ -187,6 +190,7 @@ const API_URL = '/api/proxy';
 let ACCESS_TOKEN = null;
 let CURRENT_ROLE = 'Viewer';
 let allRequests = [];
+let allProjects = [];
 
 function tryRestoreSession() {
   const token = sessionStorage.getItem('boft_token');
@@ -209,6 +213,7 @@ function loginSuccess(user, role) {
   document.getElementById('navUsername').textContent = user.name || user.email;
   if (user.picture) { const a = document.getElementById('navAvatar'); a.src = user.picture; a.style.display = 'block'; }
   const badge = document.getElementById('navRoleBadge'); badge.textContent = role; badge.style.display = 'inline-block';
+  loadProjectsForDropdown();
   loadRequests();
 }
 
@@ -231,6 +236,16 @@ async function loadRequests() {
     renderRequests();
     showToast('Requests loaded');
   } catch(e) { showToast('Error loading requests'); }
+}
+
+async function loadProjectsForDropdown() {
+  try {
+    const data = await apiGet('projects');
+    allProjects = data.projects || [];
+    populateProjectDropdown();
+  } catch(e) {
+    allProjects = [];
+  }
 }
 
 function renderRequests() {
@@ -257,17 +272,24 @@ function updateStats() {
 function renderRequestRow(r) {
   const statusClass = (r.status || '').toLowerCase();
   const priorityClass = (r.priority || '').toLowerCase();
-  const projectLine = r.type === 'Project' ? `${esc(r.projectName || r.projectId)} · ${esc(r.projectId)}` : 'Office / Operations';
+  const typeLine = getRequestTypeLine(r);
   const cost = r.actualCost !== '' ? ` · Cost $${Number(r.actualCost).toFixed(2)}` : '';
   return `<div class="request-row">
     <div>
       <div class="request-title">${esc(r.description)}</div>
-      <div class="request-sub">${projectLine} · ${esc(r.quantity || 'No qty')} · Requested by ${esc(r.requestedByName || r.requestedByEmail)}${cost}</div>
+      <div class="request-sub">${typeLine} · ${esc(r.quantity || 'No qty')} · Requested by ${esc(r.requestedByName || r.requestedByEmail)}${cost}</div>
       ${r.notes ? `<div class="request-sub">Notes: ${esc(r.notes)}</div>` : ''}
-      <div class="request-meta"><span class="tag ${statusClass}">${esc(r.status)}</span><span class="tag ${priorityClass}">${esc(r.priority)}</span><span class="tag">${esc(r.type)}</span><span class="tag">${esc(r.timestamp)}</span></div>
+      <div class="request-meta"><span class="tag ${statusClass}">${esc(r.status)}</span><span class="tag ${priorityClass}">${esc(r.priority)}</span><span class="tag">${esc(r.type)}</span>${r.subtype ? `<span class="tag">${esc(r.subtype)}</span>` : ''}<span class="tag">${esc(r.id)}</span><span class="tag">${esc(r.timestamp)}</span></div>
     </div>
     <div class="request-actions">${renderActions(r)}</div>
   </div>`;
+}
+
+function getRequestTypeLine(r) {
+  if (r.type === 'Project') return esc(r.projectName || r.projectId) + ' · ' + esc(r.projectId);
+  if (r.type === 'Service') return 'Service' + (r.subtype ? ' · ' + esc(r.subtype) : '');
+  if (r.type === 'Tool') return 'Tool' + (r.subtype ? ' · ' + esc(r.subtype) : '');
+  return 'Office / Operations' + (r.subtype ? ' · ' + esc(r.subtype) : '');
 }
 
 function renderActions(r) {
@@ -282,30 +304,82 @@ function renderActions(r) {
 }
 
 function clearFilters() { document.getElementById('filterStatus').value = ''; document.getElementById('filterType').value = ''; renderRequests(); }
-function openCreateModal() { document.getElementById('cr-type').value = 'Office'; toggleProjectFields(); document.getElementById('modal-create').classList.add('open'); }
-function toggleProjectFields() { document.getElementById('projectFields').style.display = document.getElementById('cr-type').value === 'Project' ? 'grid' : 'none'; }
+function openCreateModal() {
+  populateCreateTypeOptions();
+  updateCreateRequestFields();
+  document.getElementById('modal-create').classList.add('open');
+}
+function allowedRequestTypesForRole() {
+  if (CURRENT_ROLE === 'Field Lead') return ['Project'];
+  if (CURRENT_ROLE === 'Planner') return ['Office','Project','Service','Tool'];
+  return ['Office','Project','Service','Tool'];
+}
+function populateCreateTypeOptions() {
+  const typeSelect = document.getElementById('cr-type');
+  const current = typeSelect.value;
+  const types = allowedRequestTypesForRole();
+  const labels = { Office:'Office', Project:'Project', Service:'Service', Tool:'Tool' };
+  typeSelect.innerHTML = types.map(t => `<option value="${t}">${labels[t]}</option>`).join('');
+  typeSelect.value = types.includes(current) ? current : types[0];
+}
+function subtypeOptionsForType(type) {
+  if (type === 'Project') return ['Material','Nails','Hardware','Lumber','Tool Needed','Other'];
+  if (type === 'Office') return ['Office Supplies','Vehicle','Phone / Tech','Shop','Reserve Stock','Other'];
+  if (type === 'Service') return ['Vehicle Fix','Equipment Service','Subcontractor','Inspection','Other'];
+  if (type === 'Tool') return ['New Tool','Maintenance','Repair','Replacement','Other'];
+  return ['Other'];
+}
+function updateCreateRequestFields() {
+  const type = document.getElementById('cr-type').value;
+  document.getElementById('projectFields').style.display = type === 'Project' ? 'grid' : 'none';
+  const subtype = document.getElementById('cr-subtype');
+  subtype.innerHTML = subtypeOptionsForType(type).map(v => `<option value="${v}">${v}</option>`).join('');
+  document.getElementById('subtypeLabel').textContent = type === 'Project' ? 'Request Category' : 'Category';
+  populateProjectDropdown();
+}
+function populateProjectDropdown() {
+  const select = document.getElementById('cr-project-select');
+  if (!select) return;
+  if (!allProjects.length) {
+    select.innerHTML = '<option value="">No projects loaded</option>';
+    return;
+  }
+  select.innerHTML = '<option value="">Select Project</option>' + allProjects.map(p => {
+    const label = [p.name, p.client, p.city].filter(Boolean).join(' · ');
+    return `<option value="${escAttr(p.id)}" data-name="${escAttr(p.name || '')}">${esc(label || p.id)}</option>`;
+  }).join('');
+}
 function closeModal(id) { document.getElementById('modal-' + id).classList.remove('open'); }
 
 async function submitCreateRequest() {
   const payload = {
     action:'createMaterialRequest',
     type:document.getElementById('cr-type').value,
+    subtype:document.getElementById('cr-subtype').value,
     priority:document.getElementById('cr-priority').value,
-    projectId:document.getElementById('cr-project-id').value.trim(),
-    projectName:document.getElementById('cr-project-name').value.trim(),
+    projectId:'',
+    projectName:'',
     description:document.getElementById('cr-description').value.trim(),
     quantity:document.getElementById('cr-quantity').value.trim(),
     notes:document.getElementById('cr-notes').value.trim(),
   };
+  if (payload.type === 'Project') {
+    const projectSelect = document.getElementById('cr-project-select');
+    const selected = projectSelect.options[projectSelect.selectedIndex];
+    payload.projectId = projectSelect.value;
+    payload.projectName = selected ? (selected.getAttribute('data-name') || selected.textContent || '') : '';
+  }
   if (!payload.description) { showToast('Description required'); return; }
-  if (payload.type === 'Project' && !payload.projectId) { showToast('Project ID required'); return; }
+  if (payload.type === 'Project' && !payload.projectId) { showToast('Select a project'); return; }
   const result = await apiPost(payload);
   if (result.success) { closeModal('create'); clearCreateForm(); showToast('Request created'); loadRequests(); }
   else showToast('Error: ' + result.message);
 }
 
 function clearCreateForm() {
-  ['cr-project-id','cr-project-name','cr-description','cr-quantity','cr-notes'].forEach(id => document.getElementById(id).value = '');
+  ['cr-description','cr-quantity','cr-notes'].forEach(id => document.getElementById(id).value = '');
+  const projectSelect = document.getElementById('cr-project-select');
+  if (projectSelect) projectSelect.value = '';
   document.getElementById('cr-priority').value = 'Normal';
 }
 
@@ -339,6 +413,7 @@ async function submitStatusUpdate() {
 }
 
 function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function escAttr(s) { return esc(s).replace(/'/g, '&#39;'); }
 function showToast(msg) { document.getElementById('toastText').textContent = msg; const t = document.getElementById('toast'); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
 function doLogout() { sessionStorage.clear(); window.location.href = '/hub'; }
 
