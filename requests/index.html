@@ -89,6 +89,18 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .field-label span{color:var(--red);margin-left:2px;}
 .field-input{width:100%;background:var(--black);border:1px solid var(--border);color:var(--text);padding:0.65rem 0.9rem;font-family:'Rajdhani',sans-serif;font-size:0.92rem;outline:none;}
 .field-input option{background:var(--black2);}
+.request-builder{border-top:1px solid rgba(0,180,255,0.15);border-bottom:1px solid rgba(0,180,255,0.15);padding:1rem 0;margin:0.5rem 0 1rem;}
+.request-items-list{border:1px solid var(--border);background:var(--black);min-height:84px;}
+.request-empty{padding:1rem;color:var(--muted);font-size:0.82rem;font-style:italic;}
+.request-item{display:grid;grid-template-columns:1fr auto;gap:0.75rem;padding:0.8rem 0.9rem;border-bottom:1px solid rgba(200,146,42,0.1);}
+.request-item:last-child{border-bottom:none;}
+.request-item-title{font-size:0.92rem;color:var(--text);font-weight:700;line-height:1.35;}
+.request-item-meta{font-size:0.74rem;color:var(--muted);margin-top:0.25rem;}
+.request-item-actions{display:flex;gap:0.35rem;align-items:flex-start;}
+.request-icon-btn{width:30px;height:28px;background:transparent;border:1px solid rgba(0,180,255,0.35);color:var(--neon);cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.8rem;font-weight:700;line-height:1;}
+.request-icon-btn:hover{border-color:var(--gold);color:var(--gold-light);}
+.request-icon-btn.danger{border-color:rgba(224,85,85,0.35);color:var(--red);}
+.request-icon-btn.danger:hover{border-color:var(--red);}
 .btn-submit{font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.65rem 1.8rem;cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
 .btn-cancel{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;}
 @media(max-width:800px){.sticky-nav{height:auto;min-height:var(--nav-h);flex-wrap:wrap;padding:0.55rem 0.85rem;}.nav-username{display:none;}.page{padding:1rem;}.stats-row{grid-template-columns:1fr 1fr;}.request-row{grid-template-columns:1fr;}.request-actions{justify-content:flex-start;}.field-row{grid-template-columns:1fr;}}
@@ -153,21 +165,28 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="modal-header"><span class="modal-title">New Request</span><button class="modal-close" onclick="closeModal('create')">✕</button></div>
     <div class="modal-body">
       <div class="field-row">
-        <div><label class="field-label">Type <span>*</span></label><select class="field-input" id="cr-type" onchange="updateCreateRequestFields()"></select></div>
-        <div><label class="field-label">Priority <span>*</span></label><select class="field-input" id="cr-priority"><option value="Normal">Normal</option><option value="Urgent">Urgent</option></select></div>
-      </div>
-      <div class="field-group" id="subtypeField">
-        <label class="field-label" id="subtypeLabel">Category</label>
-        <select class="field-input" id="cr-subtype"></select>
+        <div style="grid-column:1 / -1;"><label class="field-label">Type <span>*</span></label><select class="field-input" id="cr-type" onchange="updateCreateRequestFields()"></select></div>
       </div>
       <div class="field-row" id="projectFields" style="display:none;">
         <div style="grid-column:1 / -1;"><label class="field-label">Project <span>*</span></label><select class="field-input" id="cr-project-select"></select></div>
       </div>
-      <div class="field-group"><label class="field-label">Description <span>*</span></label><textarea class="field-input" id="cr-description" rows="3" placeholder="16d nails, Simpson hangers, saw blades..."></textarea></div>
       <div class="field-row">
-        <div><label class="field-label">Quantity</label><input class="field-input" id="cr-quantity" placeholder="3 boxes"></div>
-        <div><label class="field-label">Notes</label><input class="field-input" id="cr-notes" placeholder="Need by Monday"></div>
+        <div><label class="field-label" id="subtypeLabel">Category <span>*</span></label><select class="field-input" id="cr-subtype"></select></div>
+        <div><label class="field-label">Priority <span>*</span></label><select class="field-input" id="cr-priority"><option value="Normal">Normal</option><option value="Urgent">Urgent</option></select></div>
       </div>
+      <div class="field-row">
+        <div><label class="field-label">Description <span>*</span></label><input class="field-input" id="cr-description" placeholder="16d nails, Simpson hangers..."></div>
+        <div><label class="field-label">Quantity <span>*</span></label><input type="number" min="1" step="1" inputmode="numeric" class="field-input" id="cr-quantity" placeholder="3"></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Date</label><input type="date" class="field-input" id="cr-date"></div>
+        <div style="display:flex;align-items:flex-end;"><button type="button" class="btn-submit" id="cr-add-btn" onclick="addOrUpdateCreateRequestItem()" style="width:100%;">ADD+</button></div>
+      </div>
+      <div class="request-builder">
+        <label class="field-label">List</label>
+        <div class="request-items-list" id="cr-items-list"></div>
+      </div>
+      <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="cr-notes" rows="2" placeholder="General notes for this request..."></textarea></div>
     </div>
     <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('create')">Cancel</button><button class="btn-submit" onclick="submitCreateRequest()">Create</button></div>
   </div>
@@ -191,6 +210,8 @@ let ACCESS_TOKEN = null;
 let CURRENT_ROLE = 'Viewer';
 let allRequests = [];
 let allProjects = [];
+let createRequestItems = [];
+let createRequestEditIndex = -1;
 
 function tryRestoreSession() {
   const token = sessionStorage.getItem('boft_token');
@@ -307,6 +328,11 @@ function clearFilters() { document.getElementById('filterStatus').value = ''; do
 function openCreateModal() {
   populateCreateTypeOptions();
   updateCreateRequestFields();
+  createRequestItems = [];
+  createRequestEditIndex = -1;
+  resetCreateRequestItemForm();
+  document.getElementById('cr-notes').value = '';
+  renderCreateRequestItems();
   document.getElementById('modal-create').classList.add('open');
 }
 function allowedRequestTypesForRole() {
@@ -336,6 +362,10 @@ function updateCreateRequestFields() {
   subtype.innerHTML = subtypeOptionsForType(type).map(v => `<option value="${v}">${v}</option>`).join('');
   document.getElementById('subtypeLabel').textContent = type === 'Project' ? 'Request Category' : 'Category';
   populateProjectDropdown();
+  createRequestItems = [];
+  createRequestEditIndex = -1;
+  resetCreateRequestItemForm();
+  renderCreateRequestItems();
 }
 function populateProjectDropdown() {
   const select = document.getElementById('cr-project-select');
@@ -351,16 +381,98 @@ function populateProjectDropdown() {
 }
 function closeModal(id) { document.getElementById('modal-' + id).classList.remove('open'); }
 
+function resetCreateRequestItemForm() {
+  const type = document.getElementById('cr-type').value;
+  const subtype = document.getElementById('cr-subtype');
+  subtype.innerHTML = subtypeOptionsForType(type).map(v => `<option value="${v}">${v}</option>`).join('');
+  subtype.value = subtype.options[0] ? subtype.options[0].value : 'Other';
+  document.getElementById('cr-priority').value = 'Normal';
+  document.getElementById('cr-description').value = '';
+  document.getElementById('cr-quantity').value = '';
+  document.getElementById('cr-date').value = '';
+  document.getElementById('cr-add-btn').textContent = 'ADD+';
+  createRequestEditIndex = -1;
+}
+
+function addOrUpdateCreateRequestItem() {
+  const item = {
+    category: document.getElementById('cr-subtype').value,
+    priority: document.getElementById('cr-priority').value,
+    description: document.getElementById('cr-description').value.trim(),
+    quantity: document.getElementById('cr-quantity').value.trim(),
+    date: document.getElementById('cr-date').value
+  };
+  if (!item.description) { showToast('Description required'); return; }
+  if (!item.quantity || Number(item.quantity) <= 0) { showToast('Quantity required'); return; }
+
+  if (createRequestEditIndex >= 0) createRequestItems[createRequestEditIndex] = item;
+  else createRequestItems.push(item);
+
+  resetCreateRequestItemForm();
+  renderCreateRequestItems();
+}
+
+function editCreateRequestItem(index) {
+  const item = createRequestItems[index];
+  if (!item) return;
+  createRequestEditIndex = index;
+  document.getElementById('cr-subtype').value = item.category;
+  document.getElementById('cr-priority').value = item.priority;
+  document.getElementById('cr-description').value = item.description;
+  document.getElementById('cr-quantity').value = item.quantity;
+  document.getElementById('cr-date').value = item.date || '';
+  document.getElementById('cr-add-btn').textContent = 'Update';
+}
+
+function deleteCreateRequestItem(index) {
+  createRequestItems.splice(index, 1);
+  if (createRequestEditIndex === index) resetCreateRequestItemForm();
+  else if (createRequestEditIndex > index) createRequestEditIndex--;
+  renderCreateRequestItems();
+}
+
+function renderCreateRequestItems() {
+  const list = document.getElementById('cr-items-list');
+  if (!list) return;
+  if (!createRequestItems.length) {
+    list.innerHTML = '<div class="request-empty">No items added yet.</div>';
+    return;
+  }
+  list.innerHTML = createRequestItems.map((item, index) => `
+    <div class="request-item">
+      <div>
+        <div class="request-item-title">${esc(item.description)}</div>
+        <div class="request-item-meta">${esc(item.category)} · ${esc(item.priority)} · Qty ${esc(item.quantity)}${item.date ? ' · ' + esc(item.date) : ''}</div>
+      </div>
+      <div class="request-item-actions">
+        <button type="button" class="request-icon-btn" title="Edit" onclick="editCreateRequestItem(${index})">✎</button>
+        <button type="button" class="request-icon-btn danger" title="Delete" onclick="deleteCreateRequestItem(${index})">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function buildCreateRequestSummary() {
+  return createRequestItems.map((item, index) => {
+    const due = item.date ? ' | Date: ' + item.date : '';
+    return (index + 1) + '. [' + item.category + ' | ' + item.priority + due + ' | Qty: ' + item.quantity + '] ' + item.description;
+  }).join('\n');
+}
+
 async function submitCreateRequest() {
+  if (createRequestEditIndex >= 0) { showToast('Update the item before creating request'); return; }
+  if (!createRequestItems.length) { showToast('Add at least one item'); return; }
+  const firstItem = createRequestItems[0];
+  const hasUrgent = createRequestItems.some(item => item.priority === 'Urgent');
   const payload = {
     action:'createMaterialRequest',
     type:document.getElementById('cr-type').value,
-    subtype:document.getElementById('cr-subtype').value,
-    priority:document.getElementById('cr-priority').value,
+    subtype:createRequestItems.length === 1 ? firstItem.category : 'Multiple Items',
+    priority:hasUrgent ? 'Urgent' : 'Normal',
     projectId:'',
     projectName:'',
-    description:document.getElementById('cr-description').value.trim(),
-    quantity:document.getElementById('cr-quantity').value.trim(),
+    description:buildCreateRequestSummary(),
+    quantity:createRequestItems.length === 1 ? firstItem.quantity : createRequestItems.length + ' items',
     notes:document.getElementById('cr-notes').value.trim(),
   };
   if (payload.type === 'Project') {
@@ -369,7 +481,6 @@ async function submitCreateRequest() {
     payload.projectId = projectSelect.value;
     payload.projectName = selected ? (selected.getAttribute('data-name') || selected.textContent || '') : '';
   }
-  if (!payload.description) { showToast('Description required'); return; }
   if (payload.type === 'Project' && !payload.projectId) { showToast('Select a project'); return; }
   const result = await apiPost(payload);
   if (result.success) { closeModal('create'); clearCreateForm(); showToast('Request created'); loadRequests(); }
@@ -377,10 +488,13 @@ async function submitCreateRequest() {
 }
 
 function clearCreateForm() {
-  ['cr-description','cr-quantity','cr-notes'].forEach(id => document.getElementById(id).value = '');
+  createRequestItems = [];
+  createRequestEditIndex = -1;
+  ['cr-description','cr-quantity','cr-date','cr-notes'].forEach(id => document.getElementById(id).value = '');
   const projectSelect = document.getElementById('cr-project-select');
   if (projectSelect) projectSelect.value = '';
   document.getElementById('cr-priority').value = 'Normal';
+  renderCreateRequestItems();
 }
 
 async function quickStatus(id, status) {
