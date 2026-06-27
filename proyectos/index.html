@@ -165,6 +165,19 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .field-input:focus{border-color:rgba(0,180,255,0.5);}
 .field-input option{background:var(--black2);}
 .field-input.error{border-color:var(--red)!important;}
+.request-builder{border-top:1px solid rgba(0,180,255,0.15);border-bottom:1px solid rgba(0,180,255,0.15);padding:1rem 0;margin:0.5rem 0 1rem;}
+.request-add-row{display:flex;justify-content:flex-end;margin-bottom:1rem;}
+.request-items-list{border:1px solid var(--border);background:var(--black);min-height:84px;}
+.request-empty{padding:1rem;color:var(--muted);font-size:0.82rem;font-style:italic;}
+.request-item{display:grid;grid-template-columns:1fr auto;gap:0.75rem;padding:0.8rem 0.9rem;border-bottom:1px solid rgba(200,146,42,0.1);}
+.request-item:last-child{border-bottom:none;}
+.request-item-title{font-size:0.92rem;color:var(--text);font-weight:700;line-height:1.35;}
+.request-item-meta{font-size:0.74rem;color:var(--muted);margin-top:0.25rem;}
+.request-item-actions{display:flex;gap:0.35rem;align-items:flex-start;}
+.request-icon-btn{width:30px;height:28px;background:transparent;border:1px solid rgba(0,180,255,0.35);color:var(--neon);cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.8rem;font-weight:700;line-height:1;}
+.request-icon-btn:hover{border-color:var(--gold);color:var(--gold-light);}
+.request-icon-btn.danger{border-color:rgba(224,85,85,0.35);color:var(--red);}
+.request-icon-btn.danger:hover{border-color:var(--red);}
 .modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .btn-submit{font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.65rem 1.8rem;cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
 .btn-submit:disabled{opacity:0.5;cursor:wait;}
@@ -652,14 +665,21 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
           </select>
         </div>
       </div>
-      <div class="field-group">
-        <label class="field-label">Description <span>*</span></label>
-        <textarea class="field-input" id="pr-description" rows="3" placeholder="16d nails, Simpson hangers, saw blades..." style="resize:vertical;"></textarea>
+      <div class="field-row">
+        <div><label class="field-label">Description <span>*</span></label><input class="field-input" id="pr-description" placeholder="16d nails, Simpson hangers..."></div>
+        <div><label class="field-label">Quantity <span>*</span></label><input type="number" min="1" step="1" inputmode="numeric" class="field-input" id="pr-quantity" placeholder="3"></div>
       </div>
       <div class="field-row">
-        <div><label class="field-label">Quantity</label><input class="field-input" id="pr-quantity" placeholder="3 boxes"></div>
-        <div><label class="field-label">Notes</label><input class="field-input" id="pr-notes" placeholder="Need by Monday"></div>
+        <div><label class="field-label">Date</label><input type="date" class="field-input" id="pr-date"></div>
+        <div style="display:flex;align-items:flex-end;">
+          <button type="button" class="btn-submit" id="pr-add-btn" onclick="addOrUpdateProjectRequestItem()" style="width:100%;">ADD+</button>
+        </div>
       </div>
+      <div class="request-builder">
+        <label class="field-label">List</label>
+        <div class="request-items-list" id="pr-items-list"></div>
+      </div>
+      <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="pr-notes" rows="2" placeholder="General notes for this request..." style="resize:vertical;"></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('project-request')">Cancel</button>
@@ -688,6 +708,8 @@ let ACCESS_TOKEN = null;
 let allProjects  = [];
 let currentProject = null;
 let currentFilter  = 'all';
+let projectRequestItems = [];
+let projectRequestEditIndex = -1;
 
 // Archivos pendientes para New Project y Edit Project (multi-file)
 let npDocFiles = [];
@@ -1232,30 +1254,109 @@ function openFullActivityFeed() {
 
 function openProjectRequestModal() {
   if (!currentProject) return;
+  projectRequestItems = [];
+  projectRequestEditIndex = -1;
+  resetProjectRequestItemForm();
+  document.getElementById('pr-notes').value = '';
+  renderProjectRequestItems();
+  document.getElementById('modal-project-request').classList.add('open');
+}
+
+function resetProjectRequestItemForm() {
   document.getElementById('pr-subtype').value = 'Material';
   document.getElementById('pr-priority').value = 'Normal';
   document.getElementById('pr-description').value = '';
   document.getElementById('pr-quantity').value = '';
-  document.getElementById('pr-notes').value = '';
-  document.getElementById('modal-project-request').classList.add('open');
+  document.getElementById('pr-date').value = '';
+  document.getElementById('pr-add-btn').textContent = 'ADD+';
+  projectRequestEditIndex = -1;
+}
+
+function addOrUpdateProjectRequestItem() {
+  const item = {
+    category: document.getElementById('pr-subtype').value,
+    priority: document.getElementById('pr-priority').value,
+    description: document.getElementById('pr-description').value.trim(),
+    quantity: document.getElementById('pr-quantity').value.trim(),
+    date: document.getElementById('pr-date').value
+  };
+  if (!item.description) { showToast('Description required'); return; }
+  if (!item.quantity || Number(item.quantity) <= 0) { showToast('Quantity required'); return; }
+
+  if (projectRequestEditIndex >= 0) projectRequestItems[projectRequestEditIndex] = item;
+  else projectRequestItems.push(item);
+
+  resetProjectRequestItemForm();
+  renderProjectRequestItems();
+}
+
+function editProjectRequestItem(index) {
+  const item = projectRequestItems[index];
+  if (!item) return;
+  projectRequestEditIndex = index;
+  document.getElementById('pr-subtype').value = item.category;
+  document.getElementById('pr-priority').value = item.priority;
+  document.getElementById('pr-description').value = item.description;
+  document.getElementById('pr-quantity').value = item.quantity;
+  document.getElementById('pr-date').value = item.date || '';
+  document.getElementById('pr-add-btn').textContent = 'Update';
+}
+
+function deleteProjectRequestItem(index) {
+  projectRequestItems.splice(index, 1);
+  if (projectRequestEditIndex === index) resetProjectRequestItemForm();
+  else if (projectRequestEditIndex > index) projectRequestEditIndex--;
+  renderProjectRequestItems();
+}
+
+function renderProjectRequestItems() {
+  const list = document.getElementById('pr-items-list');
+  if (!list) return;
+  if (!projectRequestItems.length) {
+    list.innerHTML = '<div class="request-empty">No items added yet.</div>';
+    return;
+  }
+  list.innerHTML = projectRequestItems.map((item, index) => `
+    <div class="request-item">
+      <div>
+        <div class="request-item-title">${esc(item.description)}</div>
+        <div class="request-item-meta">${esc(item.category)} · ${esc(item.priority)} · Qty ${esc(item.quantity)}${item.date ? ' · ' + esc(item.date) : ''}</div>
+      </div>
+      <div class="request-item-actions">
+        <button type="button" class="request-icon-btn" title="Edit" onclick="editProjectRequestItem(${index})">✎</button>
+        <button type="button" class="request-icon-btn danger" title="Delete" onclick="deleteProjectRequestItem(${index})">🗑</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function buildProjectRequestSummary() {
+  return projectRequestItems.map((item, index) => {
+    const due = item.date ? ' | Date: ' + item.date : '';
+    return (index + 1) + '. [' + item.category + ' | ' + item.priority + due + ' | Qty: ' + item.quantity + '] ' + item.description;
+  }).join('\n');
 }
 
 async function submitProjectRequest() {
   if (!currentProject) return;
-  const description = document.getElementById('pr-description').value.trim();
-  if (!description) { showToast('Description required'); return; }
+  if (projectRequestEditIndex >= 0) { showToast('Update the item before creating request'); return; }
+  if (!projectRequestItems.length) { showToast('Add at least one item'); return; }
+  const firstItem = projectRequestItems[0];
+  const hasUrgent = projectRequestItems.some(item => item.priority === 'Urgent');
+  const description = buildProjectRequestSummary();
+  const notes = document.getElementById('pr-notes').value.trim();
 
   try {
     const result = await apiPost({
       action: 'createMaterialRequest',
       type: 'Project',
-      subtype: document.getElementById('pr-subtype').value,
-      priority: document.getElementById('pr-priority').value,
+      subtype: projectRequestItems.length === 1 ? firstItem.category : 'Multiple Items',
+      priority: hasUrgent ? 'Urgent' : 'Normal',
       projectId: currentProject.id,
       projectName: currentProject.name || '',
       description,
-      quantity: document.getElementById('pr-quantity').value.trim(),
-      notes: document.getElementById('pr-notes').value.trim(),
+      quantity: projectRequestItems.length === 1 ? firstItem.quantity : projectRequestItems.length + ' items',
+      notes,
     });
     if (result.success) {
       closeModal('project-request');
