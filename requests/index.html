@@ -58,6 +58,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .request-row{display:grid;grid-template-columns:1fr auto;gap:1rem;padding:1rem 0;border-bottom:1px solid rgba(200,146,42,0.08);}
 .request-row:last-child{border-bottom:none;}
 .request-title{font-size:0.95rem;color:var(--text);font-weight:700;}
+.request-item-lines{display:flex;flex-direction:column;gap:0.35rem;margin-bottom:0.2rem;}
+.request-line-item{font-size:0.9rem;color:var(--text);font-weight:700;line-height:1.35;padding-left:0.65rem;border-left:2px solid rgba(0,180,255,0.25);}
 .request-sub{font-size:0.76rem;color:var(--muted);margin-top:0.18rem;}
 .request-meta{display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.55rem;}
 .tag{font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:0.12rem 0.55rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);}
@@ -297,13 +299,21 @@ function renderRequestRow(r) {
   const cost = r.actualCost !== '' ? ` · Cost $${Number(r.actualCost).toFixed(2)}` : '';
   return `<div class="request-row">
     <div>
-      <div class="request-title">${esc(r.description)}</div>
+      ${renderRequestDescription(r.description)}
       <div class="request-sub">${typeLine} · ${esc(r.quantity || 'No qty')} · Requested by ${esc(r.requestedByName || r.requestedByEmail)}${cost}</div>
       ${r.notes ? `<div class="request-sub">Notes: ${esc(r.notes)}</div>` : ''}
       <div class="request-meta"><span class="tag ${statusClass}">${esc(r.status)}</span><span class="tag ${priorityClass}">${esc(r.priority)}</span><span class="tag">${esc(r.type)}</span>${r.subtype ? `<span class="tag">${esc(r.subtype)}</span>` : ''}<span class="tag">${esc(r.id)}</span><span class="tag">${esc(r.timestamp)}</span></div>
     </div>
     <div class="request-actions">${renderActions(r)}</div>
   </div>`;
+}
+
+function renderRequestDescription(description) {
+  const text = String(description || '').trim();
+  const lines = text.split(/\n+/).map(line => line.trim()).filter(Boolean);
+  const looksLikeItemList = lines.length > 1 || /^1\.\s+\[/.test(text);
+  if (!looksLikeItemList) return `<div class="request-title">${esc(text)}</div>`;
+  return `<div class="request-item-lines">${lines.map(line => `<div class="request-line-item">${esc(line)}</div>`).join('')}</div>`;
 }
 
 function getRequestTypeLine(r) {
