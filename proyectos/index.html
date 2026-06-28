@@ -1312,22 +1312,58 @@ function deleteProjectRequestItem(index) {
 function renderProjectRequestItems() {
   const list = document.getElementById('pr-items-list');
   if (!list) return;
+  list.innerHTML = '';
   if (!projectRequestItems.length) {
-    list.innerHTML = '<div class="request-empty">No items added yet.</div>';
+    const empty = document.createElement('div');
+    empty.className = 'request-empty';
+    empty.textContent = 'No items added yet.';
+    list.appendChild(empty);
     return;
   }
-  list.innerHTML = projectRequestItems.map((item, index) => `
-    <div class="request-item">
-      <div>
-        <div class="request-item-title">${esc(item.description)}</div>
-        <div class="request-item-meta">${esc(item.category)} · ${esc(item.priority)} · Qty ${esc(item.quantity)}${item.date ? ' · ' + esc(item.date) : ''}</div>
-      </div>
-      <div class="request-item-actions">
-        <button type="button" class="request-icon-btn" title="Edit" onclick="editProjectRequestItem(${index})">✎</button>
-        <button type="button" class="request-icon-btn danger" title="Delete" onclick="deleteProjectRequestItem(${index})">🗑</button>
-      </div>
-    </div>
-  `).join('');
+  projectRequestItems.forEach(function(item, index) {
+    const row = document.createElement('div');
+    row.className = 'request-item';
+
+    const copy = document.createElement('div');
+    const title = document.createElement('div');
+    title.className = 'request-item-title';
+    title.textContent = item.description || '';
+
+    const meta = document.createElement('div');
+    meta.className = 'request-item-meta';
+    meta.textContent = [
+      item.category || '',
+      item.priority || '',
+      'Qty ' + (item.quantity || ''),
+      item.date || ''
+    ].filter(Boolean).join(' | ');
+
+    copy.appendChild(title);
+    copy.appendChild(meta);
+
+    const actions = document.createElement('div');
+    actions.className = 'request-item-actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'request-icon-btn';
+    editBtn.title = 'Edit';
+    editBtn.textContent = 'Edit';
+    editBtn.onclick = function() { editProjectRequestItem(index); };
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'request-icon-btn danger';
+    deleteBtn.title = 'Delete';
+    deleteBtn.textContent = 'Del';
+    deleteBtn.onclick = function() { deleteProjectRequestItem(index); };
+
+    actions.appendChild(editBtn);
+    actions.appendChild(deleteBtn);
+    row.appendChild(copy);
+    row.appendChild(actions);
+    list.appendChild(row);
+  });
 }
 
 function buildProjectRequestSummary() {
