@@ -493,8 +493,15 @@ async function submitCreateRequest() {
   }
   if (payload.type === 'Project' && !payload.projectId) { showToast('Select a project'); return; }
   const result = await apiPost(payload);
-  if (result.success) { closeModal('create'); clearCreateForm(); showToast('Request created'); loadRequests(); }
+  if (result.success) { closeModal('create'); clearCreateForm(); showToast('Request created' + materialRequestEmailToast_(result.emailStatus)); loadRequests(); }
   else showToast('Error: ' + result.message);
+}
+
+function materialRequestEmailToast_(emailStatus) {
+  if (!emailStatus) return '';
+  if (emailStatus.sent) return ' · Email sent';
+  if (emailStatus.skipped) return ' · Email skipped';
+  return ' · Email failed';
 }
 
 function clearCreateForm() {
@@ -509,7 +516,7 @@ function clearCreateForm() {
 
 async function quickStatus(id, status) {
   const result = await apiPost({ action:'updateMaterialRequestStatus', id, status });
-  if (result.success) { showToast('Request updated'); loadRequests(); }
+  if (result.success) { showToast('Request updated' + materialRequestEmailToast_(result.emailStatus)); loadRequests(); }
   else showToast('Error: ' + result.message);
 }
 
@@ -532,7 +539,7 @@ async function submitStatusUpdate() {
     notes:document.getElementById('status-notes').value,
   };
   const result = await apiPost(payload);
-  if (result.success) { closeModal('status'); showToast('Request updated'); loadRequests(); }
+  if (result.success) { closeModal('status'); showToast('Request updated' + materialRequestEmailToast_(result.emailStatus)); loadRequests(); }
   else showToast('Error: ' + result.message);
 }
 
