@@ -1164,6 +1164,7 @@ function buildActivityFeedItems() {
   if (currentProject.startDate) {
     items.push({
       date: currentProject.startDate,
+      sortDate: currentProject.startDate + ' 00:00:00',
       type: 'start',
       title: 'Project started',
       sub: currentProject.name + (currentProject.client ? ' · ' + currentProject.client : ''),
@@ -1177,6 +1178,7 @@ function buildActivityFeedItems() {
     const typeMap = { Income: 'income', Expense: 'expense', Payment: 'payment' };
     items.push({
       date: t.date,
+      sortDate: String(t.date || '') + ' 00:00:00',
       type: typeMap[t.type] || 'note',
       title: t.description,
       sub: t.type + (t.payee ? ' → ' + t.payee : '') + ' · ' + t.account,
@@ -1189,7 +1191,8 @@ function buildActivityFeedItems() {
   projectMaterialRequests.forEach(r => {
     const status = r.status || 'Pending';
     const statusClass = status.toLowerCase();
-    const displayDate = String(r.completedAt || r.orderedAt || r.approvedAt || r.timestamp || '').slice(0, 10);
+    const requestSortDate = String(r.completedAt || r.orderedAt || r.approvedAt || r.timestamp || '');
+    const displayDate = requestSortDate.slice(0, 10);
     const statusText = status === 'Approved' ? 'Approved'
       : status === 'Rejected' ? 'Rejected'
       : status === 'Ordered' ? 'Ordered'
@@ -1197,11 +1200,11 @@ function buildActivityFeedItems() {
       : 'Pending';
     items.push({
       date: displayDate || getLocalDateString(),
+      sortDate: requestSortDate || getLocalDateString() + ' 00:00:00',
       type: 'request-' + statusClass,
       title: 'Request ' + statusText + ': ' + (r.description || r.id),
       sub: [r.id, r.subtype || r.type, r.quantity || '', r.requestedByName ? 'by ' + r.requestedByName : ''].filter(Boolean).join(' · '),
       amount: null,
-      pinned: status === 'Pending',
       seq: seq++
     });
   });
@@ -1211,14 +1214,13 @@ function buildActivityFeedItems() {
   notesRaw.split('\n').forEach(line => {
     const match = line.match(/^(\d{4}-\d{2}-\d{2}):\s*(.+)/);
     if (match) {
-      items.push({ date: match[1], type: 'note', title: match[2], sub: 'Note', amount: null, seq: seq++ });
+      items.push({ date: match[1], sortDate: match[1] + ' 00:00:00', type: 'note', title: match[2], sub: 'Note', amount: null, seq: seq++ });
     }
   });
 
-  // Requests Pending se quedan arriba; lo demás va por fecha desc.
+  // Activity Feed por fecha mas reciente, usando hora cuando el item la tiene.
   items.sort((a, b) => {
-    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-    const byDate = b.date.localeCompare(a.date);
+    const byDate = String(b.sortDate || b.date || '').localeCompare(String(a.sortDate || a.date || ''));
     return byDate || ((b.seq || 0) - (a.seq || 0));
   });
 
@@ -1396,7 +1398,7 @@ async function submitProjectRequest() {
     });
     if (result.success) {
       closeModal('project-request');
-      showToast('✓ Request created');
+      showToast('✓ Request created' + materialRequestEmailToast_(result.emailStatus));
       const requestData = await apiGet('projectMaterialRequests', { projectId: currentProject.id });
       projectMaterialRequests = requestData.requests || [];
       renderActivityFeed();
@@ -1404,6 +1406,13 @@ async function submitProjectRequest() {
       showToast('Error: ' + result.message);
     }
   } catch(e) { showToast('Connection error'); }
+}
+
+function materialRequestEmailToast_(emailStatus) {
+  if (!emailStatus) return '';
+  if (emailStatus.sent) return ' · Email sent';
+  if (emailStatus.skipped) return ' · Email skipped';
+  return ' · Email failed';
 }
 
 // ============================================================
