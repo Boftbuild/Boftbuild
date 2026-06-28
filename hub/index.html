@@ -51,7 +51,7 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
 .hub-title{font-family:'Cinzel',serif;font-size:1.8rem;font-weight:700;color:var(--gold-light);text-align:center;margin-bottom:3rem;}
 
 /* CARDS */
-.hub-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;background:var(--border);width:100%;max-width:1260px;}
+.hub-cards{display:grid;grid-template-columns:repeat(var(--hub-card-count,5),minmax(220px,252px));gap:2px;background:var(--border);width:auto;max-width:1260px;justify-content:center;}
 .hub-card{background:var(--black2);padding:2.5rem 1.5rem;display:flex;flex-direction:column;align-items:center;gap:1rem;cursor:pointer;text-decoration:none;position:relative;overflow:hidden;transition:background 0.2s;border:none;}
 .hub-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;transition:opacity 0.2s;}
 .hub-card.contable::before{background:linear-gradient(90deg,var(--green),rgba(76,175,125,0.3));}
@@ -76,7 +76,7 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
 .hub-footer{text-align:center;padding:1.5rem;font-size:0.68rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;}
 
 @media(max-width:900px){
-  .hub-cards{grid-template-columns:repeat(2,1fr);}
+  .hub-cards{grid-template-columns:repeat(2,minmax(220px,252px));}
 }
 @media(max-width:640px){
   .hub-cards{grid-template-columns:1fr;}
@@ -371,44 +371,38 @@ function showHub(user, role) {
   applyRolePermissions(role);
 }
 
-// Oculta/atenúa cards del Hub según el rol — Helper y Field Lead
-// solo deberían entrar a Projects, no a Contable ni Finder.
-// La card de Activity Log SOLO se muestra para Owner.
+// Muestra solo las cards permitidas por rol.
 function applyRolePermissions(role) {
-  const cardContable  = document.getElementById('cardContable');
-  const cardProyectos = document.getElementById('cardProyectos');
-  const cardFinder    = document.getElementById('cardFinder');
-  const cardActivity  = document.getElementById('cardActivity');
-  const cardRequests  = document.getElementById('cardRequests');
+  const cards = {
+    Contable: document.getElementById('cardContable'),
+    Projects: document.getElementById('cardProyectos'),
+    Requests: document.getElementById('cardRequests'),
+    Finder: document.getElementById('cardFinder'),
+    Activity: document.getElementById('cardActivity')
+  };
+  const roleCards = {
+    Owner: ['Contable','Projects','Requests','Finder','Activity'],
+    Manager: ['Contable','Projects','Requests','Finder'],
+    Planner: ['Requests'],
+    'Field Lead': ['Projects'],
+    Helper: ['Projects'],
+    Viewer: []
+  };
+  const allowed = roleCards[role] || [];
+  let visibleCount = 0;
 
-  // Reset — todo habilitado por default (Owner, Manager, Viewer entran a todo)
-  [cardContable, cardProyectos, cardFinder].forEach(c => {
-    c.classList.remove('disabled');
-    c.removeAttribute('aria-disabled');
+  Object.keys(cards).forEach(name => {
+    const card = cards[name];
+    if (!card) return;
+    const show = allowed.includes(name);
+    card.classList.toggle('hidden', !show);
+    card.classList.remove('disabled');
+    card.removeAttribute('aria-disabled');
+    if (show) visibleCount++;
   });
-  if (cardRequests) cardRequests.classList.add('hidden');
 
-  if (role === 'Field Lead' || role === 'Helper') {
-    // Solo Projects — Contable y Finder bloqueados visualmente
-    cardContable.classList.add('disabled');
-    cardFinder.classList.add('disabled');
-  }
-  if (role === 'Planner') {
-    cardContable.classList.add('disabled');
-    cardProyectos.classList.add('disabled');
-    cardFinder.classList.add('disabled');
-  }
-  // Viewer entra a todo pero de solo lectura — eso se controla dentro
-  // de cada página (Contable/Projects), no aquí en el Hub.
-
-  if (cardRequests) {
-    cardRequests.classList.toggle('hidden', !['Owner','Manager','Planner'].includes(role));
-  }
-
-  // Activity Log — visible únicamente para Owner
-  if (cardActivity) {
-    cardActivity.classList.toggle('hidden', role !== 'Owner');
-  }
+  const grid = document.querySelector('.hub-cards');
+  if (grid) grid.style.setProperty('--hub-card-count', Math.max(visibleCount, 1));
 }
 
 function doLogout() {
