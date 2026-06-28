@@ -1412,7 +1412,7 @@ function materialRequestEmailToast_(emailStatus) {
   if (!emailStatus) return '';
   if (emailStatus.sent) return ' · Email sent';
   if (emailStatus.skipped) return ' · Email skipped';
-  return ' · Email failed';
+  return ' · Email failed' + (emailStatus.message ? ': ' + String(emailStatus.message).slice(0, 80) : '');
 }
 
 // ============================================================
