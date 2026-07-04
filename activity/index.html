@@ -569,7 +569,9 @@ function formatDetailsHtml(jsonStr) {
 function renderDetailObject(obj) {
   if (!obj || typeof obj !== 'object') return '<div class="detail-val">' + escHtml(obj) + '</div>';
 
-  if (Array.isArray(obj.changes)) {
+  const normalizedChanges = normalizeChanges(obj.changes);
+  if (normalizedChanges.length) {
+    obj = { ...obj, changes: normalizedChanges };
     return renderChangesDetails(obj);
   }
 
@@ -583,6 +585,18 @@ function renderDetailObject(obj) {
   }
 
   return '<div class="detail-section">' + renderKeyValues(obj) + '</div>';
+}
+
+function normalizeChanges(changes) {
+  if (!changes) return [];
+  if (Array.isArray(changes)) return changes.filter(c => c && typeof c === 'object');
+  if (typeof changes === 'string') {
+    try {
+      const parsed = JSON.parse(changes);
+      if (Array.isArray(parsed)) return parsed.filter(c => c && typeof c === 'object');
+    } catch(e) {}
+  }
+  return [];
 }
 
 function renderChangesDetails(obj) {
@@ -612,14 +626,18 @@ function renderExtraDetails(obj, skipKeys) {
 function renderKeyValues(obj) {
   const entries = Object.entries(obj || {});
   if (!entries.length) return '<div class="detail-val">—</div>';
-  return '<div class="detail-grid">' + entries.map(([key, val]) =>
+  return '<div class="detail-grid">' + entries.filter(([key, val]) => !isComplexDetailValue(val)).map(([key, val]) =>
     `<div class="detail-row"><span class="detail-key">${escHtml(toLabel(key))}</span><span class="detail-val">${escHtml(formatDetailValue(val))}</span></div>`
   ).join('') + '</div>';
 }
 
+function isComplexDetailValue(val) {
+  return Array.isArray(val) && val.some(item => item && typeof item === 'object');
+}
+
 function formatDetailValue(val) {
   if (val === null || val === undefined || val === '') return '—';
-  if (Array.isArray(val)) return val.join(', ');
+  if (Array.isArray(val)) return val.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(', ');
   if (typeof val === 'object') return JSON.stringify(val);
   return String(val);
 }
