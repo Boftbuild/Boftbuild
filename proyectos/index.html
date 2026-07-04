@@ -221,6 +221,13 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .pli-footer{display:flex;justify-content:space-between;margin-top:0.5rem;}
 .pli-value{font-size:0.8rem;color:var(--green);font-weight:700;}
 .pli-date{font-size:0.72rem;color:var(--muted);}
+.sidebar-summary{position:sticky;top:0;z-index:5;background:rgba(15,17,20,0.98);border-bottom:1px solid var(--border);padding:1rem 1.25rem;}
+.sidebar-summary-label{font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--neon);margin-bottom:0.3rem;}
+.sidebar-summary-title{font-family:'Cinzel',serif;font-size:0.95rem;font-weight:700;color:var(--gold-light);line-height:1.2;}
+.sidebar-summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.45rem;margin-top:0.8rem;}
+.sidebar-metric{border:1px solid rgba(200,146,42,0.12);background:var(--black);padding:0.45rem 0.55rem;}
+.sidebar-metric-value{font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:var(--text);}
+.sidebar-metric-label{font-size:0.58rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);}
 
 /* TIMELINE */
 .timeline-header{padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;position:sticky;top:0;z-index:20;background:rgba(15,17,20,0.98);backdrop-filter:blur(10px);}
@@ -230,12 +237,34 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .timeline-body{padding:1.25rem 1.5rem;}
 .timeline-section{margin-bottom:1.5rem;}
 .timeline-section-label{font-size:0.65rem;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:var(--neon);margin-bottom:0.75rem;padding-bottom:0.4rem;border-bottom:1px solid rgba(0,180,255,0.15);}
+.project-module-nav{display:flex;gap:0.35rem;flex-wrap:wrap;margin:0 0 1rem;border-bottom:1px solid rgba(0,180,255,0.15);padding-bottom:0.6rem;}
+.project-module-tab{font-family:'Rajdhani',sans-serif;font-size:0.66rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid rgba(200,146,42,0.14);padding:0.38rem 0.75rem;cursor:pointer;transition:all 0.18s;}
+.project-module-tab:hover{color:var(--gold-light);border-color:var(--border-neon);}
+.project-module-tab.active{color:var(--black);background:var(--gold);border-color:var(--gold);}
+.project-module{display:none;}
+.project-module.active{display:block;}
+.quick-actions-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;background:var(--border);margin-bottom:1rem;}
+.quick-action{background:var(--black3);border:none;color:var(--text);padding:0.7rem 0.6rem;text-align:left;cursor:pointer;font-family:'Rajdhani',sans-serif;transition:background 0.18s,border-color 0.18s;}
+.quick-action:hover{background:rgba(0,180,255,0.07);}
+.quick-action[disabled]{opacity:0.38;cursor:not-allowed;}
+.quick-action-label{font-size:0.62rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--neon);}
+.quick-action-title{font-size:0.86rem;font-weight:700;color:var(--gold-light);margin-top:0.15rem;}
+.overview-grid{display:grid;grid-template-columns:1.1fr 0.9fr;gap:1rem;align-items:start;}
+.module-card{border:1px solid rgba(200,146,42,0.12);background:var(--black3);padding:0.95rem;margin-bottom:1rem;}
+.module-card-title{font-size:0.66rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-light);margin-bottom:0.7rem;}
+.module-empty{border:1px dashed rgba(200,146,42,0.22);background:rgba(200,146,42,0.035);padding:1rem;color:var(--muted);font-size:0.82rem;}
+.scope-checklist{display:flex;flex-direction:column;gap:0.35rem;}
+.scope-item{display:flex;gap:0.5rem;align-items:flex-start;border:1px solid rgba(200,146,42,0.08);background:var(--black);padding:0.5rem 0.65rem;}
+.scope-box{width:12px;height:12px;border:1px solid var(--gold);margin-top:0.2rem;flex-shrink:0;background:var(--gold-dim);}
+.scope-text{font-size:0.86rem;color:var(--text);line-height:1.4;}
 
 /* STATS ROW */
 .stats-mini{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);margin-bottom:1.5rem;}
 .stat-mini{background:var(--black3);padding:0.85rem 0.75rem;text-align:center;}
 .stat-mini-label{font-size:0.6rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;}
 .stat-mini-val{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;}
+.project-module:not(.active){display:none!important;}
+.stats-mini.project-module.active{display:grid;}
 
 /* TIMELINE FEED */
 .feed-item{display:flex;gap:0.75rem;padding:0.65rem 0;border-bottom:1px solid rgba(200,146,42,0.06);}
@@ -270,6 +299,9 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .feed-action-btn:hover{border-color:var(--gold);color:var(--gold-light);}
 .feed-action-btn.danger{border-color:rgba(224,85,85,0.35);color:var(--red);}
 .feed-action-btn.reopen{width:auto;padding:0 0.55rem;color:var(--gold-light);border-color:var(--border);}
+.timeline-filters{display:flex;gap:0.35rem;flex-wrap:wrap;margin-bottom:0.75rem;}
+.timeline-filter{font-family:'Rajdhani',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid rgba(200,146,42,0.16);padding:0.28rem 0.6rem;cursor:pointer;}
+.timeline-filter.active{color:var(--black);background:var(--gold);border-color:var(--gold);}
 .ops-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--border);margin-bottom:1rem;}
 .ops-panel{background:var(--black3);padding:0.9rem;}
 .ops-panel-head{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.65rem;}
@@ -401,6 +433,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   .timeline-actions{width:100%;justify-content:flex-start;}
   .timeline-actions .btn-action{flex:1;text-align:center;}
   .project-live-summary{grid-template-columns:1fr 1fr;}
+  .quick-actions-strip{grid-template-columns:1fr 1fr;}
+  .overview-grid{grid-template-columns:1fr;}
 
   #grid-antes, #grid-proceso, #grid-terminado{grid-template-columns:repeat(auto-fill,minmax(64px,1fr))!important;}
 
@@ -1167,7 +1201,8 @@ function renderProjects() {
     return;
   }
 
-  list.innerHTML = filtered.map(p => {
+  const summary = renderSidebarSummary();
+  list.innerHTML = summary + filtered.map(p => {
     const sc = projectStatusClass(p.status);
     const isSelected = currentProject && currentProject.id === p.id ? 'selected' : '';
     const priceText = canSeeProjectMoney() ? (p.contractValue ? fmt(p.contractValue) : '—') : 'Restricted';
@@ -1180,6 +1215,36 @@ function renderProjects() {
       </div>
     </div>`;
   }).join('');
+}
+
+function renderSidebarSummary() {
+  if (!currentProject) {
+    const activeCount = allProjects.filter(p => String(p.status || 'Active') === 'Active').length;
+    const inspectionCount = allProjects.filter(p => String(p.status || '') === 'Inspection').length;
+    const holdCount = allProjects.filter(p => String(p.status || '') === 'Hold').length;
+    return `<div class="sidebar-summary">
+      <div class="sidebar-summary-label">Live Summary</div>
+      <div class="sidebar-summary-title">Select a project</div>
+      <div class="sidebar-summary-grid">
+        <div class="sidebar-metric"><div class="sidebar-metric-value">${activeCount}</div><div class="sidebar-metric-label">Active</div></div>
+        <div class="sidebar-metric"><div class="sidebar-metric-value">${inspectionCount}</div><div class="sidebar-metric-label">Inspection</div></div>
+        <div class="sidebar-metric"><div class="sidebar-metric-value">${holdCount}</div><div class="sidebar-metric-label">Hold</div></div>
+        <div class="sidebar-metric"><div class="sidebar-metric-value">${allProjects.length}</div><div class="sidebar-metric-label">Total</div></div>
+      </div>
+    </div>`;
+  }
+  const openPunch = projectPunchItems.filter(item => item.status !== 'Done').length;
+  const pendingRequests = projectMaterialRequests.filter(r => ['Pending','Ordered'].includes(r.status || 'Pending')).length;
+  return `<div class="sidebar-summary">
+    <div class="sidebar-summary-label">Current Project</div>
+    <div class="sidebar-summary-title">${currentProject.name || 'Project'}</div>
+    <div class="sidebar-summary-grid">
+      <div class="sidebar-metric"><div class="sidebar-metric-value">${currentProject.status || 'Active'}</div><div class="sidebar-metric-label">Status</div></div>
+      <div class="sidebar-metric"><div class="sidebar-metric-value">${openPunch}</div><div class="sidebar-metric-label">Punch Open</div></div>
+      <div class="sidebar-metric"><div class="sidebar-metric-value">${pendingRequests}</div><div class="sidebar-metric-label">Requests</div></div>
+      <div class="sidebar-metric"><div class="sidebar-metric-value">${projectDailyLogs.length}</div><div class="sidebar-metric-label">Logs</div></div>
+    </div>
+  </div>`;
 }
 
 function projectStatusClass(status) {
@@ -1214,10 +1279,12 @@ let projectTrackingItems = [];
 let selectedPunchArea = null;
 let punchDraftItems = [];
 let activePunchModalGroup = null;
+let projectTimelineFilter = 'all';
 
 async function openProject(id) {
   currentProject = allProjects.find(p => p.id === id);
   if (!currentProject) return;
+  projectTimelineFilter = 'all';
 
   // Marcar seleccionado en lista
   renderProjects();
@@ -1245,7 +1312,7 @@ async function openProject(id) {
       <div class="timeline-actions">
         <span class="project-status ${sc}">${currentProject.status || 'Active'}</span>
         ${completed && canOwnerManager ? `<button class="btn-action outline" onclick="reopenProject()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">Re-Open</button>` : ''}
-        ${canCreateRequest ? `<button class="btn-action outline" onclick="openProjectRequestModal()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">+ Request</button>` : ''}
+        ${canCreateRequest ? `<button class="btn-action gold" onclick="openProjectRequestModal()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">+ Request</button>` : ''}
         ${canEditProjectAtAll ? `<button class="btn-action outline" onclick="openEditProjectModal()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">✏️ Edit</button>` : ''}
         ${canDeleteProject ? `<button class="btn-action danger" onclick="confirmDeleteProject()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">🗑</button>` : ''}
       </div>
@@ -1276,8 +1343,26 @@ async function openProject(id) {
         </div>
       </div>
 
+      <div class="quick-actions-strip">
+        ${canCreateRequest ? `<button class="quick-action" onclick="openProjectRequestModal()"><div class="quick-action-label">Request</div><div class="quick-action-title">Create</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Request</div><div class="quick-action-title">Locked</div></button>`}
+        ${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole ? `<button class="quick-action" onclick="openPunchModal()"><div class="quick-action-label">Punch</div><div class="quick-action-title">Add Item</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Punch</div><div class="quick-action-title">Locked</div></button>`}
+        ${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole ? `<button class="quick-action" onclick="openDailyLogModal()"><div class="quick-action-label">Daily</div><div class="quick-action-title">New Log</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Daily</div><div class="quick-action-title">Locked</div></button>`}
+        ${canUploadPhotos ? `<button class="quick-action" onclick="switchProjectModule('photos')"><div class="quick-action-label">Photos</div><div class="quick-action-title">Upload</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Photos</div><div class="quick-action-title">Locked</div></button>`}
+        ${canAddNote ? `<button class="quick-action" onclick="switchProjectModule('timeline')"><div class="quick-action-label">Note</div><div class="quick-action-title">Add</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Note</div><div class="quick-action-title">Locked</div></button>`}
+      </div>
+
+      <div class="project-module-nav">
+        <button class="project-module-tab active" data-module-tab="overview" onclick="switchProjectModule('overview')">Overview</button>
+        <button class="project-module-tab" data-module-tab="operations" onclick="switchProjectModule('operations')">Operations</button>
+        <button class="project-module-tab" data-module-tab="photos" onclick="switchProjectModule('photos')">Photos</button>
+        <button class="project-module-tab" data-module-tab="documents" onclick="switchProjectModule('documents')">Documents</button>
+        ${showMoney ? `<button class="project-module-tab" data-module-tab="financial" onclick="switchProjectModule('financial')">Financial</button>` : ''}
+        <button class="project-module-tab" data-module-tab="timeline" onclick="switchProjectModule('timeline')">Timeline</button>
+        <button class="project-module-tab" data-module-tab="settings" onclick="switchProjectModule('settings')">Settings</button>
+      </div>
+
       ${showMoney ? `<!-- STATS MINI -->
-      <div class="stats-mini restricted-on-completed" id="statsMinI">
+      <div class="stats-mini restricted-on-completed project-module" data-project-module="financial" id="statsMinI">
         <div class="stat-mini"><div class="stat-mini-label">Income</div><div class="stat-mini-val green" id="tm-income">—</div></div>
         <div class="stat-mini"><div class="stat-mini-label">Expenses</div><div class="stat-mini-val red" id="tm-expenses">—</div></div>
         <div class="stat-mini"><div class="stat-mini-label">Payments</div><div class="stat-mini-val red" id="tm-payments">—</div></div>
@@ -1285,7 +1370,7 @@ async function openProject(id) {
       </div>` : ''}
 
       <!-- INFO RÁPIDA -->
-      <div class="timeline-section restricted-on-completed">
+      <div class="timeline-section restricted-on-completed project-module active" data-project-module="overview">
         <div class="timeline-section-label">Project Info</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:0.82rem;">
           <div><span style="color:var(--muted);">Start:</span> <span style="color:var(--text);">${currentProject.startDate || '—'}</span></div>
@@ -1296,28 +1381,27 @@ async function openProject(id) {
       </div>
 
       <!-- SCOPE & CONTRACT -->
-      <div class="timeline-section restricted-on-completed">
+      <div class="timeline-section restricted-on-completed project-module active" data-project-module="overview">
         <div class="timeline-section-label" style="display:flex;justify-content:space-between;">
-          <span>Scope & Documentation</span>
+          <span>Scope of Work</span>
         </div>
 
         <div style="margin-bottom:0.75rem;">
-          <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">Scope of Work</div>
           <div id="objectiveDisplay" style="font-size:0.85rem;color:var(--text);line-height:1.6;padding:0.4rem 0;">
             <span style="color:var(--muted);font-style:italic;">No scope defined — edit project to add.</span>
           </div>
         </div>
+      </div>
 
-        <div>
-          <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">Documentation</div>
-          <div id="documentsList" style="margin-bottom:0.5rem;">
-            <div style="color:var(--muted);font-size:0.82rem;font-style:italic;">No documents — add from Edit Project</div>
-          </div>
+      <div class="timeline-section restricted-on-completed project-module" data-project-module="documents">
+        <div class="timeline-section-label">Documents</div>
+        <div id="documentsList" style="margin-bottom:0.5rem;">
+          <div class="module-empty">No documents yet. Use Edit Project to add plans, contracts, permits or revisions.</div>
         </div>
       </div>
 
       <!-- PROJECT OPS -->
-      <div class="timeline-section restricted-on-completed">
+      <div class="timeline-section restricted-on-completed project-module" data-project-module="operations">
         <div class="timeline-section-label" style="display:flex;justify-content:space-between;align-items:center;">
           <span>Project Operations</span>
           <button class="btn-sm view" onclick="copyProjectShareLink()">Share Link</button>
@@ -1359,14 +1443,22 @@ async function openProject(id) {
       </div>
 
       <!-- ACTIVITY FEED -->
-      <div class="timeline-section">
-        <div class="timeline-section-label">Activity Feed</div>
+      <div class="timeline-section project-module" data-project-module="timeline">
+        <div class="timeline-section-label">Project Timeline</div>
+        <div class="timeline-filters">
+          <button class="timeline-filter active" data-timeline-filter="all" onclick="setProjectTimelineFilter('all')">All</button>
+          <button class="timeline-filter" data-timeline-filter="punch" onclick="setProjectTimelineFilter('punch')">Punch</button>
+          <button class="timeline-filter" data-timeline-filter="request" onclick="setProjectTimelineFilter('request')">Requests</button>
+          <button class="timeline-filter" data-timeline-filter="daily" onclick="setProjectTimelineFilter('daily')">Logs</button>
+          <button class="timeline-filter" data-timeline-filter="tracking" onclick="setProjectTimelineFilter('tracking')">Materials</button>
+          <button class="timeline-filter" data-timeline-filter="note" onclick="setProjectTimelineFilter('note')">Notes</button>
+        </div>
         <div id="activityFeed"><div style="color:var(--muted);font-size:0.82rem;">Loading...</div></div>
       </div>
 
       ${canAddNote ? `
       <!-- ADD NOTE -->
-      <div class="timeline-section">
+      <div class="timeline-section project-module" data-project-module="timeline">
         <div class="timeline-section-label">Add Note</div>
         <div class="add-note-wrap">
           <input type="text" class="add-note-input" id="quickNoteInput" placeholder="Framed south wall, installed LVL beam...">
@@ -1375,13 +1467,13 @@ async function openProject(id) {
       </div>` : ''}
 
       <!-- PHOTOS BY PHASE -->
-      <div class="timeline-section">
+      <div class="timeline-section project-module" data-project-module="photos">
         <div class="timeline-section-label">Photos</div>
 
         <!-- Before -->
         <div style="margin-bottom:1rem;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
-            <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">📷 Before</span>
+            <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">Before <span id="photo-count-antes">(0)</span></span>
             ${canUploadPhotos ? `<button class="btn-upload-phase" id="btn-upload-antes" onclick="triggerUpload('antes')" style="font-size:0.58rem;">+ Add</button>` : ''}
           </div>
           <div id="grid-antes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:3px;"></div>
@@ -1391,7 +1483,7 @@ async function openProject(id) {
         <!-- In Progress -->
         <div style="margin-bottom:1rem;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
-            <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">🔨 In Progress</span>
+            <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">In Progress <span id="photo-count-proceso">(0)</span></span>
             ${canUploadPhotos ? `<button class="btn-upload-phase" id="btn-upload-proceso" onclick="triggerUpload('proceso')" style="font-size:0.58rem;">+ Add</button>` : ''}
           </div>
           <div id="grid-proceso" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:3px;"></div>
@@ -1401,11 +1493,33 @@ async function openProject(id) {
         <!-- Completed -->
         <div style="margin-bottom:0.5rem;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
-            <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">✅ Completed</span>
+            <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">Completed <span id="photo-count-terminado">(0)</span></span>
             ${canUploadPhotos ? `<button class="btn-upload-phase" id="btn-upload-terminado" onclick="triggerUpload('terminado')" style="font-size:0.58rem;">+ Add</button>` : ''}
           </div>
           <div id="grid-terminado" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:3px;"></div>
           <div class="upload-progress" id="progress-terminado"></div>
+        </div>
+      </div>
+
+      <div class="timeline-section project-module" data-project-module="settings">
+        <div class="timeline-section-label">Project Settings</div>
+        <div class="module-card">
+          <div class="module-card-title">Project Controls</div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            ${canEditProjectAtAll ? `<button class="btn-sm view" onclick="openEditProjectModal()">Edit Project</button>` : ''}
+            ${completed && canOwnerManager ? `<button class="btn-sm view" onclick="reopenProject()">Re-Open Project</button>` : ''}
+            ${canDeleteProject ? `<button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="confirmDeleteProject()">Delete Project</button>` : ''}
+            <button class="btn-sm view" onclick="copyProjectShareLink()">Copy Share Link</button>
+          </div>
+        </div>
+        <div class="module-card">
+          <div class="module-card-title">Reference</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.82rem;">
+            <div><span style="color:var(--muted);">Project ID:</span> <span style="color:var(--text);">${currentProject.id || '—'}</span></div>
+            <div><span style="color:var(--muted);">Folder ID:</span> <span style="color:var(--text);">${currentProject.driveFolderId || '—'}</span></div>
+            <div><span style="color:var(--muted);">Status:</span> <span style="color:var(--text);">${currentProject.status || 'Active'}</span></div>
+            <div><span style="color:var(--muted);">City:</span> <span style="color:var(--text);">${currentProject.city || '—'}</span></div>
+          </div>
         </div>
       </div>
 
@@ -1470,20 +1584,43 @@ async function loadTimelineData() {
   } catch(e) { console.error(e); }
 }
 
+function switchProjectModule(moduleName) {
+  document.querySelectorAll('[data-project-module]').forEach(section => {
+    section.classList.toggle('active', section.dataset.projectModule === moduleName);
+  });
+  document.querySelectorAll('[data-module-tab]').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.moduleTab === moduleName);
+  });
+}
+
 function renderActivityFeed() {
   const feed = document.getElementById('activityFeed');
   if (!feed) return;
 
-  const items = buildActivityFeedItems();
+  let items = buildActivityFeedItems();
+  if (projectTimelineFilter !== 'all') {
+    items = items.filter(item => {
+      if (projectTimelineFilter === 'request') return String(item.type || '').startsWith('request');
+      return item.type === projectTimelineFilter;
+    });
+  }
 
   if (!items.length) {
-    feed.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">No activity yet. Add a note or log a transaction for this project.</div>';
+    feed.innerHTML = `<div class="module-empty">No timeline activity yet.${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) ? ' Use Add Note, Daily Log or Punch to start the record.' : ''}</div>`;
     return;
   }
 
   const visibleItems = items.slice(0, 5);
   feed.innerHTML = renderFeedItems_(visibleItems) +
     (items.length > 5 ? `<button class="feed-more" onclick="openFullActivityFeed()">View Full Feed</button>` : '');
+}
+
+function setProjectTimelineFilter(filter) {
+  projectTimelineFilter = filter || 'all';
+  document.querySelectorAll('[data-timeline-filter]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.timelineFilter === projectTimelineFilter);
+  });
+  renderActivityFeed();
 }
 
 function buildActivityFeedItems() {
@@ -1615,6 +1752,7 @@ function renderFeedItems_(items) {
 
 function renderProjectOperations() {
   renderProjectLiveSummary();
+  renderProjects();
   renderPunchListOps();
   renderDailyLogOps();
   renderTrackingOps();
@@ -1656,7 +1794,7 @@ function renderPunchListOps() {
   const el = document.getElementById('punchListOps');
   if (!el) return;
   if (!projectPunchItems.length) {
-    el.innerHTML = '<div class="ops-empty">No punch items yet.</div>';
+    el.innerHTML = `<div class="module-empty">No punch items yet.${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) ? ' <button class="btn-sm view" onclick="openPunchModal()" style="margin-left:0.5rem;">Add Punch</button>' : ''}</div>`;
     return;
   }
 
@@ -1780,7 +1918,7 @@ function renderDailyLogOps() {
   const el = document.getElementById('dailyLogOps');
   if (!el) return;
   if (!projectDailyLogs.length) {
-    el.innerHTML = '<div class="ops-empty">No daily logs yet.</div>';
+    el.innerHTML = `<div class="module-empty">No daily logs yet.${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) ? ' <button class="btn-sm view" onclick="openDailyLogModal()" style="margin-left:0.5rem;">New Log</button>' : ''}</div>`;
     return;
   }
   el.innerHTML = projectDailyLogs.slice(0, 4).map(log => `
@@ -1802,7 +1940,7 @@ function renderTrackingList(kind, el) {
   if (!el) return;
   const items = projectTrackingItems.filter(item => item.kind === kind);
   if (!items.length) {
-    el.innerHTML = '<div class="ops-empty">No ' + kind.toLowerCase() + ' tracking yet.</div>';
+    el.innerHTML = `<div class="module-empty">No ${kind.toLowerCase()} tracking yet.${['Owner','Manager','Field Lead','Planner'].includes(CURRENT_ROLE) ? ` <button class="btn-sm view" onclick="openTrackingModal('${kind}')" style="margin-left:0.5rem;">Add</button>` : ''}</div>`;
     return;
   }
   el.innerHTML = items.slice(0, 8).map(item => `
@@ -2126,10 +2264,16 @@ function renderRequestFeedActions(item) {
 function openFullActivityFeed() {
   const el = document.getElementById('fullActivityFeed');
   if (!el) return;
-  const items = buildActivityFeedItems();
+  let items = buildActivityFeedItems();
+  if (projectTimelineFilter !== 'all') {
+    items = items.filter(item => {
+      if (projectTimelineFilter === 'request') return String(item.type || '').startsWith('request');
+      return item.type === projectTimelineFilter;
+    });
+  }
   el.innerHTML = items.length
     ? renderFeedItems_(items)
-    : '<div style="color:var(--muted);font-size:0.82rem;">No activity yet.</div>';
+    : '<div class="module-empty">No activity for this filter yet.</div>';
   document.getElementById('modal-activity-feed').classList.add('open');
 }
 
@@ -2280,6 +2424,8 @@ async function submitProjectRequest() {
       showToast('✓ Request created' + materialRequestEmailToast_(result.emailStatus));
       const requestData = await apiGet('projectMaterialRequests', { projectId: currentProject.id });
       projectMaterialRequests = requestData.requests || [];
+      renderProjectLiveSummary();
+      renderProjects();
       renderActivityFeed();
     } else {
       showToast('Error: ' + result.message);
@@ -2298,6 +2444,8 @@ async function reloadProjectRequestsAndFeed() {
   if (!currentProject) return;
   const requestData = await apiGet('projectMaterialRequests', { projectId: currentProject.id });
   projectMaterialRequests = requestData.requests || [];
+  renderProjectLiveSummary();
+  renderProjects();
   renderActivityFeed();
 }
 
@@ -2518,9 +2666,17 @@ function renderObjective() {
   const display = document.getElementById('objectiveDisplay');
   if (!display) return;
   if (currentProject.objective) {
-    display.innerHTML = '<span style="color:var(--text);">' + currentProject.objective.replace(/\n/g, '<br>') + '</span>';
+    const lines = String(currentProject.objective).split('\n').map(line => line.trim()).filter(Boolean);
+    if (lines.length > 1) {
+      display.innerHTML = '<div class="scope-checklist">' + lines.map(line => {
+        const clean = line.replace(/^[-*☐✓✔]\s*/, '');
+        return `<div class="scope-item"><span class="scope-box"></span><span class="scope-text">${clean}</span></div>`;
+      }).join('') + '</div>';
+    } else {
+      display.innerHTML = '<span style="color:var(--text);">' + currentProject.objective.replace(/\n/g, '<br>') + '</span>';
+    }
   } else {
-    display.innerHTML = '<span style="color:var(--muted);font-style:italic;">No scope defined — edit project to add.</span>';
+    display.innerHTML = '<div class="module-empty">No scope defined yet. Use Edit Project to add the working checklist.</div>';
   }
 }
 
@@ -2530,7 +2686,7 @@ function renderDocumentationFile() {
   // Los docs se guardan como URLs separadas por coma en contractFileUrl
   const urls = (currentProject.contractFileUrl || '').split(',').map(u => u.trim()).filter(Boolean);
   if (!urls.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-style:italic;">No documents uploaded</div>';
+    el.innerHTML = '<div class="module-empty">No documents uploaded yet. Add plans, contracts, permits or revisions from Edit Project.</div>';
     return;
   }
   el.innerHTML = urls.map((entry, i) => {
@@ -2599,8 +2755,10 @@ async function loadQuickPhotos() {
     try {
       const data = await apiGet('projectPhotos', { folderId: currentProject.driveFolderId, phase: phase.name });
       const photos = data.photos || [];
+      const countEl = document.getElementById('photo-count-' + phase.key);
+      if (countEl) countEl.textContent = '(' + photos.length + ')';
       if (!photos.length) {
-        grid.innerHTML = '<div style="color:var(--muted);font-size:0.7rem;font-style:italic;padding:0.3rem 0;">No photos yet</div>';
+        grid.innerHTML = '<div class="module-empty">No photos in this phase yet.</div>';
       } else {
         grid.innerHTML = photos.map(p => {
           // Thumbnail autenticado con token
