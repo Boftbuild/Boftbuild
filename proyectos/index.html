@@ -318,7 +318,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .ops-chip.pending{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
 .ops-chip.approved,.ops-chip.completed{color:var(--green);border-color:rgba(76,175,125,0.45);background:rgba(76,175,125,0.08);}
 .ops-chip.rejected,.ops-chip.wrong-item,.ops-chip.lost,.ops-chip.broken{color:var(--red);border-color:rgba(224,85,85,0.45);background:rgba(224,85,85,0.08);}
-.ops-chip.ordered,.ops-chip.assigned,.ops-chip.on-site{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
+.ops-chip.ordered,.ops-chip.assigned,.ops-chip.on-site,.ops-chip.on-the-way{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
+.ops-chip.not-here{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
 .ops-chip.incomplete,.ops-chip.removed,.ops-chip.returned{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
 .ops-empty{font-size:0.76rem;color:var(--muted);font-style:italic;padding:0.35rem 0;}
 .project-live-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);margin-bottom:1rem;}
@@ -1534,10 +1535,24 @@ let activePunchModalGroup = null;
 let activePunchModalFloor = null;
 let projectTimelineFilter = 'all';
 
+function resetProjectRuntimeState() {
+  projectTransactions = [];
+  projectMaterialRequests = [];
+  projectPunchItems = [];
+  projectDailyLogs = [];
+  projectTrackingItems = [];
+  projectInspectionItems = [];
+  selectedPunchArea = null;
+  activePunchModalGroup = null;
+  activePunchModalFloor = null;
+  activeTrackingItem = null;
+  projectTimelineFilter = 'all';
+}
+
 async function openProject(id) {
   currentProject = allProjects.find(p => p.id === id);
   if (!currentProject) return;
-  projectTimelineFilter = 'all';
+  resetProjectRuntimeState();
 
   // Marcar seleccionado en lista
   renderProjects();
@@ -1796,9 +1811,11 @@ async function openProject(id) {
 }
 
 async function loadTimelineData() {
+  const loadingProjectId = currentProject ? currentProject.id : '';
   try {
     if (canSeeProjectMoney()) {
       const data = await apiGet('ledger', { page: '1', size: '500' });
+      if (!currentProject || currentProject.id !== loadingProjectId) return;
       projectTransactions = (data.transactions || []).filter(t =>
         (t.project || '').toLowerCase() === (currentProject.name || '').toLowerCase()
       );
@@ -1808,6 +1825,7 @@ async function loadTimelineData() {
     if (!isWorkerOrBelow()) {
       try {
         const requestData = await apiGet('projectMaterialRequests', { projectId: currentProject.id });
+        if (!currentProject || currentProject.id !== loadingProjectId) return;
         projectMaterialRequests = requestData.requests || [];
       } catch(e) {
         projectMaterialRequests = [];
@@ -1817,6 +1835,7 @@ async function loadTimelineData() {
     }
     try {
       const opsData = await apiGet('projectOperations', { projectId: currentProject.id });
+      if (!currentProject || currentProject.id !== loadingProjectId) return;
       projectPunchItems = opsData.punchItems || [];
       projectDailyLogs = opsData.dailyLogs || [];
       projectTrackingItems = opsData.trackingItems || [];
@@ -2434,32 +2453,58 @@ function openTrackingDetail(kind, source, id) {
     html += `<div class="field-group">
       <label class="field-label">Delivery Result</label>
       <select class="field-input" id="mt-result">
-        <option value="Completed">Llegó completo</option>
-        <option value="Incomplete">Llegó incompleto</option>
-        <option value="Wrong Item">Llegó equivocado</option>
+        <option value="Completed">Complete Delivery</option>
+        <option value="Incomplete">Incomplete Delivery</option>
+        <option value="Wrong Item">Wrong Item</option>
       </select>
     </div>
-    <div class="field-group"><label class="field-label">Cuánto llegó</label><input class="field-input" id="mt-received" placeholder="Only for incomplete"></div>
+    <div class="field-group"><label class="field-label">Quantity Received</label><input class="field-input" id="mt-received" placeholder="Only for incomplete"></div>
     <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="mt-notes" rows="2" style="resize:vertical;"></textarea></div>`;
     footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Cancel</button><button class="btn-submit" onclick="saveMaterialDelivery()">Save</button>`;
   } else if (kind === 'Tool' && item.source === 'tracking') {
     html += `<div class="field-group">
-      <label class="field-label">Remove Reason</label>
-      <select class="field-input" id="tt-reason">
-        <option value="Removed">Se la llevó el patrón</option>
-        <option value="Broken">Se descompuso</option>
-        <option value="Lost">Se perdió</option>
-        <option value="Returned">Returned</option>
-        <option value="Other">Other</option>
+      <label class="field-label">Action</label>
+      <select class="field-input" id="tt-action" onchange="renderToolTrackingActionFields()">
+        <option value="Update">Update</option>
+        <option value="Remove">Remove</option>
       </select>
     </div>
+    <div id="tt-action-fields"></div>
     <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="tt-notes" rows="2" style="resize:vertical;"></textarea></div>`;
-    footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Cancel</button><button class="btn-submit" onclick="removeActiveToolFromProject()">Save</button>`;
+    footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Cancel</button><button class="btn-submit" onclick="saveToolTrackingAction()">Save</button>`;
   } else {
     footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Close</button>`;
   }
   body.innerHTML = html;
   document.getElementById('modal-tracking-detail').classList.add('open');
+  if (kind === 'Tool' && item.source === 'tracking') renderToolTrackingActionFields();
+}
+
+function renderToolTrackingActionFields() {
+  const action = document.getElementById('tt-action')?.value || 'Update';
+  const el = document.getElementById('tt-action-fields');
+  if (!el) return;
+  if (action === 'Remove') {
+    el.innerHTML = `<div class="field-group">
+      <label class="field-label">Remove Reason</label>
+      <select class="field-input" id="tt-reason">
+        <option value="Removed">Picked Up</option>
+        <option value="Broken">Broken</option>
+        <option value="Lost">Lost</option>
+        <option value="Returned">Returned</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>`;
+  } else {
+    el.innerHTML = `<div class="field-group">
+      <label class="field-label">Status</label>
+      <select class="field-input" id="tt-status">
+        <option value="Not Here">Not Here</option>
+        <option value="On Site">On Site</option>
+        <option value="On The Way">On The Way</option>
+      </select>
+    </div>`;
+  }
 }
 
 async function saveMaterialDelivery() {
@@ -2483,13 +2528,17 @@ async function saveMaterialDelivery() {
   } catch(e) { showToast('Connection error'); }
 }
 
-async function removeActiveToolFromProject() {
+async function saveToolTrackingAction() {
   if (!activeTrackingItem || activeTrackingItem.source !== 'tracking') return;
+  const action = document.getElementById('tt-action')?.value || 'Update';
+  const reason = action === 'Remove'
+    ? document.getElementById('tt-reason').value
+    : document.getElementById('tt-status').value;
   try {
     const result = await apiPost({
       action: 'removeToolFromProject',
       id: activeTrackingItem.id,
-      reason: document.getElementById('tt-reason').value,
+      reason,
       notes: document.getElementById('tt-notes').value.trim(),
     });
     if (result.success) {
