@@ -56,6 +56,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .success-toast{display:none;align-items:center;gap:0.75rem;background:var(--black3);border:1px solid rgba(76,175,125,0.4);border-left:3px solid var(--green);padding:0.75rem 1rem;margin-bottom:1rem;position:sticky;top:calc(var(--nav-h) + 8px);z-index:40;}
 .success-toast.show{display:flex;}
 .toast-text{font-size:0.85rem;color:var(--green);font-weight:600;}
+.build-tag{font-size:0.62rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-left:auto;}
 
 /* DENIED STATE */
 .denied-screen{display:none;min-height:80vh;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;}
@@ -231,10 +232,12 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div id="toast" class="success-toast">
       <span style="font-size:18px;color:var(--green);">✓</span>
       <span class="toast-text" id="toastText">Done.</span>
+      <span class="build-tag" id="buildTag">ACTIVITY AUDIT V3</span>
     </div>
 
     <div class="section-label">Audit Trail</div>
     <div class="section-title">Activity Log — Last 90 Days</div>
+    <div class="build-tag" style="margin-bottom:0.9rem;">ACTIVITY AUDIT V3</div>
 
     <!-- TABS -->
     <div class="tabs-row">
@@ -365,6 +368,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 // CONFIG
 // ============================================================
 const API_URL = '/api/proxy';
+const ACTIVITY_BUILD = 'ACTIVITY_AUDIT_V3_2026_07_03';
 let ACCESS_TOKEN = null;
 let CURRENT_ROLE = null;
 let CURRENT_USER_EMAIL = null;
@@ -563,7 +567,9 @@ function formatDetailsHtml(jsonStr) {
   try {
     const obj = JSON.parse(jsonStr);
     return renderDetailObject(obj);
-  } catch(e) { return '<div class="detail-val">' + escHtml(jsonStr) + '</div>'; }
+  } catch(e) {
+    return '<div class="detail-section"><div class="detail-title">Raw Details</div><div class="detail-val">' + escHtml(jsonStr) + '</div></div>';
+  }
 }
 
 function renderDetailObject(obj) {
@@ -628,9 +634,13 @@ function renderExtraDetails(obj, skipKeys) {
 function renderKeyValues(obj) {
   const entries = Object.entries(obj || {});
   if (!entries.length) return '<div class="detail-val">—</div>';
-  return '<div class="detail-grid">' + entries.filter(([key, val]) => !isComplexDetailValue(val)).map(([key, val]) =>
+  const safeRows = entries.filter(([key, val]) => !isComplexDetailValue(val)).map(([key, val]) =>
     `<div class="detail-row"><span class="detail-key">${escHtml(toLabel(key))}</span><span class="detail-val">${escHtml(formatDetailValue(val))}</span></div>`
-  ).join('') + '</div>';
+  ).join('');
+  const complexRows = entries.filter(([key, val]) => isComplexDetailValue(val)).map(([key]) =>
+    `<div class="detail-row"><span class="detail-key">${escHtml(toLabel(key))}</span><span class="detail-val">Stored as object data. Update to ${ACTIVITY_BUILD} to render this field.</span></div>`
+  ).join('');
+  return '<div class="detail-grid">' + safeRows + complexRows + '</div>';
 }
 
 function isComplexDetailValue(val) {
@@ -880,6 +890,7 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 });
 
 window.addEventListener('load', () => { tryRestoreSession(); });
+console.info('BOFT Activity build:', ACTIVITY_BUILD);
 </script>
 </body>
 </html>
