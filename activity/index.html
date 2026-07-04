@@ -97,8 +97,15 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .log-action-tag.upload{color:var(--purple);border-color:rgba(167,139,250,0.3);background:var(--purple-dim);}
 .log-timestamp{font-size:0.72rem;color:var(--muted);flex-shrink:0;text-align:right;white-space:nowrap;}
 .log-details-btn{font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;margin-top:0.3rem;}
-.log-details-json{display:none;font-family:monospace;font-size:0.72rem;color:var(--muted);background:var(--black);padding:0.5rem 0.75rem;margin-top:0.4rem;white-space:pre-wrap;word-break:break-all;border-left:2px solid var(--border);}
+.log-details-json{display:none;font-size:0.78rem;color:var(--muted);background:var(--black);padding:0.7rem 0.8rem;margin-top:0.5rem;border-left:2px solid var(--border);}
 .log-details-json.show{display:block;}
+.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.45rem 0.9rem;}
+.detail-row{display:flex;gap:0.45rem;align-items:flex-start;min-width:0;}
+.detail-key{font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold-light);white-space:nowrap;}
+.detail-val{color:var(--text);word-break:break-word;}
+.detail-section{margin-top:0.65rem;padding-top:0.65rem;border-top:1px solid rgba(200,146,42,0.12);}
+.detail-section:first-child{margin-top:0;padding-top:0;border-top:none;}
+.detail-title{font-size:0.62rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--neon);margin-bottom:0.4rem;}
 
 /* EMPTY STATE */
 .empty-log{text-align:center;padding:3rem 2rem;color:var(--muted);}
@@ -187,11 +194,11 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   </div>
 </div>
 
-<!-- ACCESS DENIED (rol != Owner) -->
+<!-- ACCESS DENIED -->
 <div class="denied-screen" id="deniedScreen">
   <div class="denied-icon">🔒</div>
-  <div class="denied-title">Owner Access Only</div>
-  <div class="denied-text">The Activity Log is only available to the Owner role. If you believe this is a mistake, contact your administrator.</div>
+  <div class="denied-title">Access Restricted</div>
+  <div class="denied-text">Activity and Team settings are only available to Owner and Manager roles. If you believe this is a mistake, contact your administrator.</div>
   <a href="/hub" style="margin-top:1.5rem;font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--neon);text-decoration:none;border:1px solid rgba(0,180,255,0.3);padding:0.6rem 1.5rem;">← Back to Hub</a>
 </div>
 
@@ -225,8 +232,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 
     <!-- TABS -->
     <div class="tabs-row">
-      <button class="tab-btn active" onclick="switchTab('log', this)">Activity Log</button>
-      <button class="tab-btn" onclick="switchTab('team', this)">Team</button>
+      <button class="tab-btn active" id="tabBtnLog" onclick="switchTab('log', this)">Activity Log</button>
+      <button class="tab-btn" id="tabBtnTeam" onclick="switchTab('team', this)">Team</button>
     </div>
 
     <!-- TAB: ACTIVITY LOG -->
@@ -259,12 +266,18 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <option value="addWorker">Add Worker</option>
         <option value="editWorker">Edit Worker</option>
         <option value="deleteWorker">Delete Worker</option>
+        <option value="createMaterialRequest">Create Request</option>
+        <option value="updateMaterialRequestStatus">Update Request</option>
+        <option value="addUserManually">Add User</option>
+        <option value="updateUserRole">Update User</option>
       </select>
       <select class="filter-select" id="filterEntityType" onchange="renderLog()">
         <option value="">All Entity Types</option>
         <option value="Transaction">Transactions</option>
         <option value="Project">Projects</option>
         <option value="Worker">Workers</option>
+        <option value="Material Request">Material Requests</option>
+        <option value="User">Users</option>
       </select>
       <button class="btn-clear-filters" onclick="clearLogFilters()">Clear Filters</button>
     </div>
@@ -348,6 +361,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 const API_URL = '/api/proxy';
 let ACCESS_TOKEN = null;
 let CURRENT_ROLE = null;
+let CURRENT_USER_EMAIL = null;
 let allLogs = [];
 
 // ============================================================
@@ -364,11 +378,12 @@ function tryRestoreSession() {
     CURRENT_ROLE = role;
     const user = JSON.parse(userStr);
 
-    if (role !== 'Owner') {
+    if (!['Owner', 'Manager'].includes(role)) {
       showAccessDenied();
       return false;
     }
 
+    CURRENT_USER_EMAIL = (user.email || '').toLowerCase();
     loginSuccess(user, role);
     return true;
   }
@@ -398,8 +413,18 @@ function loginSuccess(user, role) {
     roleBadge.textContent = role;
     roleBadge.style.display = 'inline-block';
   }
-  loadActivityLog();
+  configureAccessForRole(role);
+  if (role === 'Owner') loadActivityLog();
   loadTeam();
+}
+
+function configureAccessForRole(role) {
+  const logBtn = document.getElementById('tabBtnLog');
+  const teamBtn = document.getElementById('tabBtnTeam');
+  if (role === 'Manager') {
+    if (logBtn) logBtn.style.display = 'none';
+    switchTab('team', teamBtn);
+  }
 }
 
 // ============================================================
@@ -518,7 +543,7 @@ function renderLog() {
           <span class="log-action-tag ${actionClass}">${actionLabel}</span>
         </div>
         ${hasDetails ? `<button class="log-details-btn" onclick="toggleDetails(${i})">View details</button>
-        <div class="log-details-json" id="details-${i}">${escHtml(formatDetails(log.details))}</div>` : ''}
+        <div class="log-details-json" id="details-${i}">${formatDetailsHtml(log.details)}</div>` : ''}
       </div>
       <div class="log-timestamp">${log.timestamp}</div>
     </div>`;
@@ -530,11 +555,52 @@ function toggleDetails(idx) {
   if (el) el.classList.toggle('show');
 }
 
-function formatDetails(jsonStr) {
+function formatDetailsHtml(jsonStr) {
   try {
     const obj = JSON.parse(jsonStr);
-    return JSON.stringify(obj, null, 2);
-  } catch(e) { return jsonStr; }
+    return renderDetailObject(obj);
+  } catch(e) { return '<div class="detail-val">' + escHtml(jsonStr) + '</div>'; }
+}
+
+function renderDetailObject(obj) {
+  if (!obj || typeof obj !== 'object') return '<div class="detail-val">' + escHtml(obj) + '</div>';
+
+  if (obj.before || obj.after) {
+    return `<div class="detail-section">
+      <div class="detail-title">Before</div>${renderKeyValues(obj.before || {})}
+    </div>
+    <div class="detail-section">
+      <div class="detail-title">After</div>${renderKeyValues(obj.after || {})}
+    </div>${renderExtraDetails(obj, ['before','after'])}`;
+  }
+
+  return '<div class="detail-section">' + renderKeyValues(obj) + '</div>';
+}
+
+function renderExtraDetails(obj, skipKeys) {
+  const rest = {};
+  Object.keys(obj || {}).forEach(k => { if (!skipKeys.includes(k)) rest[k] = obj[k]; });
+  if (!Object.keys(rest).length) return '';
+  return '<div class="detail-section"><div class="detail-title">Info</div>' + renderKeyValues(rest) + '</div>';
+}
+
+function renderKeyValues(obj) {
+  const entries = Object.entries(obj || {});
+  if (!entries.length) return '<div class="detail-val">—</div>';
+  return '<div class="detail-grid">' + entries.map(([key, val]) =>
+    `<div class="detail-row"><span class="detail-key">${escHtml(toLabel(key))}</span><span class="detail-val">${escHtml(formatDetailValue(val))}</span></div>`
+  ).join('') + '</div>';
+}
+
+function formatDetailValue(val) {
+  if (val === null || val === undefined || val === '') return '—';
+  if (Array.isArray(val)) return val.join(', ');
+  if (typeof val === 'object') return JSON.stringify(val);
+  return String(val);
+}
+
+function toLabel(key) {
+  return String(key || '').replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
 }
 
 function getActionClass(action) {
@@ -551,6 +617,8 @@ function getActionLabel(action) {
     editTransaction: 'Edit Transaction', deleteTransaction: 'Delete Transaction',
     createProject: 'Create Project', editProject: 'Edit Project', deleteProject: 'Delete Project',
     uploadProjectPhoto: 'Upload Photo', addWorker: 'Add Worker', editWorker: 'Edit Worker', deleteWorker: 'Delete Worker',
+    createMaterialRequest: 'Create Request', updateMaterialRequestStatus: 'Update Request',
+    addUserManually: 'Add User', updateUserRole: 'Update User',
   };
   return labels[action] || action;
 }
@@ -594,21 +662,23 @@ function renderTeam() {
 
   count.textContent = allUsers.length + ' user' + (allUsers.length !== 1 ? 's' : '');
 
-  const roleOptions = ['Owner','Manager','Planner','Field Lead','Helper','Viewer'];
+  const roleOptions = getRoleOptionsForCurrentUser();
 
   list.innerHTML = allUsers.map((u, i) => {
     const isActive = u.active !== 'No';
-    const safeEmail = u.email.replace(/'/g, "\\'");
+    const canEdit = canEditTeamUser(u);
+    const disabledAttr = canEdit ? '' : 'disabled';
     return `<tr class="${!isActive ? 'inactive-row' : ''}" data-email="${escHtml(u.email)}">
       <td data-label="Name">${escHtml(u.name || '—')}</td>
       <td data-label="Email" style="color:var(--muted);font-size:0.8rem;">${escHtml(u.email)}</td>
       <td data-label="Role">
-        <select class="role-select" id="role-${i}" onchange="onRoleOrStatusChange(${i})">
+        <select class="role-select" id="role-${i}" onchange="onRoleOrStatusChange(${i})" ${disabledAttr}>
           ${roleOptions.map(r => `<option value="${r}" ${r === u.role ? 'selected' : ''}>${r}</option>`).join('')}
+          ${!roleOptions.includes(u.role) ? `<option value="${escHtml(u.role)}" selected>${escHtml(u.role)}</option>` : ''}
         </select>
       </td>
       <td data-label="Status">
-        <span class="active-toggle ${isActive ? 'active' : 'inactive'}" id="status-${i}" onclick="toggleUserActive(${i})">${isActive ? 'Active' : 'Inactive'}</span>
+        <span class="active-toggle ${isActive ? 'active' : 'inactive'}" id="status-${i}" ${canEdit ? `onclick="toggleUserActive(${i})"` : 'style="cursor:not-allowed;opacity:0.55;"'}>${isActive ? 'Active' : 'Inactive'}</span>
       </td>
       <td data-label="Added" style="color:var(--muted);font-size:0.78rem;">${u.dateAdded || '—'}</td>
       <td style="text-align:right;">
@@ -618,12 +688,36 @@ function renderTeam() {
   }).join('');
 }
 
+function getRoleOptionsForCurrentUser() {
+  if (CURRENT_ROLE === 'Owner') return ['Owner','Manager','Planner','Field Lead','Helper','Viewer'];
+  if (CURRENT_ROLE === 'Manager') return ['Manager','Planner','Field Lead','Helper','Viewer'];
+  return [];
+}
+
+function roleRank(role) {
+  return { 'Viewer':1, 'Helper':2, 'Field Lead':3, 'Planner':4, 'Manager':5, 'Owner':6 }[role] || 0;
+}
+
+function canEditTeamUser(user) {
+  if (!user) return false;
+  const email = String(user.email || '').toLowerCase();
+  if (CURRENT_ROLE === 'Owner') {
+    return !(email === CURRENT_USER_EMAIL && user.role === 'Owner');
+  }
+  if (CURRENT_ROLE === 'Manager') {
+    return roleRank(user.role) <= roleRank('Manager');
+  }
+  return false;
+}
+
 function onRoleOrStatusChange(idx) {
   const saveBtn = document.getElementById('save-' + idx);
   if (saveBtn) saveBtn.classList.add('show');
 }
 
 function toggleUserActive(idx) {
+  const user = allUsers[idx];
+  if (!canEditTeamUser(user)) return;
   const statusEl = document.getElementById('status-' + idx);
   const isCurrentlyActive = statusEl.classList.contains('active');
   statusEl.classList.toggle('active', !isCurrentlyActive);
@@ -635,11 +729,20 @@ function toggleUserActive(idx) {
 async function saveUserRow(idx) {
   const user = allUsers[idx];
   if (!user) return;
+  if (!canEditTeamUser(user)) { showToast('Permission denied'); return; }
 
   const roleSelect = document.getElementById('role-' + idx);
   const statusEl   = document.getElementById('status-' + idx);
   const newRole    = roleSelect.value;
   const newActive  = statusEl.classList.contains('active') ? 'Yes' : 'No';
+
+  if (user.active !== 'No' && newActive === 'No') {
+    const ok = confirm('Deactivate ' + user.email + '? This user will not be able to access BOFT.');
+    if (!ok) {
+      renderTeam();
+      return;
+    }
+  }
 
   showToast('Updating ' + user.email + '...');
   try {
@@ -664,7 +767,24 @@ function openAddUserModal() {
   document.getElementById('au-email').value = '';
   document.getElementById('au-name').value  = '';
   document.getElementById('au-role').value  = 'Viewer';
+  renderAddUserRoleOptions();
   document.getElementById('modal-add-user').classList.add('open');
+}
+
+function renderAddUserRoleOptions() {
+  const roleSelect = document.getElementById('au-role');
+  const labels = {
+    Viewer: 'Viewer — read only',
+    Helper: 'Helper — upload photos only',
+    'Field Lead': 'Field Lead — Projects scope/notes/photos',
+    Planner: 'Planner — material requests',
+    Manager: 'Manager — full access, no delete',
+    Owner: 'Owner — full access',
+  };
+  roleSelect.innerHTML = getRoleOptionsForCurrentUser()
+    .map(r => `<option value="${r}">${labels[r] || r}</option>`)
+    .join('');
+  roleSelect.value = 'Viewer';
 }
 
 function closeAddUserModal() {
