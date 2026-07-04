@@ -270,6 +270,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <option value="deleteTransaction">Delete Transaction</option>
         <option value="createProject">Create Project</option>
         <option value="editProject">Edit Project</option>
+        <option value="reopenProject">Re-Open Project</option>
         <option value="deleteProject">Delete Project</option>
         <option value="uploadProjectPhoto">Upload Photo</option>
         <option value="addWorker">Add Worker</option>
@@ -277,6 +278,17 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <option value="deleteWorker">Delete Worker</option>
         <option value="createMaterialRequest">Create Request</option>
         <option value="updateMaterialRequestStatus">Update Request</option>
+        <option value="editMaterialRequest">Edit Request</option>
+        <option value="deleteMaterialRequest">Delete Request</option>
+        <option value="reopenMaterialRequest">Re-Open Request</option>
+        <option value="createPunchItem">Create Punch</option>
+        <option value="editPunchItem">Edit Punch</option>
+        <option value="completePunchItem">Complete Punch</option>
+        <option value="reopenPunchItem">Re-Open Punch</option>
+        <option value="deletePunchItem">Delete Punch</option>
+        <option value="createDailyLog">Create Daily Log</option>
+        <option value="createProjectTrackingItem">Create Tracking</option>
+        <option value="updateProjectTrackingItem">Update Tracking</option>
         <option value="addUserManually">Add User</option>
         <option value="updateUserRole">Update User</option>
       </select>
@@ -287,6 +299,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <option value="Worker">Workers</option>
         <option value="Material Request">Material Requests</option>
         <option value="User">Users</option>
+        <option value="Punch List">Punch List</option>
+        <option value="Daily Log">Daily Logs</option>
+        <option value="Material">Material</option>
+        <option value="Tool">Tools</option>
       </select>
       <button class="btn-clear-filters" onclick="clearLogFilters()">Clear Filters</button>
     </div>
@@ -678,8 +694,13 @@ function getActionLabel(action) {
     addExpense: 'Add Expense', addIncome: 'Add Income', addPayment: 'Add Payment',
     editTransaction: 'Edit Transaction', deleteTransaction: 'Delete Transaction',
     createProject: 'Create Project', editProject: 'Edit Project', deleteProject: 'Delete Project',
+    reopenProject: 'Re-Open Project',
     uploadProjectPhoto: 'Upload Photo', addWorker: 'Add Worker', editWorker: 'Edit Worker', deleteWorker: 'Delete Worker',
     createMaterialRequest: 'Create Request', updateMaterialRequestStatus: 'Update Request',
+    editMaterialRequest: 'Edit Request', deleteMaterialRequest: 'Delete Request', reopenMaterialRequest: 'Re-Open Request',
+    createPunchItem: 'Create Punch', editPunchItem: 'Edit Punch', completePunchItem: 'Complete Punch',
+    reopenPunchItem: 'Re-Open Punch', deletePunchItem: 'Delete Punch',
+    createDailyLog: 'Daily Log', createProjectTrackingItem: 'Create Tracking', updateProjectTrackingItem: 'Update Tracking',
     addUserManually: 'Add User', updateUserRole: 'Update User',
   };
   return labels[action] || action;
