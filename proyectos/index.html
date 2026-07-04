@@ -287,6 +287,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .punch-area-count{font-family:'Cinzel',serif;color:var(--gold-light);font-size:0.85rem;white-space:nowrap;}
 .punch-back{font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--neon);background:none;border:none;cursor:pointer;padding:0;margin-bottom:0.5rem;}
 .punch-status-top{font-size:0.58rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-light);margin-bottom:0.18rem;}
+.punch-full-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;gap:0.75rem;}
+.punch-full-title{font-family:'Cinzel',serif;font-size:0.95rem;font-weight:700;color:var(--gold-light);}
 .punch-draft-list{border:1px solid var(--border);background:var(--black);min-height:88px;margin-top:0.75rem;}
 .punch-draft-item{display:grid;grid-template-columns:1fr auto;gap:0.75rem;padding:0.65rem 0.75rem;border-bottom:1px solid rgba(200,146,42,0.1);}
 .punch-draft-item:last-child{border-bottom:none;}
@@ -746,10 +748,15 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
           <input class="field-input" id="pl-category-input" placeholder="Type category..." style="display:none;margin-top:0.45rem;">
         </div>
         <div>
-          <label class="field-label">Area</label>
-          <select class="field-input" id="pl-area-select" onchange="onPunchSmartSelect('area')"></select>
-          <input class="field-input" id="pl-area-input" placeholder="Type area..." style="display:none;margin-top:0.45rem;">
+          <label class="field-label">Floor</label>
+          <select class="field-input" id="pl-floor-select" onchange="onPunchSmartSelect('floor')"></select>
+          <input class="field-input" id="pl-floor-input" placeholder="Type floor..." style="display:none;margin-top:0.45rem;">
         </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Area</label>
+        <select class="field-input" id="pl-area-select" onchange="onPunchSmartSelect('area')"></select>
+        <input class="field-input" id="pl-area-input" placeholder="Master bedroom, kitchen, garage..." style="display:none;margin-top:0.45rem;">
       </div>
       <div class="field-row">
         <div><label class="field-label">Description <span>*</span></label><input class="field-input" id="pl-description" placeholder="Missing blocking, hardware, shear nail..."></div>
@@ -767,6 +774,19 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('punch-item')">Cancel</button>
       <button class="btn-submit" onclick="savePunchItems()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FULL PUNCH LIST -->
+<div id="modal-punch-full" class="modal-overlay">
+  <div class="modal" style="max-width:720px;">
+    <div class="modal-header">
+      <span class="modal-title">Punch List</span>
+      <button class="modal-close" onclick="closeModal('punch-full')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="punchFullContent"></div>
     </div>
   </div>
 </div>
@@ -1490,7 +1510,7 @@ function buildActivityFeedItems() {
       sortDate: p.updatedAt || p.completedAt || p.createdAt || getLocalDateString() + ' 00:00:00',
       type: 'punch',
       title: (p.status === 'Done' ? 'Punch Done: ' : 'Punch Item: ') + p.description,
-      sub: [p.id, p.area || 'General', p.category, p.status, p.completedByName ? 'by ' + p.completedByName : ''].filter(Boolean).join(' · '),
+      sub: [p.id, p.floor || 'General', p.area || 'General', p.category, p.status, p.completedByName ? 'by ' + p.completedByName : ''].filter(Boolean).join(' · '),
       amount: null,
       seq: seq++
     });
@@ -1571,27 +1591,21 @@ function renderPunchListOps() {
   }
 
   if (!selectedPunchArea) {
-    const areaMap = {};
-    projectPunchItems.forEach(item => {
-      const area = item.area || 'General';
-      if (!areaMap[area]) areaMap[area] = { total: 0, pending: 0, done: 0 };
-      areaMap[area].total++;
-      if (item.status === 'Done') areaMap[area].done++;
-      else areaMap[area].pending++;
-    });
-    el.innerHTML = Object.entries(areaMap).sort((a,b) => a[0].localeCompare(b[0])).map(([area, counts]) => `
-      <div class="ops-row punch-area-row" onclick="openPunchArea('${escAttr(area)}')">
+    const groups = getPunchGroups();
+    const visibleGroups = groups.slice(0, 3);
+    el.innerHTML = visibleGroups.map(group => `
+      <div class="ops-row punch-area-row" onclick="openPunchArea('${escAttr(group.key)}')">
         <div>
-          <div class="ops-row-title">${area}</div>
-          <div class="ops-row-meta">${counts.pending} pending · ${counts.done} done</div>
+          <div class="ops-row-title">${group.label}</div>
+          <div class="ops-row-meta">${group.pending} pending · ${group.done} done</div>
         </div>
-        <div class="punch-area-count">${counts.total}</div>
+        <div class="punch-area-count">${group.total}</div>
       </div>
-    `).join('');
+    `).join('') + (groups.length > 3 ? `<button class="feed-more" onclick="openFullPunchModal()">See Full</button>` : '');
     return;
   }
 
-  const areaItems = projectPunchItems.filter(item => (item.area || 'General') === selectedPunchArea);
+  const areaItems = getPunchItemsForGroup(selectedPunchArea);
   el.innerHTML = `<button class="punch-back" onclick="closePunchArea()">← Areas</button>` + areaItems.map(item => {
     const done = item.status === 'Done';
     const canWork = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !(isProjectCompleted(currentProject) && isLowProjectRole());
@@ -1608,6 +1622,31 @@ function renderPunchListOps() {
   }).join('');
 }
 
+function getPunchGroupKey(item) {
+  return (item.floor || 'General') + '||' + (item.area || 'General');
+}
+
+function getPunchGroupLabelFromKey(key) {
+  const parts = String(key || '').split('||');
+  return (parts[0] || 'General') + ' - ' + (parts[1] || 'General');
+}
+
+function getPunchGroups() {
+  const map = {};
+  projectPunchItems.forEach(item => {
+    const key = getPunchGroupKey(item);
+    if (!map[key]) map[key] = { key, label: getPunchGroupLabelFromKey(key), total: 0, pending: 0, done: 0 };
+    map[key].total++;
+    if (item.status === 'Done') map[key].done++;
+    else map[key].pending++;
+  });
+  return Object.values(map).sort((a,b) => a.label.localeCompare(b.label));
+}
+
+function getPunchItemsForGroup(key) {
+  return projectPunchItems.filter(item => getPunchGroupKey(item) === key);
+}
+
 function openPunchArea(area) {
   selectedPunchArea = area;
   renderPunchListOps();
@@ -1616,6 +1655,51 @@ function openPunchArea(area) {
 function closePunchArea() {
   selectedPunchArea = null;
   renderPunchListOps();
+}
+
+function openFullPunchModal() {
+  selectedPunchArea = null;
+  renderFullPunchGroups();
+  document.getElementById('modal-punch-full').classList.add('open');
+}
+
+function renderFullPunchGroups() {
+  const el = document.getElementById('punchFullContent');
+  if (!el) return;
+  const groups = getPunchGroups();
+  el.innerHTML = `<div class="punch-full-head"><div class="punch-full-title">All Areas</div></div>` +
+    groups.map(group => `
+      <div class="ops-row punch-area-row" onclick="renderFullPunchArea('${escAttr(group.key)}')">
+        <div>
+          <div class="ops-row-title">${group.label}</div>
+          <div class="ops-row-meta">${group.pending} pending · ${group.done} done</div>
+        </div>
+        <div class="punch-area-count">${group.total}</div>
+      </div>
+    `).join('');
+}
+
+function renderFullPunchArea(groupKey) {
+  const el = document.getElementById('punchFullContent');
+  if (!el) return;
+  const items = getPunchItemsForGroup(groupKey);
+  el.innerHTML = `<div class="punch-full-head">
+    <button class="punch-back" onclick="renderFullPunchGroups()">← Areas</button>
+    <div class="punch-full-title">${getPunchGroupLabelFromKey(groupKey)}</div>
+  </div>` + items.map(item => {
+    const done = item.status === 'Done';
+    const canWork = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !(isProjectCompleted(currentProject) && isLowProjectRole());
+    return `<div class="ops-row ${done ? 'done' : ''}">
+      <div class="punch-status-top">${item.status}</div>
+      <div class="ops-row-title">${item.description}</div>
+      <div class="ops-row-meta">${item.category || 'General'}${item.completedByName ? ' · by ' + item.completedByName : ''}${item.completedAt ? ' · ' + item.completedAt : ''}</div>
+      ${item.comments ? `<div class="ops-row-meta">${item.comments}</div>` : ''}
+      ${canWork ? `<div class="ops-row-actions">
+        ${done ? `<button class="btn-sm view" onclick="setPunchStatus('${item.id}','Pending')">Reopen</button>` : `<button class="btn-sm view" onclick="setPunchStatus('${item.id}','Done')">Done</button>`}
+        ${['Owner','Manager'].includes(CURRENT_ROLE) ? `<button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="deletePunch('${item.id}')">Delete</button>` : ''}
+      </div>` : ''}
+    </div>`;
+  }).join('');
 }
 
 function renderDailyLogOps() {
@@ -1671,7 +1755,11 @@ function escAttr(value) {
 function openPunchModal() {
   punchDraftItems = [];
   setupPunchSmartFields();
-  if (selectedPunchArea) setPunchSmartValue('area', selectedPunchArea);
+  if (selectedPunchArea) {
+    const parts = String(selectedPunchArea).split('||');
+    setPunchSmartValue('floor', parts[0] || 'General');
+    setPunchSmartValue('area', parts[1] || '');
+  }
   document.getElementById('pl-photo').value = '';
   document.getElementById('pl-description').value = '';
   document.getElementById('pl-comments').value = '';
@@ -1680,8 +1768,8 @@ function openPunchModal() {
 }
 
 function setPunchSmartValue(field, value) {
-  const select = document.getElementById(field === 'category' ? 'pl-category-select' : 'pl-area-select');
-  const input = document.getElementById(field === 'category' ? 'pl-category-input' : 'pl-area-input');
+  const select = document.getElementById('pl-' + field + '-select');
+  const input = document.getElementById('pl-' + field + '-input');
   const options = getPunchOptions(field);
   if (options.includes(value)) {
     select.style.display = 'block';
@@ -1695,21 +1783,21 @@ function setPunchSmartValue(field, value) {
 }
 
 function getPunchOptions(field) {
-  const key = field === 'category' ? 'category' : 'area';
   return [...new Set([
-    ...projectPunchItems.map(item => item[key] || '').filter(Boolean),
-    ...punchDraftItems.map(item => item[key] || '').filter(Boolean),
+    ...projectPunchItems.map(item => item[field] || '').filter(Boolean),
+    ...punchDraftItems.map(item => item[field] || '').filter(Boolean),
   ])].sort((a,b) => a.localeCompare(b));
 }
 
 function setupPunchSmartFields() {
   setupPunchSmartField('category');
+  setupPunchSmartField('floor');
   setupPunchSmartField('area');
 }
 
 function setupPunchSmartField(field) {
-  const select = document.getElementById(field === 'category' ? 'pl-category-select' : 'pl-area-select');
-  const input = document.getElementById(field === 'category' ? 'pl-category-input' : 'pl-area-input');
+  const select = document.getElementById('pl-' + field + '-select');
+  const input = document.getElementById('pl-' + field + '-input');
   const options = getPunchOptions(field);
   if (!options.length) {
     select.style.display = 'none';
@@ -1720,12 +1808,26 @@ function setupPunchSmartField(field) {
   select.style.display = 'block';
   input.style.display = 'none';
   select.innerHTML = options.map(opt => `<option value="${opt}">${opt}</option>`).join('') +
-    `<option value="__add_new__">+ Add New ${field === 'category' ? 'Category' : 'Area'}</option>`;
+    `<option value="__add_new__">+ Add New ${getPunchSmartLabel(field)}</option>`;
+}
+
+function getPunchSmartLabel(field) {
+  if (field === 'category') return 'Category';
+  if (field === 'floor') return 'Floor';
+  return 'Area';
+}
+
+function setPunchSmartAddNew(field) {
+  const select = document.getElementById('pl-' + field + '-select');
+  const input = document.getElementById('pl-' + field + '-input');
+  select.style.display = 'none';
+  input.style.display = 'block';
+  input.value = '';
 }
 
 function onPunchSmartSelect(field) {
-  const select = document.getElementById(field === 'category' ? 'pl-category-select' : 'pl-area-select');
-  const input = document.getElementById(field === 'category' ? 'pl-category-input' : 'pl-area-input');
+  const select = document.getElementById('pl-' + field + '-select');
+  const input = document.getElementById('pl-' + field + '-input');
   if (select.value === '__add_new__') {
     select.style.display = 'none';
     input.style.display = 'block';
@@ -1735,8 +1837,8 @@ function onPunchSmartSelect(field) {
 }
 
 function getPunchSmartValue(field) {
-  const select = document.getElementById(field === 'category' ? 'pl-category-select' : 'pl-area-select');
-  const input = document.getElementById(field === 'category' ? 'pl-category-input' : 'pl-area-input');
+  const select = document.getElementById('pl-' + field + '-select');
+  const input = document.getElementById('pl-' + field + '-input');
   if (input.style.display !== 'none') return input.value.trim();
   return select.value === '__add_new__' ? '' : select.value.trim();
 }
@@ -1745,12 +1847,15 @@ function addPunchDraftItem() {
   const description = document.getElementById('pl-description').value.trim();
   if (!description) { showToast('Description required'); return; }
   const category = getPunchSmartValue('category');
+  const floor = getPunchSmartValue('floor');
   const area = getPunchSmartValue('area');
   if (!category) { showToast('Category required'); return; }
+  if (!floor) { showToast('Floor required'); return; }
   if (!area) { showToast('Area required'); return; }
 
   punchDraftItems.push({
     category,
+    floor,
     area,
     description,
     photoUrl: document.getElementById('pl-photo').value.trim(),
@@ -1760,6 +1865,9 @@ function addPunchDraftItem() {
   document.getElementById('pl-photo').value = '';
   document.getElementById('pl-comments').value = '';
   setupPunchSmartFields();
+  setPunchSmartValue('category', category);
+  setPunchSmartValue('floor', floor);
+  setPunchSmartAddNew('area');
   renderPunchDraftItems();
 }
 
@@ -1774,7 +1882,7 @@ function renderPunchDraftItems() {
     <div class="punch-draft-item">
       <div>
         <div class="punch-draft-title">${item.description}</div>
-        <div class="punch-draft-meta">${item.category} · ${item.area}${item.comments ? ' · ' + item.comments : ''}</div>
+        <div class="punch-draft-meta">${item.category} · ${item.floor} · ${item.area}${item.comments ? ' · ' + item.comments : ''}</div>
       </div>
       <button class="request-icon-btn danger" onclick="removePunchDraftItem(${index})">Del</button>
     </div>
@@ -1798,6 +1906,7 @@ async function savePunchItems() {
         projectName: currentProject.name,
         description: item.description,
         category: item.category,
+        floor: item.floor,
         area: item.area,
         photoUrl: item.photoUrl,
         comments: item.comments,
