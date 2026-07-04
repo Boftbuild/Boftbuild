@@ -285,6 +285,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .feed-dot.punch{background:var(--gold-light);}
 .feed-dot.daily{background:var(--neon);}
 .feed-dot.tracking{background:#a78bfa;}
+.feed-dot.inspection{background:var(--red);}
 .feed-content{flex:1;min-width:0;}
 .feed-title{font-size:0.85rem;color:var(--text);font-weight:600;}
 .feed-sub{font-size:0.72rem;color:var(--muted);margin-top:0.1rem;}
@@ -314,6 +315,11 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .ops-row-meta{font-size:0.68rem;color:var(--muted);margin-top:0.18rem;}
 .ops-row-actions{display:flex;gap:0.35rem;margin-top:0.45rem;flex-wrap:wrap;}
 .ops-chip{font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;border:1px solid var(--border);color:var(--gold-light);padding:0.12rem 0.45rem;background:var(--gold-dim);}
+.ops-chip.pending{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
+.ops-chip.approved,.ops-chip.completed{color:var(--green);border-color:rgba(76,175,125,0.45);background:rgba(76,175,125,0.08);}
+.ops-chip.rejected,.ops-chip.wrong-item,.ops-chip.lost,.ops-chip.broken{color:var(--red);border-color:rgba(224,85,85,0.45);background:rgba(224,85,85,0.08);}
+.ops-chip.ordered,.ops-chip.assigned,.ops-chip.on-site{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
+.ops-chip.incomplete,.ops-chip.removed,.ops-chip.returned{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
 .ops-empty{font-size:0.76rem;color:var(--muted);font-style:italic;padding:0.35rem 0;}
 .project-live-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);margin-bottom:1rem;}
 .project-summary-card{background:var(--black2);padding:0.85rem 0.95rem;min-height:74px;display:flex;flex-direction:column;justify-content:space-between;border-top:2px solid rgba(0,180,255,0.32);}
@@ -606,6 +612,11 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div><label class="field-label">City</label><input type="text" class="field-input" id="np-city" placeholder="Provo"></div>
       </div>
       <div class="field-row">
+        <div><label class="field-label">State</label><input type="text" class="field-input" id="np-state" placeholder="UT"></div>
+        <div><label class="field-label">Maps URL / Pin</label><input type="text" class="field-input" id="np-maps" placeholder="Optional Google Maps link"></div>
+      </div>
+      <div class="field-group"><label class="field-label">Assigned Emails</label><input type="text" class="field-input" id="np-assigned" placeholder="worker@boftbuild.com, helper@boftbuild.com"></div>
+      <div class="field-row">
         <div><label class="field-label">Start Date <span>*</span></label><input type="date" class="field-input" id="np-start"></div>
         <div><label class="field-label">Est. End Date</label><input type="date" class="field-input" id="np-end"></div>
       </div>
@@ -621,9 +632,22 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         </div>
       </div>
       <div class="field-group"><label class="field-label">Scope of Work</label><textarea class="field-input" id="np-scope" rows="3" placeholder="Describe what will be done: Frame 2,400 sqft single family home..." style="resize:vertical;"></textarea></div>
+      <div class="field-group">
+        <label class="field-label">Tools Needed</label>
+        <div class="request-add-row"><button type="button" class="btn-sm view" onclick="openNewProjectToolModal()">+ Tool</button></div>
+        <div class="request-items-list" id="np-tools-list"></div>
+      </div>
       <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="np-notes" rows="2" placeholder="Initial notes..." style="resize:vertical;"></textarea></div>
       <div class="field-group">
         <label class="field-label">Documentation</label>
+        <select class="field-input" id="np-doc-category" style="margin-bottom:0.6rem;">
+          <option value="Contracts">Contracts</option>
+          <option value="Plans">Plans</option>
+          <option value="Permits">Permits</option>
+          <option value="Change Orders">Change Orders</option>
+          <option value="Warranty">Warranty</option>
+          <option value="Inspection">Inspection</option>
+        </select>
         <div class="receipt-upload-zone" id="np-doc-zone">
           <input type="file" id="np-doc-file" accept=".pdf,image/*,.doc,.docx,.heic,.heif" multiple onchange="onNpDocSelect()">
           <span class="upload-icon">📎</span>
@@ -639,6 +663,24 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('new-project')">Cancel</button>
       <button class="btn-submit" onclick="createProject()">Create Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NEW PROJECT TOOL -->
+<div id="modal-new-project-tool" class="modal-overlay">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="modal-title">Tool Needed</span>
+      <button class="modal-close" onclick="closeModal('new-project-tool')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group"><label class="field-label">Tool <span>*</span></label><input class="field-input" id="npt-item" placeholder="Hilti, Paslode, Laser level..."></div>
+      <div class="field-group"><label class="field-label">Notes</label><input class="field-input" id="npt-notes" placeholder="Optional"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('new-project-tool')">Cancel</button>
+      <button class="btn-submit" onclick="saveNewProjectTool()">Save</button>
     </div>
   </div>
 </div>
@@ -660,6 +702,11 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div><label class="field-label">Address</label><input type="text" class="field-input" id="ep-address"></div>
         <div><label class="field-label">City</label><input type="text" class="field-input" id="ep-city"></div>
       </div>
+      <div class="field-row">
+        <div><label class="field-label">State</label><input type="text" class="field-input" id="ep-state"></div>
+        <div><label class="field-label">Maps URL / Pin</label><input type="text" class="field-input" id="ep-maps"></div>
+      </div>
+      <div class="field-group"><label class="field-label">Assigned Emails</label><input type="text" class="field-input" id="ep-assigned"></div>
       <div class="field-row">
         <div><label class="field-label">Start Date</label><input type="date" class="field-input" id="ep-start"></div>
         <div><label class="field-label">Est. End Date</label><input type="date" class="field-input" id="ep-end"></div>
@@ -683,6 +730,14 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       </div>
       <div class="field-group">
         <label class="field-label">Documentation</label>
+        <select class="field-input" id="ep-doc-category" style="margin-bottom:0.6rem;">
+          <option value="Contracts">Contracts</option>
+          <option value="Plans">Plans</option>
+          <option value="Permits">Permits</option>
+          <option value="Change Orders">Change Orders</option>
+          <option value="Warranty">Warranty</option>
+          <option value="Inspection">Inspection</option>
+        </select>
         <!-- Lista de docs existentes -->
         <div id="ep-doc-current" style="margin-bottom:0.75rem;"></div>
         <!-- Upload nuevo -->
@@ -747,6 +802,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
             <option value="Hardware">Hardware</option>
             <option value="Lumber">Lumber</option>
             <option value="Tool Needed">Tool Needed</option>
+            <option value="Equipment">Equipment</option>
             <option value="Other">Other</option>
           </select>
         </div>
@@ -777,6 +833,24 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('project-request')">Cancel</button>
       <button class="btn-submit" onclick="submitProjectRequest()">Create Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INSPECTION ITEM -->
+<div id="modal-inspection-item" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Inspection Item</span>
+      <button class="modal-close" onclick="closeModal('inspection-item')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group"><label class="field-label">Description <span>*</span></label><textarea class="field-input" id="in-description" rows="3" style="resize:vertical;"></textarea></div>
+      <div class="field-group"><label class="field-label">Comments</label><input class="field-input" id="in-comments"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('inspection-item')">Cancel</button>
+      <button class="btn-submit" onclick="saveInspectionItem()">Save</button>
     </div>
   </div>
 </div>
@@ -849,9 +923,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="modal-body">
       <div class="field-group"><label class="field-label">Date</label><input type="date" class="field-input" id="dl-date"></div>
       <div class="field-group"><label class="field-label">What was done today?</label><textarea class="field-input" id="dl-done" rows="3" style="resize:vertical;"></textarea></div>
-      <div class="field-group"><label class="field-label">What is pending?</label><textarea class="field-input" id="dl-pending" rows="2" style="resize:vertical;"></textarea></div>
+      <div class="field-group" style="display:none;"><label class="field-label">What is pending?</label><textarea class="field-input" id="dl-pending" rows="2" style="resize:vertical;"></textarea></div>
       <div class="field-group"><label class="field-label">Problems found</label><textarea class="field-input" id="dl-problems" rows="2" style="resize:vertical;"></textarea></div>
       <div class="field-group"><label class="field-label">Notes for tomorrow</label><textarea class="field-input" id="dl-tomorrow" rows="2" style="resize:vertical;"></textarea></div>
+      <div class="field-group"><label class="field-label">Safety</label><textarea class="field-input" id="dl-safety" rows="2" style="resize:vertical;"></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('daily-log')">Cancel</button>
@@ -917,6 +992,20 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   </div>
 </div>
 
+<!-- MODAL TRACKING DETAIL -->
+<div id="modal-tracking-detail" class="modal-overlay">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title" id="trackingDetailTitle">Tracking Detail</span>
+      <button class="modal-close" onclick="closeModal('tracking-detail')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="trackingDetailBody"></div>
+    </div>
+    <div class="modal-footer" id="trackingDetailFooter"></div>
+  </div>
+</div>
+
 <!-- MODAL EDIT PROJECT REQUEST -->
 <div id="modal-edit-project-request" class="modal-overlay">
   <div class="modal">
@@ -935,6 +1024,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
             <option value="Hardware">Hardware</option>
             <option value="Lumber">Lumber</option>
             <option value="Tool Needed">Tool Needed</option>
+            <option value="Equipment">Equipment</option>
             <option value="Other">Other</option>
             <option value="Multiple Items">Multiple Items</option>
           </select>
@@ -1083,6 +1173,7 @@ function loginSuccess(user) {
 
   const role = sessionStorage.getItem('boft_role') || 'Viewer';
   CURRENT_ROLE = role;
+  CURRENT_USER_EMAIL = user.email || '';
   const roleBadge = document.getElementById('navRoleBadge');
   if (roleBadge) {
     roleBadge.textContent = role;
@@ -1103,13 +1194,37 @@ function loginSuccess(user) {
 // (el backend también valida en doPost — esto es solo para UX)
 // ============================================================
 let CURRENT_ROLE = 'Viewer';
+let CURRENT_USER_EMAIL = '';
+let newProjectTools = [];
+let newProjectToolEditIndex = -1;
+let activeTrackingItem = null;
 
 function canSeeProjectMoney() {
-  return !['Field Lead','Helper'].includes(CURRENT_ROLE);
+  return !['Field Lead','Worker','Helper'].includes(CURRENT_ROLE);
 }
 
 function canViewEstimateDocs() {
-  return !['Field Lead','Helper'].includes(CURRENT_ROLE);
+  return !['Field Lead','Worker','Helper'].includes(CURRENT_ROLE);
+}
+
+function isWorkerOrBelow() {
+  return ['Worker','Helper','Viewer'].includes(CURRENT_ROLE);
+}
+
+function canUseProjectRequests() {
+  return ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE);
+}
+
+function canUseDailyLog() {
+  return ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE);
+}
+
+function canUploadProjectPhotos() {
+  return ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE);
+}
+
+function canCompletePunch() {
+  return ['Owner','Manager','Field Lead','Worker'].includes(CURRENT_ROLE);
 }
 
 function isEstimateDoc(name, url) {
@@ -1120,20 +1235,24 @@ function applyRolePermissions(role) {
   const isOwner     = role === 'Owner';
   const isManager    = role === 'Manager';
   const isFieldLead  = role === 'Field Lead';
+  const isWorker     = role === 'Worker';
   const isHelper     = role === 'Helper';
 
   const canCreateProject = isOwner || isManager;             // + New Project
   const canDeleteProject  = isOwner;                          // 🗑 Delete project
   const canFullEditProject = isOwner || isManager;            // Edit modal completo (todos los campos)
   const canLimitedEdit     = isFieldLead;                      // Edit modal limitado (solo Scope/Notes)
-  const canUploadPhotos    = isOwner || isManager || isFieldLead || isHelper; // todos excepto Viewer
+  const canUploadPhotos    = isOwner || isManager || isFieldLead;
   const canAddNote         = isOwner || isManager || isFieldLead;
 
   const readOnlyBanner = document.getElementById('readOnlyBanner');
   const bannerText = document.getElementById('readOnlyBannerText');
   if (readOnlyBanner) {
-    if (isHelper) {
-      bannerText.textContent = 'Field access — you can upload photos to projects but cannot edit project details.';
+    if (isWorker) {
+      bannerText.textContent = 'Worker access — assigned projects, plans, address, and punch completion only.';
+      readOnlyBanner.style.display = 'flex';
+    } else if (isHelper) {
+      bannerText.textContent = 'Helper access — assigned project location and plans only.';
       readOnlyBanner.style.display = 'flex';
     } else if (isFieldLead) {
       bannerText.textContent = 'Field Lead access — you can update Scope of Work, Activity Feed notes, and upload photos.';
@@ -1249,14 +1368,15 @@ function renderSidebarSummary() {
   }
   const openPunch = projectPunchItems.filter(item => item.status !== 'Done').length;
   const pendingRequests = projectMaterialRequests.filter(r => ['Pending','Ordered'].includes(r.status || 'Pending')).length;
+  const restrictedOps = isWorkerOrBelow();
   return `<div class="sidebar-summary">
     <div class="sidebar-summary-label">Current Project</div>
     <div class="sidebar-summary-title">${currentProject.name || 'Project'}</div>
     <div class="sidebar-summary-grid">
       <div class="sidebar-metric"><div class="sidebar-metric-value">${currentProject.status || 'Active'}</div><div class="sidebar-metric-label">Status</div></div>
       <div class="sidebar-metric"><div class="sidebar-metric-value">${openPunch}</div><div class="sidebar-metric-label">Punch Open</div></div>
-      <div class="sidebar-metric"><div class="sidebar-metric-value">${pendingRequests}</div><div class="sidebar-metric-label">Requests</div></div>
-      <div class="sidebar-metric"><div class="sidebar-metric-value">${projectDailyLogs.length}</div><div class="sidebar-metric-label">Logs</div></div>
+      <div class="sidebar-metric"><div class="sidebar-metric-value">${restrictedOps ? '-' : pendingRequests}</div><div class="sidebar-metric-label">Requests</div></div>
+      <div class="sidebar-metric"><div class="sidebar-metric-value">${restrictedOps ? '-' : projectDailyLogs.length}</div><div class="sidebar-metric-label">Logs</div></div>
     </div>
   </div>`;
 }
@@ -1272,7 +1392,16 @@ function isProjectCompleted(project) {
 }
 
 function isLowProjectRole() {
-  return ['Field Lead','Helper','Viewer'].includes(CURRENT_ROLE);
+  return ['Field Lead','Worker','Helper','Viewer'].includes(CURRENT_ROLE);
+}
+
+function renderProjectLocationLink() {
+  if (!currentProject) return '';
+  const cityState = [currentProject.city, currentProject.state].filter(Boolean).join(', ');
+  if (!cityState) return '';
+  const target = currentProject.address || currentProject.mapsUrl || cityState;
+  const url = /^https?:\/\//i.test(target) ? target : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(target);
+  return ` · <a href="${url}" target="_blank" style="color:var(--neon);">${cityState}</a>`;
 }
 
 function filterProjects(filter, btn) {
@@ -1290,6 +1419,7 @@ let projectMaterialRequests = [];
 let projectPunchItems = [];
 let projectDailyLogs = [];
 let projectTrackingItems = [];
+let projectInspectionItems = [];
 let selectedPunchArea = null;
 let punchDraftItems = [];
 let activePunchModalGroup = null;
@@ -1312,9 +1442,12 @@ async function openProject(id) {
   const canDeleteProject    = CURRENT_ROLE === 'Owner';
   const canOwnerManager     = ['Owner','Manager'].includes(CURRENT_ROLE);
   const canEditProjectAtAll = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole;
-  const canUploadPhotos     = ['Owner','Manager','Field Lead','Helper'].includes(CURRENT_ROLE) && !completedLowRole;
-  const canAddNote          = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole;
-  const canCreateRequest    = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole;
+  const canUploadPhotos     = canUploadProjectPhotos() && !completedLowRole;
+  const canAddNote          = canUseDailyLog() && !completedLowRole;
+  const canCreateRequest    = canUseProjectRequests() && !completedLowRole;
+  const canSeeTimeline      = !isWorkerOrBelow();
+  const canSeeOperations    = !['Helper','Viewer'].includes(CURRENT_ROLE);
+  const canSeeDocuments     = ['Owner','Manager','Field Lead','Worker','Helper'].includes(CURRENT_ROLE);
   const showMoney           = canSeeProjectMoney();
   const priceText           = showMoney ? (currentProject.contractValue ? fmt(currentProject.contractValue) : '—') : 'Restricted';
 
@@ -1322,7 +1455,7 @@ async function openProject(id) {
     <div class="timeline-header ${completedLowRole ? 'completed-low-role' : ''}">
       <div>
         <div class="timeline-project-name">${currentProject.name}</div>
-        <div class="timeline-project-sub">${currentProject.client || ''}${currentProject.city ? ' · ' + currentProject.city : ''}</div>
+        <div class="timeline-project-sub">${currentProject.client || ''}${renderProjectLocationLink()}</div>
       </div>
       <div class="timeline-actions">
         <span class="project-status ${sc}">${currentProject.status || 'Active'}</span>
@@ -1363,17 +1496,18 @@ async function openProject(id) {
         ${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole ? `<button class="quick-action" onclick="openPunchModal()"><div class="quick-action-label">Punch</div><div class="quick-action-title">Add Item</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Punch</div><div class="quick-action-title">Locked</div></button>`}
         ${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole ? `<button class="quick-action" onclick="openDailyLogModal()"><div class="quick-action-label">Daily</div><div class="quick-action-title">New Log</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Daily</div><div class="quick-action-title">Locked</div></button>`}
         ${canUploadPhotos ? `<button class="quick-action" onclick="switchProjectModule('photos')"><div class="quick-action-label">Photos</div><div class="quick-action-title">Upload</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Photos</div><div class="quick-action-title">Locked</div></button>`}
-        ${canAddNote ? `<button class="quick-action" onclick="switchProjectModule('timeline')"><div class="quick-action-label">Note</div><div class="quick-action-title">Add</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Note</div><div class="quick-action-title">Locked</div></button>`}
+        ${canAddNote && canSeeTimeline ? `<button class="quick-action" onclick="switchProjectModule('timeline')"><div class="quick-action-label">Note</div><div class="quick-action-title">Add</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Note</div><div class="quick-action-title">Locked</div></button>`}
       </div>
 
       <div class="project-module-nav">
         <button class="project-module-tab active" data-module-tab="overview" onclick="switchProjectModule('overview')">Overview</button>
-        <button class="project-module-tab" data-module-tab="operations" onclick="switchProjectModule('operations')">Operations</button>
-        <button class="project-module-tab" data-module-tab="photos" onclick="switchProjectModule('photos')">Photos</button>
-        <button class="project-module-tab" data-module-tab="documents" onclick="switchProjectModule('documents')">Documents</button>
+        ${canSeeOperations ? `<button class="project-module-tab" data-module-tab="operations" onclick="switchProjectModule('operations')">Operations</button>` : ''}
+        ${canUploadPhotos ? `<button class="project-module-tab" data-module-tab="photos" onclick="switchProjectModule('photos')">Photos</button>` : ''}
+        ${canSeeDocuments ? `<button class="project-module-tab" data-module-tab="documents" onclick="switchProjectModule('documents')">Documents</button>` : ''}
+        ${canUseDailyLog() ? `<button class="project-module-tab" data-module-tab="inspection" onclick="switchProjectModule('inspection')">Inspection</button>` : ''}
         ${showMoney ? `<button class="project-module-tab" data-module-tab="financial" onclick="switchProjectModule('financial')">Financial</button>` : ''}
-        <button class="project-module-tab" data-module-tab="timeline" onclick="switchProjectModule('timeline')">Timeline</button>
-        <button class="project-module-tab" data-module-tab="settings" onclick="switchProjectModule('settings')">Settings</button>
+        ${canSeeTimeline ? `<button class="project-module-tab" data-module-tab="timeline" onclick="switchProjectModule('timeline')">Timeline</button>` : ''}
+        ${canOwnerManager || CURRENT_ROLE === 'Field Lead' ? `<button class="project-module-tab" data-module-tab="settings" onclick="switchProjectModule('settings')">Settings</button>` : ''}
       </div>
 
       ${showMoney ? `<!-- STATS MINI -->
@@ -1415,8 +1549,16 @@ async function openProject(id) {
         </div>
       </div>
 
+      ${canUseDailyLog() ? `<div class="timeline-section restricted-on-completed project-module" data-project-module="inspection">
+        <div class="timeline-section-label" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Inspection</span>
+          <button class="btn-sm view" onclick="openInspectionModal()">+ Item</button>
+        </div>
+        <div id="inspectionOps" class="ops-list"><div class="ops-empty">Loading...</div></div>
+      </div>` : ''}
+
       <!-- PROJECT OPS -->
-      <div class="timeline-section restricted-on-completed project-module" data-project-module="operations">
+      ${canSeeOperations ? `<div class="timeline-section restricted-on-completed project-module" data-project-module="operations">
         <div class="timeline-section-label" style="display:flex;justify-content:space-between;align-items:center;">
           <span>Project Operations</span>
           <button class="btn-sm view" onclick="copyProjectShareLink()">Share Link</button>
@@ -1433,32 +1575,30 @@ async function openProject(id) {
             </div>
             <div id="punchListOps" class="ops-list"><div class="ops-empty">Loading...</div></div>
           </div>
-          <div class="ops-panel">
+          ${canUseDailyLog() ? `<div class="ops-panel">
             <div class="ops-panel-head">
               <div class="ops-title">Daily Log</div>
-              ${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole ? `<button class="btn-sm view" onclick="openDailyLogModal()">+ Log</button>` : ''}
+              ${canUseDailyLog() && !completedLowRole ? `<button class="btn-sm view" onclick="openDailyLogModal()">+ Log</button>` : ''}
             </div>
             <div id="dailyLogOps" class="ops-list"><div class="ops-empty">Loading...</div></div>
-          </div>
-          <div class="ops-panel">
+          </div>` : ''}
+          ${!isWorkerOrBelow() ? `<div class="ops-panel">
             <div class="ops-panel-head">
               <div class="ops-title">Material Tracking</div>
-              ${['Owner','Manager','Field Lead','Planner'].includes(CURRENT_ROLE) && !completedLowRole ? `<button class="btn-sm view" onclick="openTrackingModal('Material')">+ Add</button>` : ''}
             </div>
             <div id="materialTrackingOps" class="ops-list"><div class="ops-empty">Loading...</div></div>
           </div>
           <div class="ops-panel">
             <div class="ops-panel-head">
               <div class="ops-title">Tool Tracking</div>
-              ${['Owner','Manager','Field Lead','Planner'].includes(CURRENT_ROLE) && !completedLowRole ? `<button class="btn-sm view" onclick="openTrackingModal('Tool')">+ Add</button>` : ''}
             </div>
             <div id="toolTrackingOps" class="ops-list"><div class="ops-empty">Loading...</div></div>
-          </div>
+          </div>` : ''}
         </div>
-      </div>
+      </div>` : ''}
 
       <!-- ACTIVITY FEED -->
-      <div class="timeline-section project-module" data-project-module="timeline">
+      ${canSeeTimeline ? `<div class="timeline-section project-module" data-project-module="timeline">
         <div class="timeline-section-label">Project Timeline</div>
         <div class="timeline-filters">
           <button class="timeline-filter active" data-timeline-filter="all" onclick="setProjectTimelineFilter('all')">All</button>
@@ -1466,12 +1606,13 @@ async function openProject(id) {
           <button class="timeline-filter" data-timeline-filter="request" onclick="setProjectTimelineFilter('request')">Requests</button>
           <button class="timeline-filter" data-timeline-filter="daily" onclick="setProjectTimelineFilter('daily')">Logs</button>
           <button class="timeline-filter" data-timeline-filter="tracking" onclick="setProjectTimelineFilter('tracking')">Materials</button>
+          <button class="timeline-filter" data-timeline-filter="inspection" onclick="setProjectTimelineFilter('inspection')">Inspection</button>
           <button class="timeline-filter" data-timeline-filter="note" onclick="setProjectTimelineFilter('note')">Notes</button>
         </div>
         <div id="activityFeed"><div style="color:var(--muted);font-size:0.82rem;">Loading...</div></div>
-      </div>
+      </div>` : ''}
 
-      ${canAddNote ? `
+      ${canAddNote && canSeeTimeline ? `
       <!-- ADD NOTE -->
       <div class="timeline-section project-module" data-project-module="timeline">
         <div class="timeline-section-label">Add Note</div>
@@ -1482,7 +1623,7 @@ async function openProject(id) {
       </div>` : ''}
 
       <!-- PHOTOS BY PHASE -->
-      <div class="timeline-section project-module" data-project-module="photos">
+      ${canUploadPhotos ? `<div class="timeline-section project-module" data-project-module="photos">
         <div class="timeline-section-label">Photos</div>
 
         <!-- Before -->
@@ -1514,7 +1655,7 @@ async function openProject(id) {
           <div id="grid-terminado" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:3px;"></div>
           <div class="upload-progress" id="progress-terminado"></div>
         </div>
-      </div>
+      </div>` : ''}
 
       <div class="timeline-section project-module" data-project-module="settings">
         <div class="timeline-section-label">Project Settings</div>
@@ -1548,14 +1689,22 @@ async function openProject(id) {
 
 async function loadTimelineData() {
   try {
-    const data = await apiGet('ledger', { page: '1', size: '500' });
-    projectTransactions = (data.transactions || []).filter(t =>
-      (t.project || '').toLowerCase() === (currentProject.name || '').toLowerCase()
-    );
-    try {
-      const requestData = await apiGet('projectMaterialRequests', { projectId: currentProject.id });
-      projectMaterialRequests = requestData.requests || [];
-    } catch(e) {
+    if (canSeeProjectMoney()) {
+      const data = await apiGet('ledger', { page: '1', size: '500' });
+      projectTransactions = (data.transactions || []).filter(t =>
+        (t.project || '').toLowerCase() === (currentProject.name || '').toLowerCase()
+      );
+    } else {
+      projectTransactions = [];
+    }
+    if (!isWorkerOrBelow()) {
+      try {
+        const requestData = await apiGet('projectMaterialRequests', { projectId: currentProject.id });
+        projectMaterialRequests = requestData.requests || [];
+      } catch(e) {
+        projectMaterialRequests = [];
+      }
+    } else {
       projectMaterialRequests = [];
     }
     try {
@@ -1563,11 +1712,13 @@ async function loadTimelineData() {
       projectPunchItems = opsData.punchItems || [];
       projectDailyLogs = opsData.dailyLogs || [];
       projectTrackingItems = opsData.trackingItems || [];
+      projectInspectionItems = opsData.inspectionItems || [];
       renderProjectOperations();
     } catch(e) {
       projectPunchItems = [];
       projectDailyLogs = [];
       projectTrackingItems = [];
+      projectInspectionItems = [];
       renderProjectOperations();
     }
 
@@ -1730,6 +1881,18 @@ function buildActivityFeedItems() {
     });
   });
 
+  projectInspectionItems.forEach(ins => {
+    items.push({
+      date: (ins.updatedAt || ins.createdAt || '').slice(0, 10),
+      sortDate: ins.updatedAt || ins.createdAt || getLocalDateString() + ' 00:00:00',
+      type: 'inspection',
+      title: 'Inspection: ' + ins.description,
+      sub: [ins.id, ins.status, ins.createdByName ? 'by ' + ins.createdByName : ''].filter(Boolean).join(' · '),
+      amount: null,
+      seq: seq++
+    });
+  });
+
   // Notas del campo notes (líneas con timestamp si tienen formato "YYYY-MM-DD: texto")
   const notesRaw = currentProject.notes || '';
   notesRaw.split('\n').forEach(line => {
@@ -1772,6 +1935,7 @@ function renderProjectOperations() {
   renderPunchListOps();
   renderDailyLogOps();
   renderTrackingOps();
+  renderInspectionOps();
 }
 
 function renderProjectLiveSummary() {
@@ -1782,6 +1946,7 @@ function renderProjectLiveSummary() {
   const pendingRequests = projectMaterialRequests.filter(r => ['Pending','Ordered'].includes(r.status || 'Pending')).length;
   const approvedRequests = projectMaterialRequests.filter(r => r.status === 'Approved').length;
   const latestLog = projectDailyLogs[0] ? (projectDailyLogs[0].logDate || (projectDailyLogs[0].createdAt || '').slice(0, 10)) : 'No daily log';
+  const restrictedOps = isWorkerOrBelow();
   el.innerHTML = `
     <div class="project-summary-card gold">
       <div class="project-summary-label">Status</div>
@@ -1795,13 +1960,13 @@ function renderProjectLiveSummary() {
     </div>
     <div class="project-summary-card ${pendingRequests ? 'red' : ''}">
       <div class="project-summary-label">Requests</div>
-      <div class="project-summary-value">${pendingRequests}</div>
-      <div class="project-summary-sub">${approvedRequests} approved</div>
+      <div class="project-summary-value">${restrictedOps ? '-' : pendingRequests}</div>
+      <div class="project-summary-sub">${restrictedOps ? 'Restricted' : approvedRequests + ' approved'}</div>
     </div>
     <div class="project-summary-card green">
       <div class="project-summary-label">Daily Logs</div>
-      <div class="project-summary-value">${projectDailyLogs.length}</div>
-      <div class="project-summary-sub">${latestLog}</div>
+      <div class="project-summary-value">${restrictedOps ? '-' : projectDailyLogs.length}</div>
+      <div class="project-summary-sub">${restrictedOps ? 'Restricted' : latestLog}</div>
     </div>
   `;
 }
@@ -1832,7 +1997,7 @@ function renderPunchListOps() {
   const areaItems = getPunchItemsForGroup(selectedPunchArea);
   el.innerHTML = `<button class="punch-back" onclick="closePunchArea()">← Floors</button>` + areaItems.map(item => {
     const done = item.status === 'Done';
-    const canWork = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !(isProjectCompleted(currentProject) && isLowProjectRole());
+    const canWork = canCompletePunch() && !(isProjectCompleted(currentProject) && isLowProjectRole());
     return `<div class="ops-row ${done ? 'done' : ''}">
       <div class="punch-status-top ${done ? 'done' : 'pending'}">${item.status}</div>
       <div class="ops-row-title">${item.description}</div>
@@ -1976,7 +2141,7 @@ function renderFullPunchArea(groupKey) {
     <div class="punch-full-title">${getPunchGroupLabelFromKey(groupKey)}</div>
   </div>` + items.map(item => {
     const done = item.status === 'Done';
-    const canWork = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !(isProjectCompleted(currentProject) && isLowProjectRole());
+    const canWork = canCompletePunch() && !(isProjectCompleted(currentProject) && isLowProjectRole());
     return `<div class="ops-row ${done ? 'done' : ''}">
       <div class="punch-status-top ${done ? 'done' : 'pending'}">${item.status}</div>
       <div class="ops-row-title">${item.description}</div>
@@ -2004,6 +2169,7 @@ function renderDailyLogOps() {
       ${log.pending ? `<div class="ops-row-meta"><strong>Pending:</strong> ${log.pending}</div>` : ''}
       ${log.problems ? `<div class="ops-row-meta"><strong>Problems:</strong> ${log.problems}</div>` : ''}
       ${log.tomorrowNotes ? `<div class="ops-row-meta"><strong>Tomorrow:</strong> ${log.tomorrowNotes}</div>` : ''}
+      ${log.safety ? `<div class="ops-row-meta"><strong>Safety:</strong> ${log.safety}</div>` : ''}
     </div>`).join('');
 }
 
@@ -2012,11 +2178,70 @@ function renderTrackingOps() {
   renderTrackingList('Tool', document.getElementById('toolTrackingOps'));
 }
 
+function renderInspectionOps() {
+  const el = document.getElementById('inspectionOps');
+  if (!el) return;
+  if (!projectInspectionItems.length) {
+    el.innerHTML = '<div class="module-empty">No inspection items yet.</div>';
+    return;
+  }
+  el.innerHTML = projectInspectionItems.map(item => {
+    const done = item.status === 'Done';
+    return `<div class="ops-row ${done ? 'done' : ''}">
+      <div class="punch-status-top ${done ? 'done' : 'pending'}">${item.status}</div>
+      <div class="ops-row-title">${item.description}</div>
+      ${item.comments ? `<div class="ops-row-meta">${item.comments}</div>` : ''}
+      <div class="ops-row-actions">
+        ${done ? `<button class="btn-sm view" onclick="setInspectionStatus('${item.id}','Pending')">Reopen</button>` : `<button class="btn-sm done" onclick="setInspectionStatus('${item.id}','Done')">Done</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openInspectionModal() {
+  document.getElementById('in-description').value = '';
+  document.getElementById('in-comments').value = '';
+  document.getElementById('modal-inspection-item').classList.add('open');
+}
+
+async function saveInspectionItem() {
+  const description = document.getElementById('in-description').value.trim();
+  if (!description) { showToast('Description required'); return; }
+  try {
+    const result = await apiPost({
+      action: 'createInspectionItem',
+      projectId: currentProject.id,
+      projectName: currentProject.name,
+      description,
+      comments: document.getElementById('in-comments').value.trim(),
+    });
+    if (result.success) {
+      closeModal('inspection-item');
+      projectInspectionItems = result.items || projectInspectionItems;
+      renderInspectionOps();
+      renderActivityFeed();
+      showToast('Inspection item saved');
+    } else showToast('Error: ' + result.message);
+  } catch(e) { showToast('Connection error'); }
+}
+
+async function setInspectionStatus(id, status) {
+  try {
+    const result = await apiPost({ action: 'updateInspectionItem', id, status });
+    if (result.success) {
+      projectInspectionItems = result.items || projectInspectionItems;
+      renderInspectionOps();
+      renderActivityFeed();
+      showToast('Inspection updated');
+    } else showToast('Error: ' + result.message);
+  } catch(e) { showToast('Connection error'); }
+}
+
 function renderTrackingList(kind, el) {
   if (!el) return;
   const items = getCombinedTrackingItems(kind);
   if (!items.length) {
-    el.innerHTML = `<div class="module-empty">No ${kind.toLowerCase()} tracking yet.${['Owner','Manager','Field Lead','Planner'].includes(CURRENT_ROLE) ? ` <button class="btn-sm view" onclick="openTrackingModal('${kind}')" style="margin-left:0.5rem;">Add</button>` : ''}</div>`;
+    el.innerHTML = `<div class="module-empty">No ${kind.toLowerCase()} tracking yet.</div>`;
     return;
   }
   el.innerHTML = items.slice(0, 3).map(renderTrackingRow).join('') +
@@ -2049,7 +2274,7 @@ function getCombinedTrackingItems(kind) {
 }
 
 function isMaterialTrackingRequest(req) {
-  return ['Material','Hardware','Lumber'].includes(String(req.subtype || '').trim());
+  return ['Material','Hardware','Lumber','Nails'].includes(String(req.subtype || '').trim());
 }
 
 function isToolTrackingRequest(req) {
@@ -2058,9 +2283,10 @@ function isToolTrackingRequest(req) {
 
 function renderTrackingRow(item) {
   const linked = item.source === 'request';
-  return `<div class="ops-row ${linked ? 'request-linked' : ''}">
+  const statusClass = String(item.status || 'Needed').toLowerCase().replace(/\s+/g, '-');
+  return `<div class="ops-row ${linked ? 'request-linked' : ''}" onclick="openTrackingDetail('${item.kind}','${item.source}','${item.id}')">
     <div class="ops-row-title">${item.item}</div>
-    <div class="ops-row-meta"><span class="ops-chip">${item.status || 'Needed'}</span>${linked ? ' Request ' + item.id + ' · ' : ' '}Required: ${item.requiredQty || '-'} · Ordered/Available: ${item.orderedQty || '-'} · Received: ${item.receivedQty || '-'} · Missing: ${item.missingQty || '-'}</div>
+    <div class="ops-row-meta"><span class="ops-chip ${statusClass}">${item.status || 'Needed'}</span>${linked ? ' Request ' + item.id + ' · ' : ' '}Required: ${item.requiredQty || '-'} · Ordered/Available: ${item.orderedQty || '-'} · Received: ${item.receivedQty || '-'} · Missing: ${item.missingQty || '-'}</div>
     ${(item.ownerCarrier || item.location) ? `<div class="ops-row-meta">${[item.ownerCarrier ? (linked ? 'Requested by: ' : 'Who: ') + item.ownerCarrier : '', item.location ? 'Category: ' + item.location : ''].filter(Boolean).join(' · ')}</div>` : ''}
     ${item.notes ? `<div class="ops-row-meta">${item.notes}</div>` : ''}
     ${linked ? renderRequestFeedActions({ request: item.request }) : ''}
@@ -2076,6 +2302,94 @@ function openFullTrackingModal(kind) {
     content.innerHTML = items.length ? items.map(renderTrackingRow).join('') : `<div class="module-empty">No ${kind.toLowerCase()} tracking yet.</div>`;
   }
   document.getElementById('modal-tracking-full').classList.add('open');
+}
+
+function findCombinedTrackingItem(kind, source, id) {
+  return getCombinedTrackingItems(kind).find(item => item.source === source && item.id === id);
+}
+
+function openTrackingDetail(kind, source, id) {
+  activeTrackingItem = findCombinedTrackingItem(kind, source, id);
+  if (!activeTrackingItem) return;
+  document.getElementById('trackingDetailTitle').textContent = kind + ' Tracking';
+  const body = document.getElementById('trackingDetailBody');
+  const footer = document.getElementById('trackingDetailFooter');
+  const item = activeTrackingItem;
+  const statusClass = String(item.status || '').toLowerCase().replace(/\s+/g, '-');
+  let html = `<div class="module-card">
+    <div class="module-card-title">${item.item}</div>
+    <div class="ops-row-meta"><span class="ops-chip ${statusClass}">${item.status || 'Needed'}</span>${item.source === 'request' ? ' Request ' + item.id : ' Tracking ' + item.id}</div>
+    <div class="ops-row-meta">Required: ${item.requiredQty || '-'} · Received: ${item.receivedQty || '-'}</div>
+    ${item.notes ? `<div class="ops-row-meta">${item.notes}</div>` : ''}
+  </div>`;
+  if (kind === 'Material' && item.source === 'request') {
+    html += `<div class="field-group">
+      <label class="field-label">Delivery Result</label>
+      <select class="field-input" id="mt-result">
+        <option value="Completed">Llegó completo</option>
+        <option value="Incomplete">Llegó incompleto</option>
+        <option value="Wrong Item">Llegó equivocado</option>
+      </select>
+    </div>
+    <div class="field-group"><label class="field-label">Cuánto llegó</label><input class="field-input" id="mt-received" placeholder="Only for incomplete"></div>
+    <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="mt-notes" rows="2" style="resize:vertical;"></textarea></div>`;
+    footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Cancel</button><button class="btn-submit" onclick="saveMaterialDelivery()">Save</button>`;
+  } else if (kind === 'Tool' && item.source === 'tracking') {
+    html += `<div class="field-group">
+      <label class="field-label">Remove Reason</label>
+      <select class="field-input" id="tt-reason">
+        <option value="Removed">Se la llevó el patrón</option>
+        <option value="Broken">Se descompuso</option>
+        <option value="Lost">Se perdió</option>
+        <option value="Returned">Returned</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="tt-notes" rows="2" style="resize:vertical;"></textarea></div>`;
+    footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Cancel</button><button class="btn-submit" onclick="removeActiveToolFromProject()">Save</button>`;
+  } else {
+    footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Close</button>`;
+  }
+  body.innerHTML = html;
+  document.getElementById('modal-tracking-detail').classList.add('open');
+}
+
+async function saveMaterialDelivery() {
+  if (!activeTrackingItem || activeTrackingItem.source !== 'request') return;
+  const resultType = document.getElementById('mt-result').value;
+  const notes = document.getElementById('mt-notes').value.trim();
+  if (resultType === 'Wrong Item' && !notes) { showToast('Explain what was wrong'); return; }
+  try {
+    const result = await apiPost({
+      action: 'recordMaterialTrackingDelivery',
+      requestId: activeTrackingItem.id,
+      resultType,
+      receivedQty: document.getElementById('mt-received').value.trim(),
+      notes,
+    });
+    if (result.success) {
+      closeModal('tracking-detail');
+      showToast('Material tracking updated');
+      await reloadProjectRequestsAndFeed();
+    } else showToast('Error: ' + result.message);
+  } catch(e) { showToast('Connection error'); }
+}
+
+async function removeActiveToolFromProject() {
+  if (!activeTrackingItem || activeTrackingItem.source !== 'tracking') return;
+  try {
+    const result = await apiPost({
+      action: 'removeToolFromProject',
+      id: activeTrackingItem.id,
+      reason: document.getElementById('tt-reason').value,
+      notes: document.getElementById('tt-notes').value.trim(),
+    });
+    if (result.success) {
+      closeModal('tracking-detail');
+      showToast('Tool tracking updated');
+      await reloadProjectOperations();
+    } else showToast('Error: ' + result.message);
+  } catch(e) { showToast('Connection error'); }
 }
 
 function copyProjectShareLink() {
@@ -2267,7 +2581,12 @@ async function savePunchItems() {
 
 async function setPunchStatus(id, status) {
   try {
-    const result = await apiPost({ action: 'updatePunchItem', id, status });
+    const payload = { action: 'updatePunchItem', id, status };
+    if (status === 'Done') {
+      const comment = prompt('Comment for this punch item? (optional)');
+      if (comment !== null && comment.trim()) payload.comments = comment.trim();
+    }
+    const result = await apiPost(payload);
     if (result.success) {
       if (result.items) {
         projectPunchItems = result.items;
@@ -2294,7 +2613,7 @@ async function deletePunch(id) {
 
 function openDailyLogModal() {
   document.getElementById('dl-date').value = getLocalDateString();
-  ['dl-done','dl-pending','dl-problems','dl-tomorrow'].forEach(id => document.getElementById(id).value = '');
+  ['dl-done','dl-pending','dl-problems','dl-tomorrow','dl-safety'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('modal-daily-log').classList.add('open');
 }
 
@@ -2309,6 +2628,7 @@ async function saveDailyLog() {
       pending: document.getElementById('dl-pending').value.trim(),
       problems: document.getElementById('dl-problems').value.trim(),
       tomorrowNotes: document.getElementById('dl-tomorrow').value.trim(),
+      safety: document.getElementById('dl-safety').value.trim(),
     });
     if (result.success) {
       closeModal('daily-log');
@@ -2360,6 +2680,7 @@ async function reloadProjectOperations() {
   projectPunchItems = opsData.punchItems || [];
   projectDailyLogs = opsData.dailyLogs || [];
   projectTrackingItems = opsData.trackingItems || [];
+  projectInspectionItems = opsData.inspectionItems || [];
   renderProjectOperations();
   renderActivityFeed();
   refreshOpenPunchModal();
@@ -2385,13 +2706,13 @@ function renderRequestFeedActions(item) {
   if (!r || !['Owner','Manager','Planner','Field Lead'].includes(CURRENT_ROLE) || isProjectCompleted(currentProject) && isLowProjectRole()) return '';
   if (r.status === 'Pending') {
     return `<div class="feed-actions">
-      <button class="feed-action-btn" title="Edit request" onclick="openEditProjectRequestModal('${r.id}')">✎</button>
-      <button class="feed-action-btn danger" title="Delete request" onclick="deleteProjectRequest('${r.id}')">⌫</button>
+      <button class="feed-action-btn" title="Edit request" onclick="event.stopPropagation();openEditProjectRequestModal('${r.id}')">✎</button>
+      <button class="feed-action-btn danger" title="Delete request" onclick="event.stopPropagation();deleteProjectRequest('${r.id}')">⌫</button>
     </div>`;
   }
   if (r.status === 'Rejected') {
     return `<div class="feed-actions">
-      <button class="feed-action-btn reopen" title="Re-open request" onclick="reopenProjectRequest('${r.id}')">Re-Open</button>
+      <button class="feed-action-btn reopen" title="Re-open request" onclick="event.stopPropagation();reopenProjectRequest('${r.id}')">Re-Open</button>
     </div>`;
   }
   return '';
@@ -2763,6 +3084,30 @@ function parseDocEntry(entry) {
   return { name: null, url: entry };
 }
 
+function inferDocCategory(name, url) {
+  const raw = String(name || '') + ' ' + String(url || '');
+  const prefix = String(name || '').match(/^(Contracts|Plans|Permits|Change Orders|Warranty|Inspection)::(.+)$/i);
+  if (prefix) return prefix[1].replace(/\b\w/g, c => c.toUpperCase());
+  if (/plan|layout|schedule|window/i.test(raw)) return 'Plans';
+  if (/inspection|inspector/i.test(raw)) return 'Inspection';
+  if (/permit/i.test(raw)) return 'Permits';
+  if (/change\s*order/i.test(raw)) return 'Change Orders';
+  if (/warranty/i.test(raw)) return 'Warranty';
+  if (/contract|estimate|invoice/i.test(raw)) return 'Contracts';
+  return 'Contracts';
+}
+
+function cleanDocLabel(name, fallback) {
+  return String(name || fallback || 'Document').replace(/^(Contracts|Plans|Permits|Change Orders|Warranty|Inspection)::/i, '');
+}
+
+function canViewDocCategory(category) {
+  if (['Owner','Manager'].includes(CURRENT_ROLE)) return true;
+  if (CURRENT_ROLE === 'Field Lead') return ['Plans','Inspection'].includes(category);
+  if (['Worker','Helper'].includes(CURRENT_ROLE)) return category === 'Plans';
+  return false;
+}
+
 function renderEditDocList() {
   const el = document.getElementById('ep-doc-current');
   if (!el) return;
@@ -2774,8 +3119,9 @@ function renderEditDocList() {
   el.innerHTML = urls.map((entry, i) => {
     const {name, url} = parseDocEntry(entry);
     const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(url);
-    const label = name || (isImg ? 'Image ' + (i+1) : 'Document ' + (i+1));
-    const allowView = canViewEstimateDocs() || !isEstimateDoc(label, url);
+    const category = inferDocCategory(name, url);
+    const label = cleanDocLabel(name, isImg ? 'Image ' + (i+1) : 'Document ' + (i+1));
+    const allowView = canViewDocCategory(category);
     const allowEditDocs = ['Owner','Manager'].includes(CURRENT_ROLE);
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid rgba(200,146,42,0.08);gap:0.5rem;">
       <div style="display:flex;align-items:center;gap:0.5rem;min-width:0;flex:1;">
@@ -2828,17 +3174,29 @@ function renderDocumentationFile() {
     el.innerHTML = '<div class="module-empty">No documents uploaded yet. Add plans, contracts, permits or revisions from Edit Project.</div>';
     return;
   }
-  el.innerHTML = urls.map((entry, i) => {
+  const docs = urls.map((entry, i) => {
     const {name, url} = parseDocEntry(entry);
     const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(url);
-    const label = name || (isImg ? 'Image ' + (i+1) : 'Document ' + (i+1));
-    const allowView = canViewEstimateDocs() || !isEstimateDoc(label, url);
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid rgba(200,146,42,0.08);gap:0.5rem;">
+    const category = inferDocCategory(name, url);
+    return { name, url, isImg, label: cleanDocLabel(name, isImg ? 'Image ' + (i+1) : 'Document ' + (i+1)), category };
+  }).filter(doc => canViewDocCategory(doc.category));
+  if (!docs.length) {
+    el.innerHTML = '<div class="module-empty">No documents available for your role.</div>';
+    return;
+  }
+  const categories = ['Contracts','Plans','Permits','Change Orders','Warranty','Inspection'];
+  el.innerHTML = categories.map(category => {
+    const group = docs.filter(doc => doc.category === category);
+    if (!group.length) return '';
+    return `<div class="module-card">
+      <div class="module-card-title">${category}</div>
+      ${group.map(doc => `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid rgba(200,146,42,0.08);gap:0.5rem;">
       <div style="display:flex;align-items:center;gap:0.5rem;min-width:0;flex:1;">
-        <span style="font-size:1rem;">${isImg ? '🖼️' : '📄'}</span>
-        <span style="font-size:0.82rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label}</span>
+        <span style="font-size:1rem;">${doc.isImg ? 'IMG' : 'DOC'}</span>
+        <span style="font-size:0.82rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${doc.label}</span>
       </div>
-      ${allowView ? `<button class="btn-sm view" onclick="window.open('${url}','_blank')">View ↗</button>` : '<span style="font-size:0.68rem;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase;">Restricted</span>'}
+      <button class="btn-sm view" onclick="window.open('${doc.url}','_blank')">Open</button>
+    </div>`).join('')}
     </div>`;
   }).join('');
 }
@@ -3008,8 +3366,55 @@ function closeLightbox() {
 // ============================================================
 function openNewProjectModal() {
   document.getElementById('np-start').value = getLocalDateString();
+  newProjectTools = [];
+  newProjectToolEditIndex = -1;
+  renderNewProjectTools();
   clearNpDoc(null);
   document.getElementById('modal-new-project').classList.add('open');
+}
+
+function openNewProjectToolModal(index) {
+  newProjectToolEditIndex = Number.isInteger(index) ? index : -1;
+  const tool = newProjectToolEditIndex >= 0 ? newProjectTools[newProjectToolEditIndex] : null;
+  document.getElementById('npt-item').value = tool ? tool.item : '';
+  document.getElementById('npt-notes').value = tool ? tool.notes || '' : '';
+  document.getElementById('modal-new-project-tool').classList.add('open');
+}
+
+function saveNewProjectTool() {
+  const item = document.getElementById('npt-item').value.trim();
+  if (!item) { showToast('Tool required'); return; }
+  const tool = { item, notes: document.getElementById('npt-notes').value.trim() };
+  if (newProjectToolEditIndex >= 0) newProjectTools[newProjectToolEditIndex] = tool;
+  else newProjectTools.push(tool);
+  closeModal('new-project-tool');
+  renderNewProjectTools();
+}
+
+function deleteNewProjectTool(index) {
+  newProjectTools.splice(index, 1);
+  renderNewProjectTools();
+}
+
+function renderNewProjectTools() {
+  const el = document.getElementById('np-tools-list');
+  if (!el) return;
+  if (!newProjectTools.length) {
+    el.innerHTML = '<div class="request-empty">No tools added yet.</div>';
+    return;
+  }
+  el.innerHTML = newProjectTools.map((tool, index) => `
+    <div class="request-item">
+      <div>
+        <div class="request-item-title">${tool.item}</div>
+        ${tool.notes ? `<div class="request-item-meta">${tool.notes}</div>` : ''}
+      </div>
+      <div class="request-item-actions">
+        <button class="request-icon-btn" onclick="openNewProjectToolModal(${index})">✎</button>
+        <button class="request-icon-btn danger" onclick="deleteNewProjectTool(${index})">⌫</button>
+      </div>
+    </div>
+  `).join('');
 }
 
 async function createProject() {
@@ -3029,6 +3434,9 @@ async function createProject() {
       client,
       address:       document.getElementById('np-address').value.trim(),
       city:          document.getElementById('np-city').value.trim(),
+      state:         document.getElementById('np-state').value.trim(),
+      mapsUrl:       document.getElementById('np-maps').value.trim(),
+      assignedEmails: document.getElementById('np-assigned').value.trim(),
       startDate:     start,
       endDate:       document.getElementById('np-end').value,
       contractValue: document.getElementById('np-value').value,
@@ -3037,6 +3445,7 @@ async function createProject() {
       notes:         document.getElementById('np-notes').value.trim(),
       templateId:    TEMPLATE_FOLDER_ID,
       parentId:      PROJECTS_PARENT_ID,
+      initialTools:  newProjectTools,
     });
     if (result.success) {
       // Subir todos los documentos pendientes (uno por uno, concatenando URLs)
@@ -3057,6 +3466,9 @@ async function createProject() {
               name, client,
               address:       document.getElementById('np-address').value.trim(),
               city:          document.getElementById('np-city').value.trim(),
+              state:         document.getElementById('np-state').value.trim(),
+              mapsUrl:       document.getElementById('np-maps').value.trim(),
+              assignedEmails: document.getElementById('np-assigned').value.trim(),
               startDate:     start,
               endDate:       document.getElementById('np-end').value,
               contractValue: document.getElementById('np-value').value,
@@ -3064,7 +3476,8 @@ async function createProject() {
               objective:     document.getElementById('np-scope').value.trim(),
             });
             if (uploadResult.success) {
-              const entry = processed.name + '|' + uploadResult.fileUrl;
+              const category = document.getElementById('np-doc-category').value || 'Contracts';
+              const entry = category + '::' + processed.name + '|' + uploadResult.fileUrl;
               existingUrls = existingUrls ? existingUrls + ',' + entry : entry;
             }
           } catch(e) { console.error('Doc upload error:', e); }
@@ -3076,6 +3489,9 @@ async function createProject() {
             name, client,
             address:       document.getElementById('np-address').value.trim(),
             city:          document.getElementById('np-city').value.trim(),
+            state:         document.getElementById('np-state').value.trim(),
+            mapsUrl:       document.getElementById('np-maps').value.trim(),
+            assignedEmails: document.getElementById('np-assigned').value.trim(),
             startDate:     start,
             endDate:       document.getElementById('np-end').value,
             contractValue: document.getElementById('np-value').value,
@@ -3085,6 +3501,7 @@ async function createProject() {
         }
       }
       clearNpDoc(null);
+      newProjectTools = [];
       showToast('✓ Project created — ' + result.id);
       loadProjects();
     } else {
@@ -3103,6 +3520,9 @@ function openEditProjectModal() {
   document.getElementById('ep-client').value  = currentProject.client || '';
   document.getElementById('ep-address').value = currentProject.address || '';
   document.getElementById('ep-city').value    = currentProject.city || '';
+  document.getElementById('ep-state').value   = currentProject.state || '';
+  document.getElementById('ep-maps').value    = currentProject.mapsUrl || '';
+  document.getElementById('ep-assigned').value = currentProject.assignedEmails || '';
   document.getElementById('ep-start').value   = currentProject.startDate || '';
   document.getElementById('ep-end').value     = currentProject.endDate || '';
   document.getElementById('ep-value').value   = currentProject.contractValue || '';
@@ -3118,7 +3538,7 @@ function openEditProjectModal() {
   // deshabilitar visualmente el resto de campos (el backend también lo valida)
   const isFieldLead = CURRENT_ROLE === 'Field Lead';
   const hideMoney = !canSeeProjectMoney();
-  const restrictedFieldIds = ['ep-name','ep-client','ep-address','ep-city','ep-start','ep-end','ep-value','ep-status'];
+  const restrictedFieldIds = ['ep-name','ep-client','ep-address','ep-city','ep-state','ep-maps','ep-assigned','ep-start','ep-end','ep-value','ep-status'];
   restrictedFieldIds.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
@@ -3170,6 +3590,9 @@ async function saveEditProject() {
           client:        document.getElementById('ep-client').value.trim(),
           address:       document.getElementById('ep-address').value.trim(),
           city:          document.getElementById('ep-city').value.trim(),
+          state:         document.getElementById('ep-state').value.trim(),
+          mapsUrl:       document.getElementById('ep-maps').value.trim(),
+          assignedEmails: document.getElementById('ep-assigned').value.trim(),
           startDate:     document.getElementById('ep-start').value,
           endDate:       document.getElementById('ep-end').value,
           contractValue:   document.getElementById('ep-value').value,
@@ -3201,6 +3624,9 @@ async function saveEditProject() {
               client: document.getElementById('ep-client').value.trim(),
               address: document.getElementById('ep-address').value.trim(),
               city: document.getElementById('ep-city').value.trim(),
+              state: document.getElementById('ep-state').value.trim(),
+              mapsUrl: document.getElementById('ep-maps').value.trim(),
+              assignedEmails: document.getElementById('ep-assigned').value.trim(),
               startDate: document.getElementById('ep-start').value,
               endDate: document.getElementById('ep-end').value,
               contractValue: document.getElementById('ep-value').value,
@@ -3209,7 +3635,8 @@ async function saveEditProject() {
               existingUrls,
             });
             if (uploadResult.success) {
-              const entry = processed.name + '|' + uploadResult.fileUrl;
+              const category = document.getElementById('ep-doc-category').value || 'Contracts';
+              const entry = category + '::' + processed.name + '|' + uploadResult.fileUrl;
               existingUrls = existingUrls ? existingUrls + ',' + entry : entry;
             }
           } catch(e) { console.error(e); }
@@ -3222,6 +3649,9 @@ async function saveEditProject() {
           client: document.getElementById('ep-client').value.trim(),
           address: document.getElementById('ep-address').value.trim(),
           city: document.getElementById('ep-city').value.trim(),
+          state: document.getElementById('ep-state').value.trim(),
+          mapsUrl: document.getElementById('ep-maps').value.trim(),
+          assignedEmails: document.getElementById('ep-assigned').value.trim(),
           startDate: document.getElementById('ep-start').value,
           endDate: document.getElementById('ep-end').value,
           contractValue: document.getElementById('ep-value').value,
