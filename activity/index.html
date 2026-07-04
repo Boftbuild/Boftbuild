@@ -106,6 +106,12 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .detail-section{margin-top:0.65rem;padding-top:0.65rem;border-top:1px solid rgba(200,146,42,0.12);}
 .detail-section:first-child{margin-top:0;padding-top:0;border-top:none;}
 .detail-title{font-size:0.62rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--neon);margin-bottom:0.4rem;}
+.changes-table{width:100%;border-collapse:collapse;font-size:0.76rem;}
+.changes-table th{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-light);text-align:left;padding:0.35rem 0.45rem;border-bottom:1px solid rgba(200,146,42,0.16);}
+.changes-table td{vertical-align:top;padding:0.45rem;border-bottom:1px solid rgba(200,146,42,0.08);color:var(--text);word-break:break-word;}
+.changes-table tr:last-child td{border-bottom:none;}
+.change-before{color:var(--muted);}
+.change-after{color:var(--green);font-weight:600;}
 
 /* EMPTY STATE */
 .empty-log{text-align:center;padding:3rem 2rem;color:var(--muted);}
@@ -414,17 +420,15 @@ function loginSuccess(user, role) {
     roleBadge.style.display = 'inline-block';
   }
   configureAccessForRole(role);
-  if (role === 'Owner') loadActivityLog();
+  loadActivityLog();
   loadTeam();
 }
 
 function configureAccessForRole(role) {
   const logBtn = document.getElementById('tabBtnLog');
   const teamBtn = document.getElementById('tabBtnTeam');
-  if (role === 'Manager') {
-    if (logBtn) logBtn.style.display = 'none';
-    switchTab('team', teamBtn);
-  }
+  if (logBtn) logBtn.style.display = '';
+  if (teamBtn) teamBtn.style.display = '';
 }
 
 // ============================================================
@@ -565,6 +569,10 @@ function formatDetailsHtml(jsonStr) {
 function renderDetailObject(obj) {
   if (!obj || typeof obj !== 'object') return '<div class="detail-val">' + escHtml(obj) + '</div>';
 
+  if (Array.isArray(obj.changes)) {
+    return renderChangesDetails(obj);
+  }
+
   if (obj.before || obj.after) {
     return `<div class="detail-section">
       <div class="detail-title">Before</div>${renderKeyValues(obj.before || {})}
@@ -575,6 +583,23 @@ function renderDetailObject(obj) {
   }
 
   return '<div class="detail-section">' + renderKeyValues(obj) + '</div>';
+}
+
+function renderChangesDetails(obj) {
+  const rows = (obj.changes || []).map(change => `
+    <tr>
+      <td>${escHtml(change.label || toLabel(change.field))}</td>
+      <td class="change-before">${escHtml(change.before)}</td>
+      <td class="change-after">${escHtml(change.after)}</td>
+    </tr>`).join('');
+
+  const table = rows
+    ? `<table class="changes-table"><thead><tr><th>Field</th><th>Before</th><th>After</th></tr></thead><tbody>${rows}</tbody></table>`
+    : '<div class="detail-val">No value changes recorded.</div>';
+
+  return `<div class="detail-section">
+    <div class="detail-title">Changes</div>${table}
+  </div>${renderExtraDetails(obj, ['changes','fieldsChanged'])}`;
 }
 
 function renderExtraDetails(obj, skipKeys) {
