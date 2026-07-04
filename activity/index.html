@@ -581,6 +581,12 @@ function renderDetailObject(obj) {
     return renderChangesDetails(obj);
   }
 
+  if (obj.deleted && typeof obj.deleted === 'object') {
+    return `<div class="detail-section">
+      <div class="detail-title">Deleted Record</div>${renderKeyValues(obj.deleted)}
+    </div>${renderExtraDetails(obj, ['deleted'])}`;
+  }
+
   if (obj.before || obj.after) {
     return `<div class="detail-section">
       <div class="detail-title">Before</div>${renderKeyValues(obj.before || {})}
