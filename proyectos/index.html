@@ -89,7 +89,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .project-status{font-size:0.62rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:0.15rem 0.6rem;border:1px solid;}
 .project-status.active{color:var(--green);border-color:rgba(76,175,125,0.3);background:rgba(76,175,125,0.08);}
 .project-status.completed{color:var(--muted);border-color:rgba(122,117,112,0.3);}
-.project-status.on-hold{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
+.project-status.hold{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
+.project-status.inspection{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
 .project-client{font-size:0.82rem;color:var(--muted);margin-bottom:0.4rem;}
 .project-location{font-size:0.78rem;color:var(--muted);}
 .project-card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:1rem;padding-top:0.75rem;border-top:1px solid var(--border);}
@@ -210,7 +211,9 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .project-list-item::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;}
 .project-list-item.active-status::before{background:var(--green);}
 .project-list-item.completed-status::before{background:var(--muted);}
-.project-list-item.on-hold-status::before{background:var(--gold);}
+.project-list-item.hold-status::before{background:var(--gold);}
+.project-list-item.inspection-status::before{background:var(--neon);}
+.project-list-item.completed-status{opacity:0.58;}
 .project-list-item:hover{background:var(--black3);}
 .project-list-item.selected{background:var(--black3);border-left:3px solid var(--gold);}
 .pli-name{font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:var(--gold-light);margin-bottom:0.2rem;}
@@ -250,6 +253,9 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .feed-dot.request-rejected{background:var(--red);}
 .feed-dot.request-ordered{background:var(--neon);}
 .feed-dot.request-completed{background:var(--muted);}
+.feed-dot.punch{background:var(--gold-light);}
+.feed-dot.daily{background:var(--neon);}
+.feed-dot.tracking{background:#a78bfa;}
 .feed-content{flex:1;min-width:0;}
 .feed-title{font-size:0.85rem;color:var(--text);font-weight:600;}
 .feed-sub{font-size:0.72rem;color:var(--muted);margin-top:0.1rem;}
@@ -259,6 +265,29 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .feed-amount.gold{color:var(--gold-light);}
 .feed-more{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--neon);background:transparent;border:1px solid var(--border-neon);padding:0.42rem 0.9rem;cursor:pointer;margin-top:0.75rem;}
 .feed-more:hover{color:var(--gold-light);border-color:var(--border);}
+.feed-actions{display:flex;gap:0.35rem;margin-top:0.35rem;flex-wrap:wrap;}
+.feed-action-btn{width:28px;height:26px;background:transparent;border:1px solid rgba(0,180,255,0.35);color:var(--neon);cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;line-height:1;}
+.feed-action-btn:hover{border-color:var(--gold);color:var(--gold-light);}
+.feed-action-btn.danger{border-color:rgba(224,85,85,0.35);color:var(--red);}
+.feed-action-btn.reopen{width:auto;padding:0 0.55rem;color:var(--gold-light);border-color:var(--border);}
+.ops-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--border);margin-bottom:1rem;}
+.ops-panel{background:var(--black3);padding:0.9rem;}
+.ops-panel-head{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.65rem;}
+.ops-title{font-size:0.66rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-light);}
+.ops-list{display:flex;flex-direction:column;gap:0.45rem;}
+.ops-row{border:1px solid rgba(200,146,42,0.12);background:var(--black);padding:0.55rem 0.65rem;}
+.ops-row.done{opacity:0.55;}
+.ops-row-title{font-size:0.82rem;color:var(--text);font-weight:700;line-height:1.35;}
+.ops-row-meta{font-size:0.68rem;color:var(--muted);margin-top:0.18rem;}
+.ops-row-actions{display:flex;gap:0.35rem;margin-top:0.45rem;flex-wrap:wrap;}
+.ops-chip{font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;border:1px solid var(--border);color:var(--gold-light);padding:0.12rem 0.45rem;background:var(--gold-dim);}
+.ops-empty{font-size:0.76rem;color:var(--muted);font-style:italic;padding:0.35rem 0;}
+.daily-card{border-left:2px solid var(--neon);padding-left:0.65rem;margin-bottom:0.65rem;}
+.share-link-row{display:flex;gap:0.5rem;align-items:center;}
+.share-link-input{flex:1;min-width:0;background:var(--black);border:1px solid var(--border);color:var(--muted);padding:0.45rem 0.6rem;font-family:'Rajdhani',sans-serif;font-size:0.75rem;}
+.completed-low-role .restricted-on-completed{filter:blur(3px);opacity:0.38;pointer-events:none;user-select:none;}
+.completed-lock-note{display:none;color:var(--gold-light);font-size:0.78rem;border:1px solid var(--border);background:var(--gold-dim);padding:0.65rem 0.8rem;margin-bottom:1rem;}
+.completed-low-role .completed-lock-note{display:block;}
 
 /* ADD NOTE */
 .add-note-wrap{display:flex;gap:0.5rem;margin-top:0.75rem;}
@@ -338,6 +367,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   .info-grid{grid-template-columns:1fr;}
   .fin-grid{grid-template-columns:1fr 1fr;}
   .stats-mini{grid-template-columns:1fr 1fr;}
+  .ops-grid{grid-template-columns:1fr;}
   .projects-grid{grid-template-columns:1fr;}
   .field-row{grid-template-columns:1fr;}
 
@@ -431,8 +461,9 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="filter-tabs">
       <button class="filter-tab active" onclick="filterProjects('all',this)">All</button>
       <button class="filter-tab" onclick="filterProjects('Active',this)">Active</button>
+      <button class="filter-tab" onclick="filterProjects('Hold',this)">Hold</button>
+      <button class="filter-tab" onclick="filterProjects('Inspection',this)">Inspection</button>
       <button class="filter-tab" onclick="filterProjects('Completed',this)">Completed</button>
-      <button class="filter-tab" onclick="filterProjects('On Hold',this)">On Hold</button>
     </div>
 
     <!-- SPLIT LAYOUT -->
@@ -523,7 +554,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div><label class="field-label">Status <span>*</span></label>
           <select class="field-input" id="np-status">
             <option value="Active">Active</option>
-            <option value="On Hold">On Hold</option>
+            <option value="Hold">Hold</option>
+            <option value="Inspection">Inspection</option>
             <option value="Completed">Completed</option>
           </select>
         </div>
@@ -577,7 +609,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div><label class="field-label">Status</label>
           <select class="field-input" id="ep-status">
             <option value="Active">Active</option>
-            <option value="On Hold">On Hold</option>
+            <option value="Hold">Hold</option>
+            <option value="Inspection">Inspection</option>
             <option value="Completed">Completed</option>
           </select>
         </div>
@@ -688,6 +721,146 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   </div>
 </div>
 
+<!-- MODAL PUNCH ITEM -->
+<div id="modal-punch-item" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Punch List Item</span>
+      <button class="modal-close" onclick="closeModal('punch-item')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div>
+          <label class="field-label">Category</label>
+          <select class="field-input" id="pl-category">
+            <option value="Framing">Framing</option>
+            <option value="Blocking">Blocking</option>
+            <option value="Shear">Shear</option>
+            <option value="Hardware">Hardware</option>
+            <option value="Inspection">Inspection</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div><label class="field-label">Photo URL</label><input class="field-input" id="pl-photo" placeholder="Optional"></div>
+      </div>
+      <div class="field-group"><label class="field-label">Description <span>*</span></label><textarea class="field-input" id="pl-description" rows="3" style="resize:vertical;"></textarea></div>
+      <div class="field-group"><label class="field-label">Comments</label><textarea class="field-input" id="pl-comments" rows="2" style="resize:vertical;"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('punch-item')">Cancel</button>
+      <button class="btn-submit" onclick="savePunchItem()">Add Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DAILY LOG -->
+<div id="modal-daily-log" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Daily Log</span>
+      <button class="modal-close" onclick="closeModal('daily-log')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group"><label class="field-label">Date</label><input type="date" class="field-input" id="dl-date"></div>
+      <div class="field-group"><label class="field-label">What was done today?</label><textarea class="field-input" id="dl-done" rows="3" style="resize:vertical;"></textarea></div>
+      <div class="field-group"><label class="field-label">What is pending?</label><textarea class="field-input" id="dl-pending" rows="2" style="resize:vertical;"></textarea></div>
+      <div class="field-group"><label class="field-label">Problems found</label><textarea class="field-input" id="dl-problems" rows="2" style="resize:vertical;"></textarea></div>
+      <div class="field-group"><label class="field-label">Notes for tomorrow</label><textarea class="field-input" id="dl-tomorrow" rows="2" style="resize:vertical;"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('daily-log')">Cancel</button>
+      <button class="btn-submit" onclick="saveDailyLog()">Save Log</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TRACKING -->
+<div id="modal-tracking-item" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="trackingModalTitle">Tracking Item</span>
+      <button class="modal-close" onclick="closeModal('tracking-item')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="tr-kind">
+      <div class="field-row">
+        <div><label class="field-label">Item <span>*</span></label><input class="field-input" id="tr-item" placeholder="Studs, Hilti, Paslode..."></div>
+        <div>
+          <label class="field-label">Status</label>
+          <select class="field-input" id="tr-status">
+            <option value="Needed">Needed</option>
+            <option value="Ordered">Ordered</option>
+            <option value="Received">Received</option>
+            <option value="Missing">Missing</option>
+            <option value="On Site">On Site</option>
+            <option value="Returned">Returned</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Required</label><input class="field-input" id="tr-required"></div>
+        <div><label class="field-label">Ordered / Available</label><input class="field-input" id="tr-ordered"></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Received</label><input class="field-input" id="tr-received"></div>
+        <div><label class="field-label">Missing</label><input class="field-input" id="tr-missing"></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Who brings it?</label><input class="field-input" id="tr-owner"></div>
+        <div><label class="field-label">Location</label><input class="field-input" id="tr-location"></div>
+      </div>
+      <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="tr-notes" rows="2" style="resize:vertical;"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('tracking-item')">Cancel</button>
+      <button class="btn-submit" onclick="saveTrackingItem()">Add Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDIT PROJECT REQUEST -->
+<div id="modal-edit-project-request" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Edit Request</span>
+      <button class="modal-close" onclick="closeModal('edit-project-request')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="er-id">
+      <div class="field-row">
+        <div>
+          <label class="field-label">Category <span>*</span></label>
+          <select class="field-input" id="er-subtype">
+            <option value="Material">Material</option>
+            <option value="Nails">Nails</option>
+            <option value="Hardware">Hardware</option>
+            <option value="Lumber">Lumber</option>
+            <option value="Tool Needed">Tool Needed</option>
+            <option value="Other">Other</option>
+            <option value="Multiple Items">Multiple Items</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Priority <span>*</span></label>
+          <select class="field-input" id="er-priority">
+            <option value="Normal">Normal</option>
+            <option value="Urgent">Urgent</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group"><label class="field-label">Description <span>*</span></label><textarea class="field-input" id="er-description" rows="4" style="resize:vertical;"></textarea></div>
+      <div class="field-row">
+        <div><label class="field-label">Quantity</label><input class="field-input" id="er-quantity"></div>
+        <div><label class="field-label">Notes</label><input class="field-input" id="er-notes"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('edit-project-request')">Cancel</button>
+      <button class="btn-submit" onclick="saveProjectRequestEdit()">Save Request</button>
+    </div>
+  </div>
+</div>
+
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lightbox-close" onclick="closeLightbox()">✕</button>
@@ -710,6 +883,7 @@ let currentProject = null;
 let currentFilter  = 'all';
 let projectRequestItems = [];
 let projectRequestEditIndex = -1;
+let editingProjectRequestId = null;
 
 // Archivos pendientes para New Project y Edit Project (multi-file)
 let npDocFiles = [];
@@ -924,6 +1098,10 @@ async function loadProjects() {
     const data = await apiGet('projects');
     allProjects = data.projects || [];
     renderProjects();
+    const projectFromUrl = new URLSearchParams(location.search).get('project');
+    if (projectFromUrl && allProjects.some(p => p.id === projectFromUrl)) {
+      openProject(projectFromUrl);
+    }
     showToast('Projects loaded ✓');
   } catch(e) { console.error(e); showToast('Error loading projects'); }
 }
@@ -939,7 +1117,7 @@ function renderProjects() {
   }
 
   list.innerHTML = filtered.map(p => {
-    const sc = (p.status || 'active').toLowerCase().replace(' ', '-');
+    const sc = projectStatusClass(p.status);
     const isSelected = currentProject && currentProject.id === p.id ? 'selected' : '';
     const priceText = canSeeProjectMoney() ? (p.contractValue ? fmt(p.contractValue) : '—') : 'Restricted';
     return `<div class="project-list-item ${sc}-status ${isSelected}" onclick="openProject('${p.id}')">
@@ -951,6 +1129,20 @@ function renderProjects() {
       </div>
     </div>`;
   }).join('');
+}
+
+function projectStatusClass(status) {
+  const s = String(status || 'Active').trim();
+  if (s === 'On Hold') return 'hold';
+  return s.toLowerCase().replace(/\s+/g, '-');
+}
+
+function isProjectCompleted(project) {
+  return String(project && project.status || '').trim() === 'Completed';
+}
+
+function isLowProjectRole() {
+  return ['Field Lead','Helper','Viewer'].includes(CURRENT_ROLE);
 }
 
 function filterProjects(filter, btn) {
@@ -965,6 +1157,9 @@ function filterProjects(filter, btn) {
 // ============================================================
 let projectTransactions = [];
 let projectMaterialRequests = [];
+let projectPunchItems = [];
+let projectDailyLogs = [];
+let projectTrackingItems = [];
 
 async function openProject(id) {
   currentProject = allProjects.find(p => p.id === id);
@@ -974,33 +1169,38 @@ async function openProject(id) {
   renderProjects();
 
   const panel = document.getElementById('projectPanel');
-  const sc = (currentProject.status || 'active').toLowerCase().replace(' ', '-');
+  const sc = projectStatusClass(currentProject.status);
+  const completed = isProjectCompleted(currentProject);
+  const completedLowRole = completed && isLowProjectRole();
 
   const canDeleteProject    = CURRENT_ROLE === 'Owner';
-  const canEditProjectAtAll = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE);
-  const canUploadPhotos     = ['Owner','Manager','Field Lead','Helper'].includes(CURRENT_ROLE);
-  const canAddNote          = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE);
-  const canCreateRequest    = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE);
+  const canOwnerManager     = ['Owner','Manager'].includes(CURRENT_ROLE);
+  const canEditProjectAtAll = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole;
+  const canUploadPhotos     = ['Owner','Manager','Field Lead','Helper'].includes(CURRENT_ROLE) && !completedLowRole;
+  const canAddNote          = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole;
+  const canCreateRequest    = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole;
   const showMoney           = canSeeProjectMoney();
   const priceText           = showMoney ? (currentProject.contractValue ? fmt(currentProject.contractValue) : '—') : 'Restricted';
 
   panel.innerHTML = `
-    <div class="timeline-header">
+    <div class="timeline-header ${completedLowRole ? 'completed-low-role' : ''}">
       <div>
         <div class="timeline-project-name">${currentProject.name}</div>
         <div class="timeline-project-sub">${currentProject.client || ''}${currentProject.city ? ' · ' + currentProject.city : ''}</div>
       </div>
       <div class="timeline-actions">
         <span class="project-status ${sc}">${currentProject.status || 'Active'}</span>
+        ${completed && canOwnerManager ? `<button class="btn-action outline" onclick="reopenProject()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">Re-Open</button>` : ''}
         ${canCreateRequest ? `<button class="btn-action outline" onclick="openProjectRequestModal()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">+ Request</button>` : ''}
         ${canEditProjectAtAll ? `<button class="btn-action outline" onclick="openEditProjectModal()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">✏️ Edit</button>` : ''}
         ${canDeleteProject ? `<button class="btn-action danger" onclick="confirmDeleteProject()" style="font-size:0.65rem;padding:0.3rem 0.75rem;">🗑</button>` : ''}
       </div>
     </div>
-    <div class="timeline-body">
+    <div class="timeline-body ${completedLowRole ? 'completed-low-role' : ''}">
+      <div class="completed-lock-note">This project is completed. Project details are locked for field roles.</div>
 
       ${showMoney ? `<!-- STATS MINI -->
-      <div class="stats-mini" id="statsMinI">
+      <div class="stats-mini restricted-on-completed" id="statsMinI">
         <div class="stat-mini"><div class="stat-mini-label">Income</div><div class="stat-mini-val green" id="tm-income">—</div></div>
         <div class="stat-mini"><div class="stat-mini-label">Expenses</div><div class="stat-mini-val red" id="tm-expenses">—</div></div>
         <div class="stat-mini"><div class="stat-mini-label">Payments</div><div class="stat-mini-val red" id="tm-payments">—</div></div>
@@ -1008,7 +1208,7 @@ async function openProject(id) {
       </div>` : ''}
 
       <!-- INFO RÁPIDA -->
-      <div class="timeline-section">
+      <div class="timeline-section restricted-on-completed">
         <div class="timeline-section-label">Project Info</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:0.82rem;">
           <div><span style="color:var(--muted);">Start:</span> <span style="color:var(--text);">${currentProject.startDate || '—'}</span></div>
@@ -1019,7 +1219,7 @@ async function openProject(id) {
       </div>
 
       <!-- SCOPE & CONTRACT -->
-      <div class="timeline-section">
+      <div class="timeline-section restricted-on-completed">
         <div class="timeline-section-label" style="display:flex;justify-content:space-between;">
           <span>Scope & Documentation</span>
         </div>
@@ -1035,6 +1235,48 @@ async function openProject(id) {
           <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem;">Documentation</div>
           <div id="documentsList" style="margin-bottom:0.5rem;">
             <div style="color:var(--muted);font-size:0.82rem;font-style:italic;">No documents — add from Edit Project</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROJECT OPS -->
+      <div class="timeline-section restricted-on-completed">
+        <div class="timeline-section-label" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Project Operations</span>
+          <button class="btn-sm view" onclick="copyProjectShareLink()">Share Link</button>
+        </div>
+        <div class="share-link-row" style="margin-bottom:1rem;">
+          <input class="share-link-input" id="projectShareLink" readonly value="${location.origin + '/proyectos?project=' + encodeURIComponent(currentProject.id)}">
+          <button class="btn-sm view" onclick="copyProjectShareLink()">Copy</button>
+        </div>
+        <div class="ops-grid">
+          <div class="ops-panel">
+            <div class="ops-panel-head">
+              <div class="ops-title">Punch List</div>
+              ${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole ? `<button class="btn-sm view" onclick="openPunchModal()">+ Add</button>` : ''}
+            </div>
+            <div id="punchListOps" class="ops-list"><div class="ops-empty">Loading...</div></div>
+          </div>
+          <div class="ops-panel">
+            <div class="ops-panel-head">
+              <div class="ops-title">Daily Log</div>
+              ${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole ? `<button class="btn-sm view" onclick="openDailyLogModal()">+ Log</button>` : ''}
+            </div>
+            <div id="dailyLogOps" class="ops-list"><div class="ops-empty">Loading...</div></div>
+          </div>
+          <div class="ops-panel">
+            <div class="ops-panel-head">
+              <div class="ops-title">Material Tracking</div>
+              ${['Owner','Manager','Field Lead','Planner'].includes(CURRENT_ROLE) && !completedLowRole ? `<button class="btn-sm view" onclick="openTrackingModal('Material')">+ Add</button>` : ''}
+            </div>
+            <div id="materialTrackingOps" class="ops-list"><div class="ops-empty">Loading...</div></div>
+          </div>
+          <div class="ops-panel">
+            <div class="ops-panel-head">
+              <div class="ops-title">Tool Tracking</div>
+              ${['Owner','Manager','Field Lead','Planner'].includes(CURRENT_ROLE) && !completedLowRole ? `<button class="btn-sm view" onclick="openTrackingModal('Tool')">+ Add</button>` : ''}
+            </div>
+            <div id="toolTrackingOps" class="ops-list"><div class="ops-empty">Loading...</div></div>
           </div>
         </div>
       </div>
@@ -1109,6 +1351,18 @@ async function loadTimelineData() {
       projectMaterialRequests = requestData.requests || [];
     } catch(e) {
       projectMaterialRequests = [];
+    }
+    try {
+      const opsData = await apiGet('projectOperations', { projectId: currentProject.id });
+      projectPunchItems = opsData.punchItems || [];
+      projectDailyLogs = opsData.dailyLogs || [];
+      projectTrackingItems = opsData.trackingItems || [];
+      renderProjectOperations();
+    } catch(e) {
+      projectPunchItems = [];
+      projectDailyLogs = [];
+      projectTrackingItems = [];
+      renderProjectOperations();
     }
 
     // Stats
@@ -1204,6 +1458,43 @@ function buildActivityFeedItems() {
       type: 'request-' + statusClass,
       title: 'Request ' + statusText + ': ' + (r.description || r.id),
       sub: [r.id, r.subtype || r.type, r.quantity || '', r.requestedByName ? 'by ' + r.requestedByName : ''].filter(Boolean).join(' · '),
+      request: r,
+      amount: null,
+      seq: seq++
+    });
+  });
+
+  projectPunchItems.forEach(p => {
+    items.push({
+      date: (p.updatedAt || p.completedAt || p.createdAt || '').slice(0, 10),
+      sortDate: p.updatedAt || p.completedAt || p.createdAt || getLocalDateString() + ' 00:00:00',
+      type: 'punch',
+      title: (p.status === 'Done' ? 'Punch Done: ' : 'Punch Item: ') + p.description,
+      sub: [p.id, p.category, p.status, p.completedByName ? 'by ' + p.completedByName : ''].filter(Boolean).join(' · '),
+      amount: null,
+      seq: seq++
+    });
+  });
+
+  projectDailyLogs.forEach(log => {
+    items.push({
+      date: log.logDate || (log.createdAt || '').slice(0, 10),
+      sortDate: (log.logDate || getLocalDateString()) + ' ' + ((log.createdAt || '').split(' ')[1] || '00:00:00'),
+      type: 'daily',
+      title: 'Daily Log: ' + (log.doneToday ? log.doneToday.slice(0, 80) : 'Project update'),
+      sub: [log.id, log.createdByName || log.createdByEmail, log.problems ? 'Problems noted' : ''].filter(Boolean).join(' · '),
+      amount: null,
+      seq: seq++
+    });
+  });
+
+  projectTrackingItems.forEach(t => {
+    items.push({
+      date: (t.updatedAt || t.createdAt || '').slice(0, 10),
+      sortDate: t.updatedAt || t.createdAt || getLocalDateString() + ' 00:00:00',
+      type: 'tracking',
+      title: t.kind + ': ' + t.item,
+      sub: [t.status, t.missingQty ? 'Missing ' + t.missingQty : '', t.ownerCarrier ? 'who: ' + t.ownerCarrier : ''].filter(Boolean).join(' · '),
       amount: null,
       seq: seq++
     });
@@ -1238,10 +1529,224 @@ function renderFeedItems_(items) {
       <div class="feed-content">
         <div class="feed-title">${item.title}</div>
         <div class="feed-sub">${item.date} · ${item.sub}</div>
+        ${renderRequestFeedActions(item)}
       </div>
       ${amtStr}
     </div>`;
   }).join('');
+}
+
+function renderProjectOperations() {
+  renderPunchListOps();
+  renderDailyLogOps();
+  renderTrackingOps();
+}
+
+function renderPunchListOps() {
+  const el = document.getElementById('punchListOps');
+  if (!el) return;
+  if (!projectPunchItems.length) {
+    el.innerHTML = '<div class="ops-empty">No punch items yet.</div>';
+    return;
+  }
+  el.innerHTML = projectPunchItems.slice(0, 8).map(item => {
+    const done = item.status === 'Done';
+    const canWork = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !(isProjectCompleted(currentProject) && isLowProjectRole());
+    return `<div class="ops-row ${done ? 'done' : ''}">
+      <div class="ops-row-title">${item.description}</div>
+      <div class="ops-row-meta"><span class="ops-chip">${item.status}</span> ${item.category || 'Framing'}${item.completedByName ? ' · by ' + item.completedByName : ''}${item.completedAt ? ' · ' + item.completedAt : ''}</div>
+      ${item.comments ? `<div class="ops-row-meta">${item.comments}</div>` : ''}
+      ${canWork ? `<div class="ops-row-actions">
+        ${done ? `<button class="btn-sm view" onclick="setPunchStatus('${item.id}','Pending')">Reopen</button>` : `<button class="btn-sm view" onclick="setPunchStatus('${item.id}','Done')">Done</button>`}
+        ${['Owner','Manager'].includes(CURRENT_ROLE) ? `<button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="deletePunch('${item.id}')">Delete</button>` : ''}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderDailyLogOps() {
+  const el = document.getElementById('dailyLogOps');
+  if (!el) return;
+  if (!projectDailyLogs.length) {
+    el.innerHTML = '<div class="ops-empty">No daily logs yet.</div>';
+    return;
+  }
+  el.innerHTML = projectDailyLogs.slice(0, 4).map(log => `
+    <div class="daily-card">
+      <div class="ops-row-title">${log.logDate || 'Daily Log'} · ${log.createdByName || log.createdByEmail || ''}</div>
+      ${log.doneToday ? `<div class="ops-row-meta"><strong>Done:</strong> ${log.doneToday}</div>` : ''}
+      ${log.pending ? `<div class="ops-row-meta"><strong>Pending:</strong> ${log.pending}</div>` : ''}
+      ${log.problems ? `<div class="ops-row-meta"><strong>Problems:</strong> ${log.problems}</div>` : ''}
+      ${log.tomorrowNotes ? `<div class="ops-row-meta"><strong>Tomorrow:</strong> ${log.tomorrowNotes}</div>` : ''}
+    </div>`).join('');
+}
+
+function renderTrackingOps() {
+  renderTrackingList('Material', document.getElementById('materialTrackingOps'));
+  renderTrackingList('Tool', document.getElementById('toolTrackingOps'));
+}
+
+function renderTrackingList(kind, el) {
+  if (!el) return;
+  const items = projectTrackingItems.filter(item => item.kind === kind);
+  if (!items.length) {
+    el.innerHTML = '<div class="ops-empty">No ' + kind.toLowerCase() + ' tracking yet.</div>';
+    return;
+  }
+  el.innerHTML = items.slice(0, 8).map(item => `
+    <div class="ops-row">
+      <div class="ops-row-title">${item.item}</div>
+      <div class="ops-row-meta"><span class="ops-chip">${item.status || 'Needed'}</span> Required: ${item.requiredQty || '-'} · Ordered/Available: ${item.orderedQty || '-'} · Received: ${item.receivedQty || '-'} · Missing: ${item.missingQty || '-'}</div>
+      ${(item.ownerCarrier || item.location) ? `<div class="ops-row-meta">${[item.ownerCarrier ? 'Who: ' + item.ownerCarrier : '', item.location ? 'Where: ' + item.location : ''].filter(Boolean).join(' · ')}</div>` : ''}
+      ${item.notes ? `<div class="ops-row-meta">${item.notes}</div>` : ''}
+    </div>`).join('');
+}
+
+function copyProjectShareLink() {
+  const link = location.origin + '/proyectos?project=' + encodeURIComponent(currentProject ? currentProject.id : '');
+  navigator.clipboard?.writeText(link);
+  const input = document.getElementById('projectShareLink');
+  if (input) input.value = link;
+  showToast('Project link copied');
+}
+
+function openPunchModal() {
+  document.getElementById('pl-category').value = 'Framing';
+  document.getElementById('pl-photo').value = '';
+  document.getElementById('pl-description').value = '';
+  document.getElementById('pl-comments').value = '';
+  document.getElementById('modal-punch-item').classList.add('open');
+}
+
+async function savePunchItem() {
+  const description = document.getElementById('pl-description').value.trim();
+  if (!description) { showToast('Description required'); return; }
+  try {
+    const result = await apiPost({
+      action: 'createPunchItem',
+      projectId: currentProject.id,
+      projectName: currentProject.name,
+      description,
+      category: document.getElementById('pl-category').value,
+      photoUrl: document.getElementById('pl-photo').value.trim(),
+      comments: document.getElementById('pl-comments').value.trim(),
+    });
+    if (result.success) {
+      closeModal('punch-item');
+      showToast('Punch item added');
+      await reloadProjectOperations();
+    } else showToast('Error: ' + result.message);
+  } catch(e) { showToast('Connection error'); }
+}
+
+async function setPunchStatus(id, status) {
+  try {
+    const result = await apiPost({ action: 'updatePunchItem', id, status });
+    if (result.success) {
+      showToast(status === 'Done' ? 'Punch item completed' : 'Punch item reopened');
+      await reloadProjectOperations();
+    } else showToast('Error: ' + result.message);
+  } catch(e) { showToast('Connection error'); }
+}
+
+async function deletePunch(id) {
+  if (!confirm('Delete punch item ' + id + '?')) return;
+  try {
+    const result = await apiPost({ action: 'deletePunchItem', id });
+    if (result.success) {
+      showToast('Punch item deleted');
+      await reloadProjectOperations();
+    } else showToast('Error: ' + result.message);
+  } catch(e) { showToast('Connection error'); }
+}
+
+function openDailyLogModal() {
+  document.getElementById('dl-date').value = getLocalDateString();
+  ['dl-done','dl-pending','dl-problems','dl-tomorrow'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('modal-daily-log').classList.add('open');
+}
+
+async function saveDailyLog() {
+  try {
+    const result = await apiPost({
+      action: 'createDailyLog',
+      projectId: currentProject.id,
+      projectName: currentProject.name,
+      logDate: document.getElementById('dl-date').value,
+      doneToday: document.getElementById('dl-done').value.trim(),
+      pending: document.getElementById('dl-pending').value.trim(),
+      problems: document.getElementById('dl-problems').value.trim(),
+      tomorrowNotes: document.getElementById('dl-tomorrow').value.trim(),
+    });
+    if (result.success) {
+      closeModal('daily-log');
+      showToast('Daily log saved');
+      await reloadProjectOperations();
+    } else showToast('Error: ' + result.message);
+  } catch(e) { showToast('Connection error'); }
+}
+
+function openTrackingModal(kind) {
+  document.getElementById('tr-kind').value = kind;
+  document.getElementById('trackingModalTitle').textContent = kind + ' Tracking';
+  ['tr-item','tr-required','tr-ordered','tr-received','tr-missing','tr-owner','tr-location','tr-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('tr-status').value = kind === 'Tool' ? 'Needed' : 'Needed';
+  document.getElementById('modal-tracking-item').classList.add('open');
+}
+
+async function saveTrackingItem() {
+  const kind = document.getElementById('tr-kind').value;
+  const item = document.getElementById('tr-item').value.trim();
+  if (!item) { showToast('Item required'); return; }
+  try {
+    const result = await apiPost({
+      action: 'createProjectTrackingItem',
+      projectId: currentProject.id,
+      projectName: currentProject.name,
+      kind,
+      item,
+      requiredQty: document.getElementById('tr-required').value.trim(),
+      orderedQty: document.getElementById('tr-ordered').value.trim(),
+      receivedQty: document.getElementById('tr-received').value.trim(),
+      missingQty: document.getElementById('tr-missing').value.trim(),
+      status: document.getElementById('tr-status').value,
+      ownerCarrier: document.getElementById('tr-owner').value.trim(),
+      location: document.getElementById('tr-location').value.trim(),
+      notes: document.getElementById('tr-notes').value.trim(),
+    });
+    if (result.success) {
+      closeModal('tracking-item');
+      showToast(kind + ' tracking added');
+      await reloadProjectOperations();
+    } else showToast('Error: ' + result.message);
+  } catch(e) { showToast('Connection error'); }
+}
+
+async function reloadProjectOperations() {
+  if (!currentProject) return;
+  const opsData = await apiGet('projectOperations', { projectId: currentProject.id });
+  projectPunchItems = opsData.punchItems || [];
+  projectDailyLogs = opsData.dailyLogs || [];
+  projectTrackingItems = opsData.trackingItems || [];
+  renderProjectOperations();
+  renderActivityFeed();
+}
+
+function renderRequestFeedActions(item) {
+  const r = item.request;
+  if (!r || !['Owner','Manager','Planner','Field Lead'].includes(CURRENT_ROLE) || isProjectCompleted(currentProject) && isLowProjectRole()) return '';
+  if (r.status === 'Pending') {
+    return `<div class="feed-actions">
+      <button class="feed-action-btn" title="Edit request" onclick="openEditProjectRequestModal('${r.id}')">✎</button>
+      <button class="feed-action-btn danger" title="Delete request" onclick="deleteProjectRequest('${r.id}')">⌫</button>
+    </div>`;
+  }
+  if (r.status === 'Rejected') {
+    return `<div class="feed-actions">
+      <button class="feed-action-btn reopen" title="Re-open request" onclick="reopenProjectRequest('${r.id}')">Re-Open</button>
+    </div>`;
+  }
+  return '';
 }
 
 function openFullActivityFeed() {
@@ -1413,6 +1918,86 @@ function materialRequestEmailToast_(emailStatus) {
   if (emailStatus.sent) return ' · Email sent';
   if (emailStatus.skipped) return ' · Email skipped';
   return ' · Email failed' + (emailStatus.message ? ': ' + String(emailStatus.message).slice(0, 80) : '');
+}
+
+async function reloadProjectRequestsAndFeed() {
+  if (!currentProject) return;
+  const requestData = await apiGet('projectMaterialRequests', { projectId: currentProject.id });
+  projectMaterialRequests = requestData.requests || [];
+  renderActivityFeed();
+}
+
+function openEditProjectRequestModal(requestId) {
+  const r = projectMaterialRequests.find(req => req.id === requestId);
+  if (!r) return;
+  if (r.status !== 'Pending') { showToast('Only Pending requests can be edited'); return; }
+  editingProjectRequestId = requestId;
+  document.getElementById('er-id').value = r.id;
+  document.getElementById('er-subtype').value = r.subtype || 'Material';
+  document.getElementById('er-priority').value = r.priority || 'Normal';
+  document.getElementById('er-description').value = r.description || '';
+  document.getElementById('er-quantity').value = r.quantity || '';
+  document.getElementById('er-notes').value = r.notes || '';
+  document.getElementById('modal-edit-project-request').classList.add('open');
+}
+
+async function saveProjectRequestEdit() {
+  const id = editingProjectRequestId || document.getElementById('er-id').value;
+  const description = document.getElementById('er-description').value.trim();
+  if (!id || !description) { showToast('Description required'); return; }
+
+  try {
+    const result = await apiPost({
+      action: 'updateMaterialRequestDetails',
+      id,
+      subtype: document.getElementById('er-subtype').value,
+      priority: document.getElementById('er-priority').value,
+      description,
+      quantity: document.getElementById('er-quantity').value.trim(),
+      notes: document.getElementById('er-notes').value.trim(),
+    });
+    if (result.success) {
+      closeModal('edit-project-request');
+      editingProjectRequestId = null;
+      showToast('✓ Request updated');
+      await reloadProjectRequestsAndFeed();
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
+}
+
+async function deleteProjectRequest(requestId) {
+  const r = projectMaterialRequests.find(req => req.id === requestId);
+  if (!r) return;
+  if (r.status !== 'Pending') { showToast('Only Pending requests can be deleted'); return; }
+  if (!confirm('Delete request ' + requestId + '?')) return;
+
+  try {
+    const result = await apiPost({ action: 'deleteMaterialRequest', id: requestId });
+    if (result.success) {
+      showToast('✓ Request deleted');
+      await reloadProjectRequestsAndFeed();
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
+}
+
+async function reopenProjectRequest(requestId) {
+  const r = projectMaterialRequests.find(req => req.id === requestId);
+  if (!r) return;
+  if (r.status !== 'Rejected') { showToast('Only Rejected requests can be reopened'); return; }
+
+  try {
+    const result = await apiPost({ action: 'reopenMaterialRequest', id: requestId });
+    if (result.success) {
+      showToast('✓ Request reopened');
+      await reloadProjectRequestsAndFeed();
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
 }
 
 // ============================================================
@@ -1975,6 +2560,26 @@ async function saveEditProject() {
       }
       clearEpDoc(null);
       showToast('✓ Project updated');
+      await loadProjects();
+      currentProject = allProjects.find(p => p.id === id);
+      openProject(id);
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
+}
+
+async function reopenProject() {
+  if (!currentProject || !['Owner','Manager'].includes(CURRENT_ROLE)) return;
+  if (!isProjectCompleted(currentProject)) return;
+  if (!confirm('Re-open "' + currentProject.name + '"?')) return;
+
+  const id = currentProject.id;
+  showToast('Re-opening project...');
+  try {
+    const result = await apiPost({ action: 'editProject', id, status: 'Active' });
+    if (result.success) {
+      showToast('✓ Project reopened');
       await loadProjects();
       currentProject = allProjects.find(p => p.id === id);
       openProject(id);
