@@ -1279,6 +1279,7 @@ let projectTrackingItems = [];
 let selectedPunchArea = null;
 let punchDraftItems = [];
 let activePunchModalGroup = null;
+let activePunchModalFloor = null;
 let projectTimelineFilter = 'all';
 
 async function openProject(id) {
@@ -1799,22 +1800,22 @@ function renderPunchListOps() {
   }
 
   if (!selectedPunchArea) {
-    const groups = getPunchGroups();
-    const visibleGroups = groups.slice(0, 3);
-    el.innerHTML = visibleGroups.map(group => `
-      <div class="ops-row punch-area-row" onclick="openFullPunchModal('${escAttr(group.key)}')">
+    const floors = getPunchFloors();
+    const visibleFloors = floors.slice(0, 3);
+    el.innerHTML = visibleFloors.map(floor => `
+      <div class="ops-row punch-area-row" onclick="openFullPunchModal('${escAttr(floor.key)}')">
         <div>
-          <div class="ops-row-title">${group.label}</div>
-          <div class="ops-row-meta">${group.pending} pending · ${group.done} done</div>
+          <div class="ops-row-title">${floor.label}</div>
+          <div class="ops-row-meta">${floor.areas} areas · ${floor.pending} pending · ${floor.done} done</div>
         </div>
-        <div class="punch-area-count">${group.total}</div>
+        <div class="punch-area-count">${floor.total}</div>
       </div>
-    `).join('') + (groups.length > 3 ? `<button class="feed-more" onclick="openFullPunchModal()">See Full</button>` : '');
+    `).join('') + (floors.length > 3 ? `<button class="feed-more" onclick="openFullPunchModal()">See Full</button>` : '');
     return;
   }
 
   const areaItems = getPunchItemsForGroup(selectedPunchArea);
-  el.innerHTML = `<button class="punch-back" onclick="closePunchArea()">← Areas</button>` + areaItems.map(item => {
+  el.innerHTML = `<button class="punch-back" onclick="closePunchArea()">← Floors</button>` + areaItems.map(item => {
     const done = item.status === 'Done';
     const canWork = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !(isProjectCompleted(currentProject) && isLowProjectRole());
     return `<div class="ops-row ${done ? 'done' : ''}">
@@ -1834,6 +1835,10 @@ function getPunchGroupKey(item) {
   return (item.floor || 'General') + '||' + (item.area || 'General');
 }
 
+function getPunchFloorKey(item) {
+  return item.floor || 'General';
+}
+
 function getPunchGroupLabelFromKey(key) {
   const parts = String(key || '').split('||');
   return (parts[0] || 'General') + ' - ' + (parts[1] || 'General');
@@ -1847,6 +1852,39 @@ function getPunchGroups() {
     map[key].total++;
     if (item.status === 'Done') map[key].done++;
     else map[key].pending++;
+  });
+  return Object.values(map).sort((a,b) => a.label.localeCompare(b.label));
+}
+
+function getPunchFloors() {
+  const map = {};
+  projectPunchItems.forEach(item => {
+    const key = getPunchFloorKey(item);
+    if (!map[key]) map[key] = { key, label: key, total: 0, pending: 0, done: 0, areaMap: {} };
+    map[key].total++;
+    map[key].areaMap[item.area || 'General'] = true;
+    if (item.status === 'Done') map[key].done++;
+    else map[key].pending++;
+  });
+  return Object.values(map).map(floor => ({
+    key: floor.key,
+    label: floor.label,
+    total: floor.total,
+    pending: floor.pending,
+    done: floor.done,
+    areas: Object.keys(floor.areaMap).length,
+  })).sort((a,b) => a.label.localeCompare(b.label));
+}
+
+function getPunchAreasForFloor(floorKey) {
+  const map = {};
+  projectPunchItems.filter(item => getPunchFloorKey(item) === floorKey).forEach(item => {
+    const groupKey = getPunchGroupKey(item);
+    const area = item.area || 'General';
+    if (!map[groupKey]) map[groupKey] = { key: groupKey, label: area, total: 0, pending: 0, done: 0 };
+    map[groupKey].total++;
+    if (item.status === 'Done') map[groupKey].done++;
+    else map[groupKey].pending++;
   });
   return Object.values(map).sort((a,b) => a.label.localeCompare(b.label));
 }
@@ -1865,10 +1903,11 @@ function closePunchArea() {
   renderPunchListOps();
 }
 
-function openFullPunchModal(groupKey) {
+function openFullPunchModal(floorKey) {
   selectedPunchArea = null;
-  activePunchModalGroup = groupKey || null;
-  if (activePunchModalGroup) renderFullPunchArea(activePunchModalGroup);
+  activePunchModalGroup = null;
+  activePunchModalFloor = floorKey || null;
+  if (activePunchModalFloor) renderFullPunchFloor(activePunchModalFloor);
   else renderFullPunchGroups();
   document.getElementById('modal-punch-full').classList.add('open');
 }
@@ -1877,26 +1916,48 @@ function renderFullPunchGroups() {
   const el = document.getElementById('punchFullContent');
   if (!el) return;
   activePunchModalGroup = null;
-  const groups = getPunchGroups();
-  el.innerHTML = `<div class="punch-full-head"><div class="punch-full-title">All Areas</div></div>` +
-    groups.map(group => `
-      <div class="ops-row punch-area-row" onclick="renderFullPunchArea('${escAttr(group.key)}')">
+  activePunchModalFloor = null;
+  const floors = getPunchFloors();
+  el.innerHTML = `<div class="punch-full-head"><div class="punch-full-title">All Floors</div></div>` +
+    floors.map(floor => `
+      <div class="ops-row punch-area-row" onclick="renderFullPunchFloor('${escAttr(floor.key)}')">
         <div>
-          <div class="ops-row-title">${group.label}</div>
-          <div class="ops-row-meta">${group.pending} pending · ${group.done} done</div>
+          <div class="ops-row-title">${floor.label}</div>
+          <div class="ops-row-meta">${floor.areas} areas · ${floor.pending} pending · ${floor.done} done</div>
         </div>
-        <div class="punch-area-count">${group.total}</div>
+        <div class="punch-area-count">${floor.total}</div>
       </div>
     `).join('');
+}
+
+function renderFullPunchFloor(floorKey) {
+  const el = document.getElementById('punchFullContent');
+  if (!el) return;
+  activePunchModalFloor = floorKey;
+  activePunchModalGroup = null;
+  const areas = getPunchAreasForFloor(floorKey);
+  el.innerHTML = `<div class="punch-full-head">
+    <button class="punch-back" onclick="renderFullPunchGroups()">← Floors</button>
+    <div class="punch-full-title">${floorKey}</div>
+  </div>` + areas.map(area => `
+    <div class="ops-row punch-area-row" onclick="renderFullPunchArea('${escAttr(area.key)}')">
+      <div>
+        <div class="ops-row-title">${area.label}</div>
+        <div class="ops-row-meta">${area.pending} pending · ${area.done} done</div>
+      </div>
+      <div class="punch-area-count">${area.total}</div>
+    </div>
+  `).join('');
 }
 
 function renderFullPunchArea(groupKey) {
   const el = document.getElementById('punchFullContent');
   if (!el) return;
   activePunchModalGroup = groupKey;
+  activePunchModalFloor = String(groupKey || '').split('||')[0] || null;
   const items = getPunchItemsForGroup(groupKey);
   el.innerHTML = `<div class="punch-full-head">
-    <button class="punch-back" onclick="renderFullPunchGroups()">← Areas</button>
+    <button class="punch-back" onclick="renderFullPunchFloor('${escAttr(activePunchModalFloor)}')">← Areas</button>
     <div class="punch-full-title">${getPunchGroupLabelFromKey(groupKey)}</div>
   </div>` + items.map(item => {
     const done = item.status === 'Done';
@@ -2032,9 +2093,15 @@ function getPunchSmartLabel(field) {
 function setPunchSmartAddNew(field) {
   const select = document.getElementById('pl-' + field + '-select');
   const input = document.getElementById('pl-' + field + '-input');
-  select.style.display = 'none';
-  input.style.display = 'block';
-  input.value = '';
+  if (select && select.options.length) {
+    select.style.display = 'block';
+    input.style.display = 'none';
+    select.value = '__add_new__';
+  } else {
+    select.style.display = 'none';
+    input.style.display = 'block';
+    input.value = '';
+  }
 }
 
 function onPunchSmartSelect(field) {
@@ -2079,7 +2146,7 @@ function addPunchDraftItem() {
   setupPunchSmartFields();
   setPunchSmartValue('category', category);
   setPunchSmartValue('floor', floor);
-  setPunchSmartAddNew('area');
+  setPunchSmartValue('area', area);
   renderPunchDraftItems();
 }
 
@@ -2238,6 +2305,10 @@ function refreshOpenPunchModal() {
   if (!modal || !modal.classList.contains('open')) return;
   if (activePunchModalGroup) {
     if (getPunchItemsForGroup(activePunchModalGroup).length) renderFullPunchArea(activePunchModalGroup);
+    else if (activePunchModalFloor) renderFullPunchFloor(activePunchModalFloor);
+    else renderFullPunchGroups();
+  } else if (activePunchModalFloor) {
+    if (getPunchAreasForFloor(activePunchModalFloor).length) renderFullPunchFloor(activePunchModalFloor);
     else renderFullPunchGroups();
   } else {
     renderFullPunchGroups();
@@ -3183,7 +3254,10 @@ function showToast(msg) {
 
 function closeModal(id) {
   document.getElementById('modal-' + id).classList.remove('open');
-  if (id === 'punch-full') activePunchModalGroup = null;
+  if (id === 'punch-full') {
+    activePunchModalGroup = null;
+    activePunchModalFloor = null;
+  }
 }
 
 function fileToBase64(file) {
@@ -3199,7 +3273,10 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => {
     if (e.target === el) {
       el.classList.remove('open');
-      if (el.id === 'modal-punch-full') activePunchModalGroup = null;
+      if (el.id === 'modal-punch-full') {
+        activePunchModalGroup = null;
+        activePunchModalFloor = null;
+      }
     }
   });
 });
