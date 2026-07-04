@@ -590,10 +590,12 @@ function renderDetailObject(obj) {
 function normalizeChanges(changes) {
   if (!changes) return [];
   if (Array.isArray(changes)) return changes.filter(c => c && typeof c === 'object');
+  if (typeof changes === 'object') return [changes];
   if (typeof changes === 'string') {
     try {
       const parsed = JSON.parse(changes);
       if (Array.isArray(parsed)) return parsed.filter(c => c && typeof c === 'object');
+      if (parsed && typeof parsed === 'object') return [parsed];
     } catch(e) {}
   }
   return [];
@@ -632,7 +634,8 @@ function renderKeyValues(obj) {
 }
 
 function isComplexDetailValue(val) {
-  return Array.isArray(val) && val.some(item => item && typeof item === 'object');
+  return (Array.isArray(val) && val.some(item => item && typeof item === 'object')) ||
+    (val && typeof val === 'object');
 }
 
 function formatDetailValue(val) {
