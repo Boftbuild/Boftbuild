@@ -4,11 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BOFT Founder Time Tracker</title>
+<script src="https://accounts.google.com/gsi/client"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/founder-time/styles.css">
 </head>
 <body>
-<div class="app-shell">
+<section class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="brand-mark">BOFT<span>.</span></div>
+    <div class="section-label">Founder access</div>
+    <h1>Founder Time Tracker</h1>
+    <p>Private command center for documenting founder build value.</p>
+    <button class="btn primary large" id="googleSignInBtn" type="button">Sign in with Google</button>
+    <div class="login-error hidden" id="loginError">Access restricted to martinc@boftbuild.com.</div>
+  </div>
+</section>
+
+<div class="app-shell hidden" id="appShell">
   <nav class="topbar">
     <a class="brand" href="/">
       BOFT<span>.</span>
@@ -18,9 +30,11 @@
       <span>Track the hours. Measure the build. Document the value.</span>
     </div>
     <div class="topbar-actions">
+      <span class="signed-user" id="signedUser"></span>
       <button class="btn outline" id="syncBtn">Sync</button>
       <button class="btn outline" id="exportJsonBtn">Export JSON</button>
       <button class="btn outline" id="exportCsvBtn">Export CSV</button>
+      <button class="btn outline" id="logoutBtn">Logout</button>
     </div>
   </nav>
 

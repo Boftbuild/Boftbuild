@@ -4,11 +4,21 @@ const RESULTS = ['Completed','Partial','Blocked','Research only'];
 const IMPACTS = ['Low','Medium','High','Critical'];
 const LOCAL_SESSIONS_KEY = 'boft-founder-time:sessions';
 const LOCAL_SETTINGS_KEY = 'boft-founder-time:settings';
+const GOOGLE_CLIENT_ID = '139648063899-tq9arpo1817e20a1qtmm5dm0jl35u4sm.apps.googleusercontent.com';
+const ALLOWED_EMAIL = 'martinc@boftbuild.com';
+const AUTH_KEYS = {
+  token: 'founder_time_token',
+  tokenExp: 'founder_time_token_exp',
+  user: 'founder_time_user'
+};
 
 let sessions = [];
 let settings = { hourlyRate: 75 };
 let timerHandle = null;
 let backendOnline = false;
+let accessToken = '';
+let currentUser = null;
+let googleTokenClient = null;
 
 const els = {};
 
@@ -19,12 +29,13 @@ async function init(){
   hydrateSelects();
   bindEvents();
   loadLocalState();
-  render();
-  await syncFromBackend();
+  initGoogleAuth();
+  restoreAuthSession();
 }
 
 function bindElements(){
   [
+    'loginScreen','appShell','googleSignInBtn','loginError','signedUser','logoutBtn',
     'dashboardCards','startForm','startBtn','projectInput','moduleInput','categoryInput','noteInput',
     'hourlyRateInput','timerPanel','timerState','timerValue','activeMeta','activeNote','endBtn',
     'endModal','endForm','keepRunningBtn','cancelEndBtn','historyBody','filterDate','filterModule',
@@ -51,6 +62,8 @@ function hydrateSelects(){
 
 function bindEvents(){
   els.startForm.addEventListener('submit', startSession);
+  els.googleSignInBtn.addEventListener('click', signInWithGoogle);
+  els.logoutBtn.addEventListener('click', logout);
   els.endBtn.addEventListener('click', () => els.endModal.classList.remove('hidden'));
   els.keepRunningBtn.addEventListener('click', closeEndModal);
   els.cancelEndBtn.addEventListener('click', closeEndModal);
@@ -69,6 +82,104 @@ function bindEvents(){
   });
 }
 
+function initGoogleAuth(){
+  if(!window.google || !google.accounts){
+    setTimeout(initGoogleAuth, 250);
+    return;
+  }
+
+  googleTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'openid email profile',
+    prompt: '',
+    callback: handleGoogleToken
+  });
+}
+
+function restoreAuthSession(){
+  const token = sessionStorage.getItem(AUTH_KEYS.token);
+  const exp = Number(sessionStorage.getItem(AUTH_KEYS.tokenExp) || 0);
+  const user = readSessionJson(AUTH_KEYS.user, null);
+
+  if(token && exp > Date.now() && user && user.email === ALLOWED_EMAIL){
+    accessToken = token;
+    currentUser = user;
+    showApp();
+    return;
+  }
+
+  showLogin();
+}
+
+function signInWithGoogle(){
+  els.loginError.classList.add('hidden');
+  if(!googleTokenClient){
+    els.loginError.textContent = 'Google Sign-In is still loading. Try again in a moment.';
+    els.loginError.classList.remove('hidden');
+    return;
+  }
+  googleTokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+async function handleGoogleToken(response){
+  if(!response || !response.access_token){
+    showLoginError('Google did not return an access token.');
+    return;
+  }
+
+  try{
+    const userResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${response.access_token}` }
+    });
+    if(!userResponse.ok) throw new Error('Could not verify Google user.');
+
+    const user = await userResponse.json();
+    const email = String(user.email || '').toLowerCase();
+    if(email !== ALLOWED_EMAIL){
+      showLoginError('Access restricted to martinc@boftbuild.com.');
+      return;
+    }
+
+    accessToken = response.access_token;
+    currentUser = { email, name: user.name || email, picture: user.picture || '' };
+    const expiresAt = Date.now() + Number(response.expires_in || 3600) * 1000 - 60000;
+
+    sessionStorage.setItem(AUTH_KEYS.token, accessToken);
+    sessionStorage.setItem(AUTH_KEYS.tokenExp, String(expiresAt));
+    sessionStorage.setItem(AUTH_KEYS.user, JSON.stringify(currentUser));
+    showApp();
+  }catch(err){
+    showLoginError(err.message || 'Google sign-in failed.');
+  }
+}
+
+function showApp(){
+  els.loginScreen.classList.add('hidden');
+  els.appShell.classList.remove('hidden');
+  els.signedUser.textContent = currentUser ? currentUser.email : '';
+  render();
+  syncFromBackend();
+}
+
+function showLogin(){
+  els.appShell.classList.add('hidden');
+  els.loginScreen.classList.remove('hidden');
+}
+
+function showLoginError(message){
+  els.loginError.textContent = message;
+  els.loginError.classList.remove('hidden');
+}
+
+function logout(){
+  accessToken = '';
+  currentUser = null;
+  sessionStorage.removeItem(AUTH_KEYS.token);
+  sessionStorage.removeItem(AUTH_KEYS.tokenExp);
+  sessionStorage.removeItem(AUTH_KEYS.user);
+  showLogin();
+}
+
 function loadLocalState(){
   sessions = readJson(LOCAL_SESSIONS_KEY, []);
   settings = readJson(LOCAL_SETTINGS_KEY, { hourlyRate: 75 });
@@ -76,6 +187,10 @@ function loadLocalState(){
 }
 
 async function syncFromBackend(){
+  if(!accessToken){
+    setSyncState('Login required');
+    return;
+  }
   setSyncState('Syncing...');
   try{
     const settingsResponse = await api('getSettings');
@@ -306,9 +421,10 @@ function renderMetricRows(values){
 }
 
 async function api(action, payload = {}){
+  if(!accessToken) throw new Error('Login required.');
   const options = payload && Object.keys(payload).length
-    ? { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ action, ...payload }) }
-    : { method:'GET' };
+    ? { method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${accessToken}`}, body:JSON.stringify({ action, ...payload }) }
+    : { method:'GET', headers:{ Authorization:`Bearer ${accessToken}` } };
   const url = options.method === 'GET' ? `/api/founder-time?action=${encodeURIComponent(action)}` : '/api/founder-time';
   const response = await fetch(url, options);
   const data = await response.json();
@@ -367,6 +483,7 @@ function money(value){ return new Intl.NumberFormat('en-US',{style:'currency',cu
 function dateOnly(iso){ return new Date(iso).toLocaleDateString(); }
 function timeOnly(iso){ return new Date(iso).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }); }
 function readJson(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)) || fallback; }catch(err){ return fallback; } }
+function readSessionJson(key, fallback){ try{ return JSON.parse(sessionStorage.getItem(key)) || fallback; }catch(err){ return fallback; } }
 function escapeHtml(value){
   return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
 }
