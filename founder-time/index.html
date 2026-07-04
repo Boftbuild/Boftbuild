@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOFT Founder Time Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/founder-time/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <nav class="topbar">
+    <a class="brand" href="/">
+      BOFT<span>.</span>
+    </a>
+    <div class="topbar-title">
+      <strong>Founder Time Tracker</strong>
+      <span>Track the hours. Measure the build. Document the value.</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn outline" id="syncBtn">Sync</button>
+      <button class="btn outline" id="exportJsonBtn">Export JSON</button>
+      <button class="btn outline" id="exportCsvBtn">Export CSV</button>
+    </div>
+  </nav>
+
+  <main class="page">
+    <section class="command-header">
+      <div>
+        <div class="section-label">Developer command center</div>
+        <h1>BOFT Founder Time Tracker</h1>
+      </div>
+      <label class="rate-control">
+        Internal hourly rate
+        <input type="number" min="0" step="1" id="hourlyRateInput" value="75">
+      </label>
+    </section>
+
+    <section class="status-grid" id="dashboardCards"></section>
+
+    <section class="work-grid">
+      <form class="panel start-panel" id="startForm">
+        <div class="panel-head">
+          <div>
+            <div class="section-label">New session</div>
+            <h2>Start Session</h2>
+          </div>
+          <button class="btn primary large" type="submit" id="startBtn">Start Session</button>
+        </div>
+
+        <label class="field">
+          Project
+          <input id="projectInput" value="BOFT System" required>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            Module
+            <select id="moduleInput" required></select>
+          </label>
+          <label class="field">
+            Category
+            <select id="categoryInput" required></select>
+          </label>
+        </div>
+
+        <label class="field">
+          What are you working on?
+          <textarea id="noteInput" rows="4"></textarea>
+        </label>
+      </form>
+
+      <section class="panel timer-panel" id="timerPanel">
+        <div>
+          <div class="section-label" id="timerState">System idle</div>
+          <div class="timer-value" id="timerValue">0m</div>
+        </div>
+        <div class="active-meta" id="activeMeta"></div>
+        <p id="activeNote">Start a focused work session to begin tracking founder value.</p>
+        <button class="btn gold large hidden" id="endBtn">End Session</button>
+      </section>
+    </section>
+
+    <section class="panel metrics-panel">
+      <div class="panel-head">
+        <div>
+          <div class="section-label">Build value</div>
+          <h2>Metrics Panel</h2>
+        </div>
+        <div class="metric-total">
+          <strong id="totalHoursMetric">0h</strong>
+          <span id="totalValueMetric">$0</span>
+        </div>
+      </div>
+      <div class="metric-columns">
+        <div class="metric-list">
+          <h3>Hours by module</h3>
+          <div id="moduleHours"></div>
+        </div>
+        <div class="metric-list">
+          <h3>Hours by category</h3>
+          <div id="categoryHours"></div>
+        </div>
+      </div>
+      <div class="mini-grid">
+        <article>
+          <span>High impact hours</span>
+          <strong id="highImpactHours">0h</strong>
+        </article>
+        <article>
+          <span>Blocked hours</span>
+          <strong id="blockedHours">0h</strong>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel history-panel">
+      <div class="panel-head">
+        <div>
+          <div class="section-label">Session log</div>
+          <h2>History</h2>
+        </div>
+        <span class="sync-state" id="syncState">Local ready</span>
+      </div>
+
+      <div class="filters">
+        <input type="date" id="filterDate">
+        <select id="filterModule"><option value="">All modules</option></select>
+        <select id="filterCategory"><option value="">All categories</option></select>
+        <select id="filterImpact"><option value="">All impact</option></select>
+        <select id="filterResult"><option value="">All results</option></select>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Duration</th>
+              <th>Project</th>
+              <th>Module</th>
+              <th>Category</th>
+              <th>Result</th>
+              <th>Impact</th>
+              <th>Summary</th>
+              <th>Internal value</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-overlay hidden" id="endModal">
+  <form class="modal" id="endForm">
+    <div class="modal-head">
+      <div>
+        <div class="section-label">Close session report</div>
+        <h2>Document the value</h2>
+      </div>
+      <button class="modal-close" type="button" id="keepRunningBtn">×</button>
+    </div>
+
+    <div class="modal-grid">
+      <label class="field">What was done?<textarea id="whatWasDone" rows="3" required></textarea></label>
+      <label class="field">What changed?<textarea id="whatChanged" rows="3" required></textarea></label>
+      <label class="field">Files/modules affected<textarea id="filesAffected" rows="3" required></textarea></label>
+      <label class="field">Problems found<textarea id="problemsFound" rows="3" required></textarea></label>
+      <label class="field">Solution or next step<textarea id="solutionOrNextStep" rows="3" required></textarea></label>
+      <label class="field">Knowledge gained<textarea id="knowledgeGained" rows="3" required></textarea></label>
+      <label class="field">Next action<textarea id="nextAction" rows="3" required></textarea></label>
+      <label class="field">Result<select id="resultInput" required></select></label>
+      <label class="field">Impact<select id="impactInput" required></select></label>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn outline" type="button" id="cancelEndBtn">Keep Running</button>
+      <button class="btn gold" type="submit">Complete Session</button>
+    </div>
+  </form>
+</div>
+
+<script src="/founder-time/app.js"></script>
+</body>
+</html>
