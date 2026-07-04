@@ -282,6 +282,16 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .ops-row-actions{display:flex;gap:0.35rem;margin-top:0.45rem;flex-wrap:wrap;}
 .ops-chip{font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;border:1px solid var(--border);color:var(--gold-light);padding:0.12rem 0.45rem;background:var(--gold-dim);}
 .ops-empty{font-size:0.76rem;color:var(--muted);font-style:italic;padding:0.35rem 0;}
+.punch-area-row{display:flex;align-items:center;justify-content:space-between;gap:0.75rem;cursor:pointer;}
+.punch-area-row:hover{border-color:var(--border-neon);}
+.punch-area-count{font-family:'Cinzel',serif;color:var(--gold-light);font-size:0.85rem;white-space:nowrap;}
+.punch-back{font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--neon);background:none;border:none;cursor:pointer;padding:0;margin-bottom:0.5rem;}
+.punch-status-top{font-size:0.58rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-light);margin-bottom:0.18rem;}
+.punch-draft-list{border:1px solid var(--border);background:var(--black);min-height:88px;margin-top:0.75rem;}
+.punch-draft-item{display:grid;grid-template-columns:1fr auto;gap:0.75rem;padding:0.65rem 0.75rem;border-bottom:1px solid rgba(200,146,42,0.1);}
+.punch-draft-item:last-child{border-bottom:none;}
+.punch-draft-title{font-size:0.86rem;color:var(--text);font-weight:700;line-height:1.35;}
+.punch-draft-meta{font-size:0.7rem;color:var(--muted);margin-top:0.2rem;}
 .daily-card{border-left:2px solid var(--neon);padding-left:0.65rem;margin-bottom:0.65rem;}
 .share-link-row{display:flex;gap:0.5rem;align-items:center;}
 .share-link-input{flex:1;min-width:0;background:var(--black);border:1px solid var(--border);color:var(--muted);padding:0.45rem 0.6rem;font-family:'Rajdhani',sans-serif;font-size:0.75rem;}
@@ -725,30 +735,38 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 <div id="modal-punch-item" class="modal-overlay">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">Punch List Item</span>
+      <span class="modal-title">Punch List Items</span>
       <button class="modal-close" onclick="closeModal('punch-item')">✕</button>
     </div>
     <div class="modal-body">
       <div class="field-row">
         <div>
           <label class="field-label">Category</label>
-          <select class="field-input" id="pl-category">
-            <option value="Framing">Framing</option>
-            <option value="Blocking">Blocking</option>
-            <option value="Shear">Shear</option>
-            <option value="Hardware">Hardware</option>
-            <option value="Inspection">Inspection</option>
-            <option value="Other">Other</option>
-          </select>
+          <select class="field-input" id="pl-category-select" onchange="onPunchSmartSelect('category')"></select>
+          <input class="field-input" id="pl-category-input" placeholder="Type category..." style="display:none;margin-top:0.45rem;">
         </div>
-        <div><label class="field-label">Photo URL</label><input class="field-input" id="pl-photo" placeholder="Optional"></div>
+        <div>
+          <label class="field-label">Area</label>
+          <select class="field-input" id="pl-area-select" onchange="onPunchSmartSelect('area')"></select>
+          <input class="field-input" id="pl-area-input" placeholder="Type area..." style="display:none;margin-top:0.45rem;">
+        </div>
       </div>
-      <div class="field-group"><label class="field-label">Description <span>*</span></label><textarea class="field-input" id="pl-description" rows="3" style="resize:vertical;"></textarea></div>
-      <div class="field-group"><label class="field-label">Comments</label><textarea class="field-input" id="pl-comments" rows="2" style="resize:vertical;"></textarea></div>
+      <div class="field-row">
+        <div><label class="field-label">Description <span>*</span></label><input class="field-input" id="pl-description" placeholder="Missing blocking, hardware, shear nail..."></div>
+        <div style="display:flex;align-items:flex-end;"><button type="button" class="btn-submit" onclick="addPunchDraftItem()" style="width:100%;">ADD</button></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Photo URL</label><input class="field-input" id="pl-photo" placeholder="Optional"></div>
+        <div><label class="field-label">Comments</label><input class="field-input" id="pl-comments" placeholder="Optional"></div>
+      </div>
+      <div class="request-builder">
+        <label class="field-label">List</label>
+        <div class="punch-draft-list" id="pl-draft-list"></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('punch-item')">Cancel</button>
-      <button class="btn-submit" onclick="savePunchItem()">Add Item</button>
+      <button class="btn-submit" onclick="savePunchItems()">Save</button>
     </div>
   </div>
 </div>
@@ -1160,6 +1178,8 @@ let projectMaterialRequests = [];
 let projectPunchItems = [];
 let projectDailyLogs = [];
 let projectTrackingItems = [];
+let selectedPunchArea = null;
+let punchDraftItems = [];
 
 async function openProject(id) {
   currentProject = allProjects.find(p => p.id === id);
@@ -1470,7 +1490,7 @@ function buildActivityFeedItems() {
       sortDate: p.updatedAt || p.completedAt || p.createdAt || getLocalDateString() + ' 00:00:00',
       type: 'punch',
       title: (p.status === 'Done' ? 'Punch Done: ' : 'Punch Item: ') + p.description,
-      sub: [p.id, p.category, p.status, p.completedByName ? 'by ' + p.completedByName : ''].filter(Boolean).join(' · '),
+      sub: [p.id, p.area || 'General', p.category, p.status, p.completedByName ? 'by ' + p.completedByName : ''].filter(Boolean).join(' · '),
       amount: null,
       seq: seq++
     });
@@ -1549,12 +1569,36 @@ function renderPunchListOps() {
     el.innerHTML = '<div class="ops-empty">No punch items yet.</div>';
     return;
   }
-  el.innerHTML = projectPunchItems.slice(0, 8).map(item => {
+
+  if (!selectedPunchArea) {
+    const areaMap = {};
+    projectPunchItems.forEach(item => {
+      const area = item.area || 'General';
+      if (!areaMap[area]) areaMap[area] = { total: 0, pending: 0, done: 0 };
+      areaMap[area].total++;
+      if (item.status === 'Done') areaMap[area].done++;
+      else areaMap[area].pending++;
+    });
+    el.innerHTML = Object.entries(areaMap).sort((a,b) => a[0].localeCompare(b[0])).map(([area, counts]) => `
+      <div class="ops-row punch-area-row" onclick="openPunchArea('${escAttr(area)}')">
+        <div>
+          <div class="ops-row-title">${area}</div>
+          <div class="ops-row-meta">${counts.pending} pending · ${counts.done} done</div>
+        </div>
+        <div class="punch-area-count">${counts.total}</div>
+      </div>
+    `).join('');
+    return;
+  }
+
+  const areaItems = projectPunchItems.filter(item => (item.area || 'General') === selectedPunchArea);
+  el.innerHTML = `<button class="punch-back" onclick="closePunchArea()">← Areas</button>` + areaItems.map(item => {
     const done = item.status === 'Done';
     const canWork = ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !(isProjectCompleted(currentProject) && isLowProjectRole());
     return `<div class="ops-row ${done ? 'done' : ''}">
+      <div class="punch-status-top">${item.status}</div>
       <div class="ops-row-title">${item.description}</div>
-      <div class="ops-row-meta"><span class="ops-chip">${item.status}</span> ${item.category || 'Framing'}${item.completedByName ? ' · by ' + item.completedByName : ''}${item.completedAt ? ' · ' + item.completedAt : ''}</div>
+      <div class="ops-row-meta">${item.category || 'General'}${item.completedByName ? ' · by ' + item.completedByName : ''}${item.completedAt ? ' · ' + item.completedAt : ''}</div>
       ${item.comments ? `<div class="ops-row-meta">${item.comments}</div>` : ''}
       ${canWork ? `<div class="ops-row-actions">
         ${done ? `<button class="btn-sm view" onclick="setPunchStatus('${item.id}','Pending')">Reopen</button>` : `<button class="btn-sm view" onclick="setPunchStatus('${item.id}','Done')">Done</button>`}
@@ -1562,6 +1606,16 @@ function renderPunchListOps() {
       </div>` : ''}
     </div>`;
   }).join('');
+}
+
+function openPunchArea(area) {
+  selectedPunchArea = area;
+  renderPunchListOps();
+}
+
+function closePunchArea() {
+  selectedPunchArea = null;
+  renderPunchListOps();
 }
 
 function renderDailyLogOps() {
@@ -1610,32 +1664,151 @@ function copyProjectShareLink() {
   showToast('Project link copied');
 }
 
+function escAttr(value) {
+  return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
 function openPunchModal() {
-  document.getElementById('pl-category').value = 'Framing';
+  punchDraftItems = [];
+  setupPunchSmartFields();
+  if (selectedPunchArea) setPunchSmartValue('area', selectedPunchArea);
   document.getElementById('pl-photo').value = '';
   document.getElementById('pl-description').value = '';
   document.getElementById('pl-comments').value = '';
+  renderPunchDraftItems();
   document.getElementById('modal-punch-item').classList.add('open');
 }
 
-async function savePunchItem() {
+function setPunchSmartValue(field, value) {
+  const select = document.getElementById(field === 'category' ? 'pl-category-select' : 'pl-area-select');
+  const input = document.getElementById(field === 'category' ? 'pl-category-input' : 'pl-area-input');
+  const options = getPunchOptions(field);
+  if (options.includes(value)) {
+    select.style.display = 'block';
+    input.style.display = 'none';
+    select.value = value;
+  } else {
+    select.style.display = 'none';
+    input.style.display = 'block';
+    input.value = value || '';
+  }
+}
+
+function getPunchOptions(field) {
+  const key = field === 'category' ? 'category' : 'area';
+  return [...new Set([
+    ...projectPunchItems.map(item => item[key] || '').filter(Boolean),
+    ...punchDraftItems.map(item => item[key] || '').filter(Boolean),
+  ])].sort((a,b) => a.localeCompare(b));
+}
+
+function setupPunchSmartFields() {
+  setupPunchSmartField('category');
+  setupPunchSmartField('area');
+}
+
+function setupPunchSmartField(field) {
+  const select = document.getElementById(field === 'category' ? 'pl-category-select' : 'pl-area-select');
+  const input = document.getElementById(field === 'category' ? 'pl-category-input' : 'pl-area-input');
+  const options = getPunchOptions(field);
+  if (!options.length) {
+    select.style.display = 'none';
+    input.style.display = 'block';
+    input.value = '';
+    return;
+  }
+  select.style.display = 'block';
+  input.style.display = 'none';
+  select.innerHTML = options.map(opt => `<option value="${opt}">${opt}</option>`).join('') +
+    `<option value="__add_new__">+ Add New ${field === 'category' ? 'Category' : 'Area'}</option>`;
+}
+
+function onPunchSmartSelect(field) {
+  const select = document.getElementById(field === 'category' ? 'pl-category-select' : 'pl-area-select');
+  const input = document.getElementById(field === 'category' ? 'pl-category-input' : 'pl-area-input');
+  if (select.value === '__add_new__') {
+    select.style.display = 'none';
+    input.style.display = 'block';
+    input.value = '';
+    input.focus();
+  }
+}
+
+function getPunchSmartValue(field) {
+  const select = document.getElementById(field === 'category' ? 'pl-category-select' : 'pl-area-select');
+  const input = document.getElementById(field === 'category' ? 'pl-category-input' : 'pl-area-input');
+  if (input.style.display !== 'none') return input.value.trim();
+  return select.value === '__add_new__' ? '' : select.value.trim();
+}
+
+function addPunchDraftItem() {
   const description = document.getElementById('pl-description').value.trim();
   if (!description) { showToast('Description required'); return; }
+  const category = getPunchSmartValue('category');
+  const area = getPunchSmartValue('area');
+  if (!category) { showToast('Category required'); return; }
+  if (!area) { showToast('Area required'); return; }
+
+  punchDraftItems.push({
+    category,
+    area,
+    description,
+    photoUrl: document.getElementById('pl-photo').value.trim(),
+    comments: document.getElementById('pl-comments').value.trim(),
+  });
+  document.getElementById('pl-description').value = '';
+  document.getElementById('pl-photo').value = '';
+  document.getElementById('pl-comments').value = '';
+  setupPunchSmartFields();
+  renderPunchDraftItems();
+}
+
+function renderPunchDraftItems() {
+  const list = document.getElementById('pl-draft-list');
+  if (!list) return;
+  if (!punchDraftItems.length) {
+    list.innerHTML = '<div class="request-empty">No items added yet.</div>';
+    return;
+  }
+  list.innerHTML = punchDraftItems.map((item, index) => `
+    <div class="punch-draft-item">
+      <div>
+        <div class="punch-draft-title">${item.description}</div>
+        <div class="punch-draft-meta">${item.category} · ${item.area}${item.comments ? ' · ' + item.comments : ''}</div>
+      </div>
+      <button class="request-icon-btn danger" onclick="removePunchDraftItem(${index})">Del</button>
+    </div>
+  `).join('');
+}
+
+function removePunchDraftItem(index) {
+  punchDraftItems.splice(index, 1);
+  setupPunchSmartFields();
+  renderPunchDraftItems();
+}
+
+async function savePunchItems() {
+  if (!punchDraftItems.length) { showToast('Add at least one punch item'); return; }
   try {
-    const result = await apiPost({
-      action: 'createPunchItem',
-      projectId: currentProject.id,
-      projectName: currentProject.name,
-      description,
-      category: document.getElementById('pl-category').value,
-      photoUrl: document.getElementById('pl-photo').value.trim(),
-      comments: document.getElementById('pl-comments').value.trim(),
-    });
-    if (result.success) {
-      closeModal('punch-item');
-      showToast('Punch item added');
-      await reloadProjectOperations();
-    } else showToast('Error: ' + result.message);
+    let failed = 0;
+    for (const item of punchDraftItems) {
+      const result = await apiPost({
+        action: 'createPunchItem',
+        projectId: currentProject.id,
+        projectName: currentProject.name,
+        description: item.description,
+        category: item.category,
+        area: item.area,
+        photoUrl: item.photoUrl,
+        comments: item.comments,
+      });
+      if (!result.success) failed++;
+    }
+    closeModal('punch-item');
+    showToast(failed ? 'Saved with ' + failed + ' failed item(s)' : 'Punch list saved');
+    punchDraftItems = [];
+    selectedPunchArea = null;
+    await reloadProjectOperations();
   } catch(e) { showToast('Connection error'); }
 }
 
