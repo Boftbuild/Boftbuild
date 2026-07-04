@@ -309,6 +309,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .ops-list{display:flex;flex-direction:column;gap:0.45rem;}
 .ops-row{border:1px solid rgba(200,146,42,0.12);background:var(--black);padding:0.55rem 0.65rem;transition:border-color 0.18s,background 0.18s,transform 0.18s;}
 .ops-row.done{border-color:rgba(76,175,125,0.35);background:rgba(76,175,125,0.055);}
+.ops-row.request-linked{border-left:3px solid var(--gold);background:rgba(200,146,42,0.045);}
 .ops-row-title{font-size:0.82rem;color:var(--text);font-weight:700;line-height:1.35;}
 .ops-row-meta{font-size:0.68rem;color:var(--muted);margin-top:0.18rem;}
 .ops-row-actions{display:flex;gap:0.35rem;margin-top:0.45rem;flex-wrap:wrap;}
@@ -899,6 +900,19 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('tracking-item')">Cancel</button>
       <button class="btn-submit" onclick="saveTrackingItem()">Add Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FULL TRACKING -->
+<div id="modal-tracking-full" class="modal-overlay">
+  <div class="modal" style="max-width:720px;">
+    <div class="modal-header">
+      <span class="modal-title" id="trackingFullTitle">Tracking</span>
+      <button class="modal-close" onclick="closeModal('tracking-full')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="trackingFullContent"></div>
     </div>
   </div>
 </div>
@@ -1602,6 +1616,7 @@ function renderActivityFeed() {
   if (projectTimelineFilter !== 'all') {
     items = items.filter(item => {
       if (projectTimelineFilter === 'request') return String(item.type || '').startsWith('request');
+      if (projectTimelineFilter === 'tracking') return item.type === 'tracking' || (String(item.type || '').startsWith('request') && item.request && (isMaterialTrackingRequest(item.request) || isToolTrackingRequest(item.request)));
       return item.type === projectTimelineFilter;
     });
   }
@@ -1999,18 +2014,68 @@ function renderTrackingOps() {
 
 function renderTrackingList(kind, el) {
   if (!el) return;
-  const items = projectTrackingItems.filter(item => item.kind === kind);
+  const items = getCombinedTrackingItems(kind);
   if (!items.length) {
     el.innerHTML = `<div class="module-empty">No ${kind.toLowerCase()} tracking yet.${['Owner','Manager','Field Lead','Planner'].includes(CURRENT_ROLE) ? ` <button class="btn-sm view" onclick="openTrackingModal('${kind}')" style="margin-left:0.5rem;">Add</button>` : ''}</div>`;
     return;
   }
-  el.innerHTML = items.slice(0, 8).map(item => `
-    <div class="ops-row">
-      <div class="ops-row-title">${item.item}</div>
-      <div class="ops-row-meta"><span class="ops-chip">${item.status || 'Needed'}</span> Required: ${item.requiredQty || '-'} · Ordered/Available: ${item.orderedQty || '-'} · Received: ${item.receivedQty || '-'} · Missing: ${item.missingQty || '-'}</div>
-      ${(item.ownerCarrier || item.location) ? `<div class="ops-row-meta">${[item.ownerCarrier ? 'Who: ' + item.ownerCarrier : '', item.location ? 'Where: ' + item.location : ''].filter(Boolean).join(' · ')}</div>` : ''}
-      ${item.notes ? `<div class="ops-row-meta">${item.notes}</div>` : ''}
-    </div>`).join('');
+  el.innerHTML = items.slice(0, 3).map(renderTrackingRow).join('') +
+    (items.length > 3 ? `<button class="feed-more" onclick="openFullTrackingModal('${kind}')">See Full</button>` : '');
+}
+
+function getCombinedTrackingItems(kind) {
+  const manualItems = projectTrackingItems
+    .filter(item => item.kind === kind)
+    .map(item => ({ source: 'tracking', sortDate: item.updatedAt || item.createdAt || '', ...item }));
+  const requestItems = projectMaterialRequests
+    .filter(req => kind === 'Material' ? isMaterialTrackingRequest(req) : isToolTrackingRequest(req))
+    .map(req => ({
+      source: 'request',
+      id: req.id,
+      kind,
+      item: req.description || req.subtype || req.id,
+      requiredQty: req.quantity || '',
+      orderedQty: ['Approved','Ordered','Completed'].includes(req.status) ? req.quantity || '' : '',
+      receivedQty: req.status === 'Completed' ? req.quantity || '' : '',
+      missingQty: req.status === 'Rejected' ? req.quantity || '' : '',
+      status: req.status || 'Pending',
+      ownerCarrier: req.requestedByName || req.requestedByEmail || '',
+      location: req.subtype || '',
+      notes: req.notes || '',
+      sortDate: req.completedAt || req.orderedAt || req.approvedAt || req.timestamp || '',
+      request: req,
+    }));
+  return [...requestItems, ...manualItems].sort((a,b) => String(b.sortDate || '').localeCompare(String(a.sortDate || '')));
+}
+
+function isMaterialTrackingRequest(req) {
+  return ['Material','Hardware','Lumber'].includes(String(req.subtype || '').trim());
+}
+
+function isToolTrackingRequest(req) {
+  return ['Tool Needed','Tool','Tools','Equipment'].includes(String(req.subtype || '').trim());
+}
+
+function renderTrackingRow(item) {
+  const linked = item.source === 'request';
+  return `<div class="ops-row ${linked ? 'request-linked' : ''}">
+    <div class="ops-row-title">${item.item}</div>
+    <div class="ops-row-meta"><span class="ops-chip">${item.status || 'Needed'}</span>${linked ? ' Request ' + item.id + ' · ' : ' '}Required: ${item.requiredQty || '-'} · Ordered/Available: ${item.orderedQty || '-'} · Received: ${item.receivedQty || '-'} · Missing: ${item.missingQty || '-'}</div>
+    ${(item.ownerCarrier || item.location) ? `<div class="ops-row-meta">${[item.ownerCarrier ? (linked ? 'Requested by: ' : 'Who: ') + item.ownerCarrier : '', item.location ? 'Category: ' + item.location : ''].filter(Boolean).join(' · ')}</div>` : ''}
+    ${item.notes ? `<div class="ops-row-meta">${item.notes}</div>` : ''}
+    ${linked ? renderRequestFeedActions({ request: item.request }) : ''}
+  </div>`;
+}
+
+function openFullTrackingModal(kind) {
+  const title = document.getElementById('trackingFullTitle');
+  const content = document.getElementById('trackingFullContent');
+  if (title) title.textContent = kind + ' Tracking';
+  if (content) {
+    const items = getCombinedTrackingItems(kind);
+    content.innerHTML = items.length ? items.map(renderTrackingRow).join('') : `<div class="module-empty">No ${kind.toLowerCase()} tracking yet.</div>`;
+  }
+  document.getElementById('modal-tracking-full').classList.add('open');
 }
 
 function copyProjectShareLink() {
@@ -2339,6 +2404,7 @@ function openFullActivityFeed() {
   if (projectTimelineFilter !== 'all') {
     items = items.filter(item => {
       if (projectTimelineFilter === 'request') return String(item.type || '').startsWith('request');
+      if (projectTimelineFilter === 'tracking') return item.type === 'tracking' || (String(item.type || '').startsWith('request') && item.request && (isMaterialTrackingRequest(item.request) || isToolTrackingRequest(item.request)));
       return item.type === projectTimelineFilter;
     });
   }
@@ -2497,6 +2563,7 @@ async function submitProjectRequest() {
       projectMaterialRequests = requestData.requests || [];
       renderProjectLiveSummary();
       renderProjects();
+      renderTrackingOps();
       renderActivityFeed();
     } else {
       showToast('Error: ' + result.message);
@@ -2517,6 +2584,7 @@ async function reloadProjectRequestsAndFeed() {
   projectMaterialRequests = requestData.requests || [];
   renderProjectLiveSummary();
   renderProjects();
+  renderTrackingOps();
   renderActivityFeed();
 }
 
