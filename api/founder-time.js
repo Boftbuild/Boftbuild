@@ -2,12 +2,13 @@ export const config = { runtime: 'edge' };
 
 const APPS_SCRIPT_URL = process.env.FOUNDER_TIME_SCRIPT_URL || '';
 const SHARED_SECRET = process.env.FOUNDER_TIME_SECRET || '';
+const ALLOWED_EMAIL = (process.env.FOUNDER_TIME_ALLOWED_EMAIL || 'martinc@boftbuild.com').toLowerCase();
 
 export default async function handler(req) {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Content-Type': 'application/json',
   };
 
@@ -26,6 +27,8 @@ export default async function handler(req) {
   }
 
   try {
+    await assertAuthorizedUser(req);
+
     let response;
 
     if (req.method === 'GET') {
@@ -57,5 +60,27 @@ export default async function handler(req) {
       status: 500,
       headers,
     });
+  }
+}
+
+async function assertAuthorizedUser(req) {
+  const token = req.headers.get('authorization')?.replace('Bearer ', '') || '';
+  if (!token) {
+    throw new Error('Missing Google authorization token.');
+  }
+
+  const userResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!userResponse.ok) {
+    throw new Error('Invalid Google authorization token.');
+  }
+
+  const user = await userResponse.json();
+  const email = String(user.email || '').toLowerCase();
+
+  if (email !== ALLOWED_EMAIL) {
+    throw new Error('Unauthorized founder time user.');
   }
 }
