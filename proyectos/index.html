@@ -3146,12 +3146,13 @@ function onNpDocSelect() {
   const input = document.getElementById('np-doc-file');
   const files = Array.from(input.files);
   if (!files.length) return;
-  npDocFiles.push(...files);
+  const category = document.getElementById('np-doc-category').value || 'Contracts';
+  npDocFiles.push(...files.map(file => ({ file, category })));
   renderNpPendingList();
   document.getElementById('np-doc-zone').classList.add('has-file');
   document.getElementById('np-doc-clear').style.display = 'block';
   const label = document.getElementById('np-doc-label');
-  label.textContent = npDocFiles.length === 1 ? npDocFiles[0].name : npDocFiles.length + ' files selected';
+  label.textContent = npDocFiles.length === 1 ? npDocFiles[0].file.name : npDocFiles.length + ' files selected';
   input.value = '';
 }
 
@@ -3159,10 +3160,10 @@ function renderNpPendingList() {
   const list = document.getElementById('np-doc-pending-list');
   if (!list) return;
   if (!npDocFiles.length) { list.innerHTML = ''; return; }
-  list.innerHTML = npDocFiles.map((f, i) => `
+  list.innerHTML = npDocFiles.map((entry, i) => `
     <div class="pending-file-chip">
-      <span class="name">📎 ${f.name}</span>
-      <span class="size">${formatBytes(f.size)}</span>
+      <span class="name">📎 ${entry.file.name}</span>
+      <span class="size">${entry.category} · ${formatBytes(entry.file.size)}</span>
       <button class="remove-chip" onclick="removeNpDoc(${i})">✕</button>
     </div>`).join('');
 }
@@ -3176,7 +3177,7 @@ function removeNpDoc(idx) {
     document.getElementById('np-doc-zone').classList.remove('has-file');
     document.getElementById('np-doc-clear').style.display = 'none';
   } else {
-    label.textContent = npDocFiles.length === 1 ? npDocFiles[0].name : npDocFiles.length + ' files selected';
+    label.textContent = npDocFiles.length === 1 ? npDocFiles[0].file.name : npDocFiles.length + ' files selected';
   }
 }
 
@@ -3194,12 +3195,13 @@ function onEpDocSelect() {
   const input = document.getElementById('ep-doc-file');
   const files = Array.from(input.files);
   if (!files.length) return;
-  epDocFiles.push(...files);
+  const category = document.getElementById('ep-doc-category').value || 'Contracts';
+  epDocFiles.push(...files.map(file => ({ file, category })));
   renderEpPendingList();
   document.getElementById('ep-doc-zone').classList.add('has-file');
   document.getElementById('ep-doc-clear').style.display = 'block';
   const label = document.getElementById('ep-doc-label');
-  label.textContent = epDocFiles.length === 1 ? epDocFiles[0].name : epDocFiles.length + ' files selected';
+  label.textContent = epDocFiles.length === 1 ? epDocFiles[0].file.name : epDocFiles.length + ' files selected';
   input.value = '';
 }
 
@@ -3207,10 +3209,10 @@ function renderEpPendingList() {
   const list = document.getElementById('ep-doc-pending-list');
   if (!list) return;
   if (!epDocFiles.length) { list.innerHTML = ''; return; }
-  list.innerHTML = epDocFiles.map((f, i) => `
+  list.innerHTML = epDocFiles.map((entry, i) => `
     <div class="pending-file-chip">
-      <span class="name">📎 ${f.name}</span>
-      <span class="size">${formatBytes(f.size)}</span>
+      <span class="name">📎 ${entry.file.name}</span>
+      <span class="size">${entry.category} · ${formatBytes(entry.file.size)}</span>
       <button class="remove-chip" onclick="removeEpDoc(${i})">✕</button>
     </div>`).join('');
 }
@@ -3224,7 +3226,7 @@ function removeEpDoc(idx) {
     document.getElementById('ep-doc-zone').classList.remove('has-file');
     document.getElementById('ep-doc-clear').style.display = 'none';
   } else {
-    label.textContent = epDocFiles.length === 1 ? epDocFiles[0].name : epDocFiles.length + ' files selected';
+    label.textContent = epDocFiles.length === 1 ? epDocFiles[0].file.name : epDocFiles.length + ' files selected';
   }
 }
 
@@ -3613,8 +3615,9 @@ async function createProject() {
       if (npDocFiles.length > 0 && result.driveFolderId) {
         showToast('Uploading ' + npDocFiles.length + ' document(s)...');
         let existingUrls = '';
-        for (const file of npDocFiles) {
+        for (const docEntry of npDocFiles) {
           try {
+            const file = docEntry.file;
             const processed = file.type.startsWith('image/') ? await processImageFile(file) : file;
             const base64 = await fileToBase64(processed);
             const uploadResult = await apiPost({
@@ -3637,7 +3640,7 @@ async function createProject() {
               objective:     document.getElementById('np-scope').value.trim(),
             });
             if (uploadResult.success) {
-              const category = document.getElementById('np-doc-category').value || 'Contracts';
+              const category = docEntry.category || 'Contracts';
               const entry = category + '::' + processed.name + '|' + uploadResult.fileUrl;
               existingUrls = existingUrls ? existingUrls + ',' + entry : entry;
             }
@@ -3773,8 +3776,9 @@ async function saveEditProject() {
       if (!isFieldLead && epDocFiles.length > 0 && currentProject.driveFolderId) {
         showToast('Uploading ' + epDocFiles.length + ' document(s)...');
         let existingUrls = result.contractFileUrl || currentProject.contractFileUrl || '';
-        for (const file of epDocFiles) {
+        for (const docEntry of epDocFiles) {
           try {
+            const file = docEntry.file;
             const processed = file.type.startsWith('image/') ? await processImageFile(file) : file;
             const base64 = await fileToBase64(processed);
             const uploadResult = await apiPost({
@@ -3799,7 +3803,7 @@ async function saveEditProject() {
               existingUrls,
             });
             if (uploadResult.success) {
-              const category = document.getElementById('ep-doc-category').value || 'Contracts';
+              const category = docEntry.category || 'Contracts';
               const entry = category + '::' + processed.name + '|' + uploadResult.fileUrl;
               existingUrls = existingUrls ? existingUrls + ',' + entry : entry;
             }
