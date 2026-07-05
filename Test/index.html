@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BOFT Projects Prototype HTML</title>
+  <script src="https://accounts.google.com/gsi/client"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
@@ -1254,12 +1255,15 @@
     </div>
   </div>
   <script>
-    const API_URL = '/api/proxy';
-    let ACCESS_TOKEN = sessionStorage.getItem('boft_token') || '';
-    let CURRENT_ROLE = sessionStorage.getItem('boft_role') || 'Viewer';
+    const CLIENT_ID = '139648063899-tq9arpo1817e20a1qtmm5dm0jl35u4sm.apps.googleusercontent.com';
+    const ALLOWED_DOMAIN = 'boftbuild.com';
+    const URL_PARAMS = new URLSearchParams(location.search);
+    const API_URL = URL_PARAMS.get('apiUrl') || (location.pathname.includes('/macros/s/') ? location.href.split('?')[0] : '/api/proxy');
+    let ACCESS_TOKEN = URL_PARAMS.get('token') || URL_PARAMS.get('credential') || sessionStorage.getItem('boft_token') || localStorage.getItem('boft_token') || '';
+    let CURRENT_ROLE = URL_PARAMS.get('role') || sessionStorage.getItem('boft_role') || localStorage.getItem('boft_role') || 'Viewer';
     let CURRENT_USER = {};
     try {
-      CURRENT_USER = JSON.parse(sessionStorage.getItem('boft_user') || '{}');
+      CURRENT_USER = JSON.parse(URL_PARAMS.get('user') || sessionStorage.getItem('boft_user') || localStorage.getItem('boft_user') || '{}');
     } catch (err) {
       CURRENT_USER = {};
     }
@@ -1376,7 +1380,7 @@
 
     async function apiGet(action, params = {}) {
       if (!ACCESS_TOKEN) throw new Error('No session token found');
-      const qs = new URLSearchParams({ action, ...params }).toString();
+      const qs = new URLSearchParams({ action, token: ACCESS_TOKEN, ...params }).toString();
       const response = await fetch(API_URL + '?' + qs, {
         headers: { Authorization: 'Bearer ' + ACCESS_TOKEN }
       });
@@ -1385,10 +1389,94 @@
       return data;
     }
 
+    function persistPrototypeSession(token, user = {}) {
+      ACCESS_TOKEN = token || ACCESS_TOKEN;
+      CURRENT_USER = { ...CURRENT_USER, ...user };
+      sessionStorage.setItem('boft_token', ACCESS_TOKEN);
+      localStorage.setItem('boft_token', ACCESS_TOKEN);
+      sessionStorage.setItem('boft_user', JSON.stringify(CURRENT_USER));
+      localStorage.setItem('boft_user', JSON.stringify(CURRENT_USER));
+    }
+
+    function decodeJwtPayload(token) {
+      try {
+        const payload = token.split('.')[1];
+        return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+      } catch (err) {
+        return {};
+      }
+    }
+
+    async function resolveCurrentRole() {
+      if (!ACCESS_TOKEN) return;
+      try {
+        const data = await apiGet('getUserRole', { email: CURRENT_USER.email || '' });
+        if (data && data.role) {
+          CURRENT_ROLE = data.role;
+          sessionStorage.setItem('boft_role', CURRENT_ROLE);
+          localStorage.setItem('boft_role', CURRENT_ROLE);
+        }
+      } catch (err) {
+        // Keep the role already stored, if any.
+      }
+    }
+
+    function renderSignInShell(message) {
+      renderEmptyProjectShell(message || 'Sign in to load BOFT project data.');
+      const body = document.querySelector('.project-body');
+      if (body) {
+        body.innerHTML = `
+          <div class="module-card" style="max-width:520px;">
+            <div class="module-title">BOFT Sign In Required</div>
+            <div class="module-row-meta" style="margin-bottom:16px;">This prototype now reads real Sheet data only. Sign in with your BOFT account to load Projects.</div>
+            <div id="prototypeGoogleSignIn"></div>
+          </div>
+        `;
+      }
+      window.setTimeout(initPrototypeGoogleSignIn, 100);
+    }
+
+    function initPrototypeGoogleSignIn() {
+      const target = document.getElementById('prototypeGoogleSignIn');
+      if (!target || !window.google || !google.accounts || !google.accounts.id) return;
+      google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: async response => {
+          const profile = decodeJwtPayload(response.credential || '');
+          const email = profile.email || '';
+          if (!email || !email.endsWith('@' + ALLOWED_DOMAIN)) {
+            showPrototypeToast('BOFT account required');
+            return;
+          }
+          persistPrototypeSession(response.credential, {
+            email,
+            name: profile.name || email,
+            picture: profile.picture || ''
+          });
+          await loadPrototypeData();
+        }
+      });
+      target.innerHTML = '';
+      google.accounts.id.renderButton(target, {
+        theme: 'filled_black',
+        size: 'large',
+        width: 280,
+        text: 'signin_with'
+      });
+    }
+
     async function loadPrototypeData() {
       hydrateTopUser();
       bindFilters();
       bindStaticPrototypeActions();
+
+      if (!ACCESS_TOKEN) {
+        renderSignInShell('No active BOFT session found.');
+        return;
+      }
+
+      await resolveCurrentRole();
+      hydrateTopUser();
 
       try {
         const data = await apiGet('projects');
