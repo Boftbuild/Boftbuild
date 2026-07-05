@@ -372,6 +372,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 
 /* MULTI-FILE PENDING LIST */
 .pending-files-list{margin-top:0.5rem;display:flex;flex-direction:column;gap:4px;}
+.pending-doc-group{border:1px solid rgba(200,146,42,0.18);background:rgba(200,146,42,0.035);margin-bottom:0.5rem;}
+.pending-doc-group-head{display:flex;align-items:center;justify-content:space-between;padding:0.45rem 0.6rem;border-bottom:1px solid rgba(200,146,42,0.12);}
+.pending-doc-group-title{font-size:0.68rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-light);}
+.pending-doc-group-count{font-size:0.68rem;color:var(--muted);font-weight:700;}
 .pending-file-chip{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;background:rgba(76,175,125,0.06);border:1px solid rgba(76,175,125,0.3);padding:0.4rem 0.6rem;font-size:0.78rem;}
 .pending-file-chip .name{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}
 .pending-file-chip .size{color:var(--muted);font-size:0.7rem;flex-shrink:0;}
@@ -3186,6 +3190,55 @@ async function reopenProjectRequest(requestId) {
 // ============================================================
 // DOCUMENTATION — Modal handlers (multi-file)
 // ============================================================
+function resetDocUploadZone(prefix) {
+  const isNewProject = prefix === 'np';
+  const zone = document.getElementById(prefix + '-doc-zone');
+  const clearBtn = document.getElementById(prefix + '-doc-clear');
+  const label = document.getElementById(prefix + '-doc-label');
+  const input = document.getElementById(prefix + '-doc-file');
+  if (input) input.value = '';
+  if (label) label.textContent = isNewProject ? 'Tap to upload contract(s), permit(s) or document(s)' : 'Tap to add document(s)';
+  if (zone) zone.classList.remove('has-file');
+  if (clearBtn) clearBtn.style.display = 'none';
+}
+
+function renderPendingDocList(entries, listId, removeFnName) {
+  const list = document.getElementById(listId);
+  if (!list) return;
+  if (!entries.length) { list.innerHTML = ''; return; }
+  const groups = {};
+  entries.forEach((entry, index) => {
+    const category = entry.category || 'Contracts';
+    if (!groups[category]) groups[category] = [];
+    groups[category].push({ entry, index });
+  });
+  const order = ['Contracts','Plans','Permits','Change Orders','Warranty','Inspection'];
+  const categories = Object.keys(groups).sort((a, b) => {
+    const ai = order.indexOf(a);
+    const bi = order.indexOf(b);
+    if (ai === -1 && bi === -1) return a.localeCompare(b);
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+  list.innerHTML = categories.map(category => {
+    const items = groups[category];
+    const countLabel = items.length + ' file' + (items.length === 1 ? '' : 's');
+    return `<div class="pending-doc-group">
+      <div class="pending-doc-group-head">
+        <span class="pending-doc-group-title">${category}</span>
+        <span class="pending-doc-group-count">${countLabel}</span>
+      </div>
+      ${items.map(({ entry, index }) => `
+        <div class="pending-file-chip">
+          <span class="name">📎 ${entry.file.name}</span>
+          <span class="size">${formatBytes(entry.file.size)}</span>
+          <button class="remove-chip" onclick="${removeFnName}(${index})">✕</button>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
 function onNpDocSelect() {
   const input = document.getElementById('np-doc-file');
   const files = Array.from(input.files);
@@ -3194,46 +3247,24 @@ function onNpDocSelect() {
   const category = categorySelect.value || 'Contracts';
   npDocFiles.push(...files.map(file => ({ file, category })));
   renderNpPendingList();
-  document.getElementById('np-doc-zone').classList.add('has-file');
-  document.getElementById('np-doc-clear').style.display = 'block';
-  const label = document.getElementById('np-doc-label');
-  label.textContent = npDocFiles.length === 1 ? npDocFiles[0].file.name : npDocFiles.length + ' files selected';
   categorySelect.value = 'Contracts';
-  input.value = '';
+  resetDocUploadZone('np');
 }
 
 function renderNpPendingList() {
-  const list = document.getElementById('np-doc-pending-list');
-  if (!list) return;
-  if (!npDocFiles.length) { list.innerHTML = ''; return; }
-  list.innerHTML = npDocFiles.map((entry, i) => `
-    <div class="pending-file-chip">
-      <span class="name">📎 ${entry.file.name}</span>
-      <span class="size">${entry.category} · ${formatBytes(entry.file.size)}</span>
-      <button class="remove-chip" onclick="removeNpDoc(${i})">✕</button>
-    </div>`).join('');
+  renderPendingDocList(npDocFiles, 'np-doc-pending-list', 'removeNpDoc');
 }
 
 function removeNpDoc(idx) {
   npDocFiles.splice(idx, 1);
   renderNpPendingList();
-  const label = document.getElementById('np-doc-label');
-  if (!npDocFiles.length) {
-    label.textContent = 'Tap to upload contract(s), permit(s) or document(s)';
-    document.getElementById('np-doc-zone').classList.remove('has-file');
-    document.getElementById('np-doc-clear').style.display = 'none';
-  } else {
-    label.textContent = npDocFiles.length === 1 ? npDocFiles[0].file.name : npDocFiles.length + ' files selected';
-  }
+  resetDocUploadZone('np');
 }
 
 function clearNpDoc(e) {
   if (e) { e.preventDefault(); e.stopPropagation(); }
   npDocFiles = [];
-  document.getElementById('np-doc-file').value = '';
-  document.getElementById('np-doc-label').textContent = 'Tap to upload contract(s), permit(s) or document(s)';
-  document.getElementById('np-doc-zone').classList.remove('has-file');
-  document.getElementById('np-doc-clear').style.display = 'none';
+  resetDocUploadZone('np');
   renderNpPendingList();
 }
 
@@ -3245,37 +3276,18 @@ function onEpDocSelect() {
   const category = categorySelect.value || 'Contracts';
   epDocFiles.push(...files.map(file => ({ file, category })));
   renderEpPendingList();
-  document.getElementById('ep-doc-zone').classList.add('has-file');
-  document.getElementById('ep-doc-clear').style.display = 'block';
-  const label = document.getElementById('ep-doc-label');
-  label.textContent = epDocFiles.length === 1 ? epDocFiles[0].file.name : epDocFiles.length + ' files selected';
   categorySelect.value = 'Contracts';
-  input.value = '';
+  resetDocUploadZone('ep');
 }
 
 function renderEpPendingList() {
-  const list = document.getElementById('ep-doc-pending-list');
-  if (!list) return;
-  if (!epDocFiles.length) { list.innerHTML = ''; return; }
-  list.innerHTML = epDocFiles.map((entry, i) => `
-    <div class="pending-file-chip">
-      <span class="name">📎 ${entry.file.name}</span>
-      <span class="size">${entry.category} · ${formatBytes(entry.file.size)}</span>
-      <button class="remove-chip" onclick="removeEpDoc(${i})">✕</button>
-    </div>`).join('');
+  renderPendingDocList(epDocFiles, 'ep-doc-pending-list', 'removeEpDoc');
 }
 
 function removeEpDoc(idx) {
   epDocFiles.splice(idx, 1);
   renderEpPendingList();
-  const label = document.getElementById('ep-doc-label');
-  if (!epDocFiles.length) {
-    label.textContent = 'Tap to add document(s)';
-    document.getElementById('ep-doc-zone').classList.remove('has-file');
-    document.getElementById('ep-doc-clear').style.display = 'none';
-  } else {
-    label.textContent = epDocFiles.length === 1 ? epDocFiles[0].file.name : epDocFiles.length + ' files selected';
-  }
+  resetDocUploadZone('ep');
 }
 
 function formatBytes(bytes) {
@@ -3773,10 +3785,7 @@ async function openEditProjectModal() {
 function clearEpDoc(e) {
   if (e) { e.preventDefault(); e.stopPropagation(); }
   epDocFiles = [];
-  document.getElementById('ep-doc-file').value = '';
-  document.getElementById('ep-doc-label').textContent = 'Tap to add document(s)';
-  document.getElementById('ep-doc-zone').classList.remove('has-file');
-  document.getElementById('ep-doc-clear').style.display = 'none';
+  resetDocUploadZone('ep');
   renderEpPendingList();
 }
 
