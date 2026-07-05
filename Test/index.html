@@ -1176,5 +1176,412 @@
       </section>
     </main>
   </div>
+  <script>
+    const API_URL = '/api/proxy';
+    let ACCESS_TOKEN = sessionStorage.getItem('boft_token') || '';
+    let CURRENT_ROLE = sessionStorage.getItem('boft_role') || 'Field Lead';
+    let CURRENT_USER = {};
+    try {
+      CURRENT_USER = JSON.parse(sessionStorage.getItem('boft_user') || '{}');
+    } catch (err) {
+      CURRENT_USER = {};
+    }
+
+    let prototypeProjects = [];
+    let prototypeOpsByProject = {};
+    let prototypeRequestsByProject = {};
+    let selectedProjectId = '';
+    let selectedFilter = 'all';
+
+    const fallbackProjects = [
+      {
+        id: 'P003',
+        name: 'Deck',
+        client: 'Ruma Soto',
+        city: 'West Valley',
+        state: 'Utah',
+        address: 'West Valley, Utah',
+        mapsUrl: 'https://www.google.com/maps/search/?api=1&query=West%20Valley%20Utah',
+        status: 'Active',
+        startDate: '2026-07-04',
+        contractValue: 0
+      },
+      {
+        id: 'P004',
+        name: 'Stairs',
+        client: 'Clint',
+        city: 'Draper',
+        state: 'Utah',
+        address: 'Draper, Utah',
+        status: 'Inspection',
+        startDate: '2026-07-04',
+        contractValue: 0
+      },
+      {
+        id: 'P005',
+        name: 'Shed',
+        client: 'Lazro',
+        city: 'Lehi',
+        state: 'Utah',
+        address: 'Lehi, Utah',
+        status: 'Hold',
+        startDate: '2026-07-04',
+        contractValue: 0
+      },
+      {
+        id: 'P006',
+        name: 'Full House',
+        client: 'Damion',
+        city: 'Sandy',
+        state: 'Utah',
+        address: 'Sandy, Utah',
+        status: 'Active',
+        startDate: '2026-07-04',
+        contractValue: 0
+      }
+    ];
+
+    const fallbackOps = {
+      punchItems: [
+        { id: 'PL001', description: 'Install handrail', floor: 'Basement', area: 'Stairs', category: 'Framing', status: 'Pending', priority: 'High' },
+        { id: 'PL002', description: 'Fix outlet cover', floor: 'Main', area: 'Porch', category: 'Electrical', status: 'Pending', priority: 'Low' },
+        { id: 'PL003', description: 'Paint touch up', floor: 'Main', area: 'Living Room', category: 'Finish', status: 'Pending', priority: 'Medium' },
+        { id: 'PL004', description: 'Caulk windows', floor: 'Main', area: 'Exterior', category: 'Windows', status: 'In Progress', priority: 'Medium' },
+        { id: 'PL005', description: 'Check moisture barrier', floor: 'Basement', area: 'Wall A', category: 'Inspection', status: 'In Progress', priority: 'High' },
+        { id: 'PL006', description: 'Clean up site', floor: 'Exterior', area: 'Front', category: 'Cleanup', status: 'In Progress', priority: 'Low' },
+        { id: 'PL007', description: 'Paint walls', floor: 'Basement', area: 'Bedroom', category: 'Finish', status: 'Done', priority: 'Low' },
+        { id: 'PL008', description: 'Install insulation', floor: 'Basement', area: 'Mechanical', category: 'Insulation', status: 'Done', priority: 'High' },
+        { id: 'PL009', description: 'Fix light switch', floor: 'Basement', area: 'Hall', category: 'Electrical', status: 'Done', priority: 'Low' }
+      ],
+      dailyLogs: [],
+      trackingItems: [],
+      inspectionItems: []
+    };
+
+    function esc(value) {
+      return String(value || '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[ch]);
+    }
+
+    function normalizeStatus(status) {
+      const value = String(status || 'Active').trim();
+      return value === 'On Hold' ? 'Hold' : value;
+    }
+
+    function cityState(project) {
+      return [project.city, project.state].filter(Boolean).join(', ');
+    }
+
+    function projectMapUrl(project) {
+      const target = project.mapsUrl || project.address || cityState(project);
+      if (!target) return '#';
+      return /^https?:\/\//i.test(target) ? target : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(target);
+    }
+
+    function userFirstName() {
+      const name = CURRENT_USER.name || CURRENT_USER.email || 'Tester';
+      return String(name).split(/\s+/)[0] || 'Tester';
+    }
+
+    async function apiGet(action, params = {}) {
+      if (!ACCESS_TOKEN) throw new Error('No session token found');
+      const qs = new URLSearchParams({ action, ...params }).toString();
+      const response = await fetch(API_URL + '?' + qs, {
+        headers: { Authorization: 'Bearer ' + ACCESS_TOKEN }
+      });
+      const data = await response.json();
+      if (data.error || data.code === 403) throw new Error(data.error || 'Unauthorized');
+      return data;
+    }
+
+    async function loadPrototypeData() {
+      hydrateTopUser();
+      bindFilters();
+
+      try {
+        const data = await apiGet('projects');
+        prototypeProjects = (data.projects || []).map(project => ({
+          ...project,
+          status: normalizeStatus(project.status)
+        }));
+        if (!prototypeProjects.length) prototypeProjects = fallbackProjects;
+      } catch (err) {
+        prototypeProjects = fallbackProjects;
+      }
+
+      selectedProjectId = prototypeProjects[0] ? prototypeProjects[0].id : '';
+      renderPrototypeProjects();
+      await openPrototypeProject(selectedProjectId);
+    }
+
+    function hydrateTopUser() {
+      const name = CURRENT_USER.name || CURRENT_USER.email || 'Tester User';
+      document.querySelectorAll('.avatar').forEach(el => {
+        el.textContent = String(name).trim().charAt(0).toUpperCase() || 'T';
+      });
+
+      const topName = document.querySelector('.top-actions .subtle');
+      if (topName) topName.textContent = name;
+
+      const topRole = document.querySelector('.top-actions .pill');
+      if (topRole) topRole.textContent = CURRENT_ROLE;
+
+      const sidebarName = document.querySelector('.sidebar-user > div:last-child > div:first-child');
+      if (sidebarName) sidebarName.textContent = name;
+
+      const sidebarRole = document.querySelector('.sidebar-user .role-small');
+      if (sidebarRole) sidebarRole.textContent = CURRENT_ROLE;
+    }
+
+    function bindFilters() {
+      document.querySelectorAll('.filter').forEach(button => {
+        button.addEventListener('click', () => {
+          const label = button.textContent.trim();
+          selectedFilter = label === 'All' ? 'all' : label;
+          document.querySelectorAll('.filter').forEach(item => item.classList.remove('active'));
+          button.classList.add('active');
+          renderPrototypeProjects();
+        });
+      });
+    }
+
+    function projectSummary(project) {
+      const ops = prototypeOpsByProject[project.id] || fallbackOps;
+      const requests = prototypeRequestsByProject[project.id] || [];
+      const punchItems = ops.punchItems || [];
+      const dailyLogs = ops.dailyLogs || [];
+      const openPunch = punchItems.filter(item => item.status !== 'Done').length;
+      const donePunch = punchItems.filter(item => item.status === 'Done').length;
+      const pendingRequests = requests.filter(item => ['Pending', 'Ordered'].includes(item.status || 'Pending')).length;
+      const approvedRequests = requests.filter(item => item.status === 'Approved').length;
+      return { openPunch, donePunch, pendingRequests, approvedRequests, dailyLogs };
+    }
+
+    function renderCurrentProjectSummary(project) {
+      const box = document.querySelector('.current-project');
+      if (!box || !project) return;
+      const summary = projectSummary(project);
+      box.innerHTML = `
+        <div class="eyebrow">Current Project</div>
+        <h2>${esc(project.name || 'Project')}</h2>
+        <div class="mini-stats">
+          <div class="mini-stat">
+            <div class="stat-value">${esc(project.status || 'Active')}</div>
+            <div class="stat-label">Status</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value">${summary.openPunch}</div>
+            <div class="stat-label">Punch Open</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value">${summary.pendingRequests}</div>
+            <div class="stat-label">Requests</div>
+          </div>
+          <div class="mini-stat">
+            <div class="stat-value">${summary.dailyLogs.length}</div>
+            <div class="stat-label">Logs</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPrototypeProjects() {
+      const list = document.querySelector('.project-list');
+      if (!list) return;
+
+      const filtered = selectedFilter === 'all'
+        ? prototypeProjects
+        : prototypeProjects.filter(project => normalizeStatus(project.status) === selectedFilter);
+
+      if (!filtered.length) {
+        list.innerHTML = '<div class="project-row"><div><h3>No Projects</h3><div class="subtle">Nothing found for this status.</div></div></div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map(project => {
+        const selected = project.id === selectedProjectId ? ' active' : '';
+        const city = cityState(project);
+        return `
+          <div class="project-row${selected}" data-project-id="${esc(project.id)}">
+            <div>
+              <h3>${esc(project.name || 'Untitled')}</h3>
+              <div class="subtle">${esc(project.client || 'No client')}${city ? ' - ' + esc(city) : ''}</div>
+              <span class="restricted">${esc(project.status || 'Active')}</span>
+            </div>
+            <div class="subtle">${esc(project.startDate || project.endDate || '')}</div>
+            <div class="chevron">&rsaquo;</div>
+          </div>
+        `;
+      }).join('');
+
+      list.querySelectorAll('.project-row[data-project-id]').forEach(row => {
+        row.addEventListener('click', () => openPrototypeProject(row.dataset.projectId));
+      });
+    }
+
+    async function openPrototypeProject(projectId) {
+      const project = prototypeProjects.find(item => item.id === projectId) || prototypeProjects[0];
+      if (!project) return;
+      selectedProjectId = project.id;
+      renderPrototypeProjects();
+      renderCurrentProjectSummary(project);
+      renderProjectShell(project);
+
+      await loadProjectDetails(project);
+      renderCurrentProjectSummary(project);
+      renderProjectShell(project);
+      renderPunchKanban(project);
+    }
+
+    async function loadProjectDetails(project) {
+      if (!project || prototypeOpsByProject[project.id]) return;
+      try {
+        const [opsData, requestData] = await Promise.all([
+          apiGet('projectOperations', { projectId: project.id }),
+          apiGet('projectMaterialRequests', { projectId: project.id })
+        ]);
+        prototypeOpsByProject[project.id] = {
+          punchItems: opsData.punchItems || [],
+          dailyLogs: opsData.dailyLogs || [],
+          trackingItems: opsData.trackingItems || [],
+          inspectionItems: opsData.inspectionItems || []
+        };
+        prototypeRequestsByProject[project.id] = requestData.requests || [];
+      } catch (err) {
+        prototypeOpsByProject[project.id] = fallbackOps;
+        prototypeRequestsByProject[project.id] = [
+          { id: 'MR001', status: 'Approved', type: 'Material', projectId: project.id }
+        ];
+      }
+    }
+
+    function renderProjectShell(project) {
+      const header = document.querySelector('.project-header');
+      const metrics = document.querySelector('.metrics');
+      const linkBox = document.querySelector('.link-box');
+      const summary = projectSummary(project);
+      const city = cityState(project);
+      const latestLog = summary.dailyLogs[0]
+        ? (summary.dailyLogs[0].logDate || String(summary.dailyLogs[0].createdAt || '').slice(0, 10))
+        : 'No daily log';
+
+      if (header) {
+        header.innerHTML = `
+          <div>
+            <h1>${esc(project.name || 'Project')}</h1>
+            <div class="subtle">${esc(project.client || '')}${city ? ' - <a class="location" href="' + esc(projectMapUrl(project)) + '" target="_blank">' + esc(city) + '</a>' : ''}</div>
+          </div>
+          <div class="project-header-actions">
+            <button class="btn green">${esc(project.status || 'Active')}</button>
+            <button class="btn gold">+ Request</button>
+            <button class="btn blue">Edit</button>
+            <div class="dots">...</div>
+          </div>
+        `;
+      }
+
+      if (metrics) {
+        metrics.innerHTML = `
+          <div class="metric status">
+            <div class="metric-name">Status</div>
+            <div class="metric-number">${esc(project.status || 'Active')}</div>
+            <div class="metric-note">${esc(project.id || 'Project')} <span class="dot green"></span></div>
+          </div>
+          <div class="metric punch">
+            <div class="metric-name">Punch Open</div>
+            <div class="metric-number">${summary.openPunch}</div>
+            <div class="metric-note">${summary.donePunch} done</div>
+          </div>
+          <div class="metric request">
+            <div class="metric-name">Requests</div>
+            <div class="metric-number">${summary.pendingRequests}</div>
+            <div class="metric-note">${summary.approvedRequests} approved</div>
+          </div>
+          <div class="metric logs">
+            <div class="metric-name">Daily Logs</div>
+            <div class="metric-number">${summary.dailyLogs.length}</div>
+            <div class="metric-note">${esc(latestLog)}</div>
+          </div>
+        `;
+      }
+
+      if (linkBox) {
+        linkBox.textContent = location.origin
+          ? location.origin + '/projects?project=' + encodeURIComponent(project.id || '')
+          : 'https://www.boftbuild.com/projects?project=' + encodeURIComponent(project.id || '');
+      }
+    }
+
+    function itemPriority(item) {
+      const source = String(item.priority || item.comments || item.category || '').toLowerCase();
+      if (source.includes('high') || source.includes('urgent')) return 'High';
+      if (source.includes('low')) return 'Low';
+      return 'Medium';
+    }
+
+    function priorityClass(priority) {
+      if (priority === 'High') return 'red';
+      if (priority === 'Low') return 'green';
+      return 'gold';
+    }
+
+    function statusBucket(item) {
+      const status = String(item.status || 'Pending').trim();
+      if (status === 'Done') return 'done';
+      if (status === 'In Progress') return 'progress';
+      return 'pending';
+    }
+
+    function renderTaskCard(item) {
+      const priority = itemPriority(item);
+      return `
+        <div class="task-card">
+          <div class="task-name">${esc(item.description || item.item || 'Punch item')}</div>
+          <div class="task-meta">
+            <span>${esc(item.area || item.floor || item.category || 'General')}</span>
+            <span class="priority"><span class="dot ${priorityClass(priority)}"></span> ${priority}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderPunchKanban(project) {
+      const container = document.querySelector('.kanban');
+      if (!container) return;
+      const ops = prototypeOpsByProject[project.id] || fallbackOps;
+      const items = ops.punchItems || [];
+      const pending = items.filter(item => statusBucket(item) === 'pending');
+      const progress = items.filter(item => statusBucket(item) === 'progress');
+      const done = items.filter(item => statusBucket(item) === 'done');
+
+      container.innerHTML = `
+        <div class="kanban-column pending">
+          <div class="column-title"><span>Pending&nbsp;&nbsp;${pending.length}</span><span class="spin"></span></div>
+          ${pending.slice(0, 3).map(renderTaskCard).join('') || '<div class="task-card"><div class="task-name">No pending items</div><div class="task-meta"><span>This project is clear</span></div></div>'}
+          <button class="add-row">+ Add Item</button>
+        </div>
+        <div class="kanban-column progress">
+          <div class="column-title"><span>In Progress&nbsp;&nbsp;${progress.length}</span><span class="spin"></span></div>
+          ${progress.slice(0, 3).map(renderTaskCard).join('') || '<div class="task-card"><div class="task-name">No active items</div><div class="task-meta"><span>Nothing moving right now</span></div></div>'}
+          <button class="add-row">+ Add Item</button>
+        </div>
+        <div class="kanban-column done">
+          <div class="column-title"><span>Done&nbsp;&nbsp;${done.length}</span><span class="spin"></span></div>
+          ${done.slice(0, 3).map(renderTaskCard).join('') || '<div class="task-card"><div class="task-name">No completed items</div><div class="task-meta"><span>Done list is empty</span></div></div>'}
+          <button class="add-row">+ Add Item</button>
+        </div>
+      `;
+
+      const sectionTitle = document.querySelector('.section-title');
+      if (sectionTitle) sectionTitle.textContent = 'Punch List - ' + (project.name || project.id);
+    }
+
+    document.addEventListener('DOMContentLoaded', loadPrototypeData);
+  </script>
 </body>
 </html>
