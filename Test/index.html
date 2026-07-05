@@ -1260,6 +1260,7 @@
     const URL_PARAMS = new URLSearchParams(location.search);
     const API_URL = URL_PARAMS.get('apiUrl') || (location.pathname.includes('/macros/s/') ? location.href.split('?')[0] : '/api/proxy');
     let ACCESS_TOKEN = URL_PARAMS.get('token') || URL_PARAMS.get('credential') || sessionStorage.getItem('boft_token') || localStorage.getItem('boft_token') || '';
+    let gsiClient = null;
     let CURRENT_ROLE = URL_PARAMS.get('role') || sessionStorage.getItem('boft_role') || localStorage.getItem('boft_role') || 'Viewer';
     let CURRENT_USER = {};
     try {
@@ -1389,11 +1390,36 @@
       return data;
     }
 
+    async function fetchGoogleUserInfo(accessToken) {
+      const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: 'Bearer ' + accessToken }
+      });
+      if (!response.ok) throw new Error('Google userinfo failed: ' + response.status);
+      return response.json();
+    }
+
+    async function fetchRoleWithToken(accessToken, user = {}) {
+      const qs = new URLSearchParams({
+        action: 'getUserRole',
+        token: accessToken,
+        name: user.name || ''
+      }).toString();
+      const response = await fetch(API_URL + '?' + qs, {
+        headers: { Authorization: 'Bearer ' + accessToken }
+      });
+      const data = await response.json();
+      if (data.error || data.code === 403) throw new Error(data.error || 'Role access denied');
+      return data;
+    }
+
     function persistPrototypeSession(token, user = {}) {
       ACCESS_TOKEN = token || ACCESS_TOKEN;
       CURRENT_USER = { ...CURRENT_USER, ...user };
+      const expiresAt = Date.now() + 3500 * 1000;
       sessionStorage.setItem('boft_token', ACCESS_TOKEN);
+      sessionStorage.setItem('boft_token_exp', String(expiresAt));
       localStorage.setItem('boft_token', ACCESS_TOKEN);
+      localStorage.setItem('boft_token_exp', String(expiresAt));
       sessionStorage.setItem('boft_user', JSON.stringify(CURRENT_USER));
       localStorage.setItem('boft_user', JSON.stringify(CURRENT_USER));
     }
@@ -1438,31 +1464,37 @@
 
     function initPrototypeGoogleSignIn() {
       const target = document.getElementById('prototypeGoogleSignIn');
-      if (!target || !window.google || !google.accounts || !google.accounts.id) return;
-      google.accounts.id.initialize({
+      if (!target || !window.google || !google.accounts || !google.accounts.oauth2) return;
+      gsiClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
+        scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive',
         callback: async response => {
-          const profile = decodeJwtPayload(response.credential || '');
-          const email = profile.email || '';
-          if (!email || !email.endsWith('@' + ALLOWED_DOMAIN)) {
-            showPrototypeToast('BOFT account required');
-            return;
+          try {
+            if (!response.access_token) throw new Error('No Google access token returned');
+            const user = await fetchGoogleUserInfo(response.access_token);
+            const email = user.email || '';
+            if (!email || email.split('@')[1] !== ALLOWED_DOMAIN) {
+              showPrototypeToast('BOFT account required');
+              return;
+            }
+            persistPrototypeSession(response.access_token, user);
+            const roleInfo = await fetchRoleWithToken(response.access_token, user);
+            CURRENT_ROLE = roleInfo.role || 'Viewer';
+            sessionStorage.setItem('boft_role', CURRENT_ROLE);
+            localStorage.setItem('boft_role', CURRENT_ROLE);
+            await loadPrototypeData();
+          } catch (err) {
+            renderSignInShell('Sign in failed: ' + (err.message || err));
           }
-          persistPrototypeSession(response.credential, {
-            email,
-            name: profile.name || email,
-            picture: profile.picture || ''
-          });
-          await loadPrototypeData();
         }
       });
       target.innerHTML = '';
-      google.accounts.id.renderButton(target, {
-        theme: 'filled_black',
-        size: 'large',
-        width: 280,
-        text: 'signin_with'
-      });
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn gold';
+      button.textContent = 'Sign In With Google';
+      button.onclick = () => gsiClient && gsiClient.requestAccessToken();
+      target.appendChild(button);
     }
 
     async function loadPrototypeData() {
@@ -1486,7 +1518,10 @@
         }));
       } catch (err) {
         prototypeProjects = [];
+        const detail = err && err.message ? err.message : String(err || 'Unknown error');
+        renderEmptyProjectShell('Could not load BOFT project data: ' + detail);
         showPrototypeToast('Could not load BOFT project data');
+        return;
       }
 
       selectedProjectId = prototypeProjects[0] ? prototypeProjects[0].id : '';
