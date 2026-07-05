@@ -261,7 +261,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <select class="filter-select" id="filterUser" onchange="renderLog()">
         <option value="">All Team Members</option>
       </select>
-      <select class="filter-select" id="filterAction" onchange="renderLog()">
+      <select class="filter-select" id="filterAction" onchange="onActivityActionFilterChange()">
         <option value="">All Actions</option>
         <option value="addExpense">Add Expense</option>
         <option value="addIncome">Add Income</option>
@@ -284,6 +284,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <option value="createPunchItem">Create Punch</option>
         <option value="editPunchItem">Edit Punch</option>
         <option value="completePunchItem">Complete Punch</option>
+        <option value="incompletePunchItem">Incomplete Punch</option>
         <option value="reopenPunchItem">Re-Open Punch</option>
         <option value="deletePunchItem">Delete Punch</option>
         <option value="createDailyLog">Create Daily Log</option>
@@ -292,7 +293,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <option value="addUserManually">Add User</option>
         <option value="updateUserRole">Update User</option>
       </select>
-      <select class="filter-select" id="filterEntityType" onchange="renderLog()">
+      <select class="filter-select" id="filterEntityType" onchange="onActivityEntityFilterChange()">
         <option value="">All Entity Types</option>
         <option value="Transaction">Transactions</option>
         <option value="Project">Projects</option>
@@ -303,6 +304,9 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <option value="Daily Log">Daily Logs</option>
         <option value="Material">Material</option>
         <option value="Tool">Tools</option>
+      </select>
+      <select class="filter-select" id="filterProject" onchange="renderLog()" style="display:none;">
+        <option value="">All Projects</option>
       </select>
       <button class="btn-clear-filters" onclick="clearLogFilters()">Clear Filters</button>
     </div>
@@ -530,6 +534,78 @@ function clearLogFilters() {
   document.getElementById('filterUser').value = '';
   document.getElementById('filterAction').value = '';
   document.getElementById('filterEntityType').value = '';
+  document.getElementById('filterProject').value = '';
+  document.getElementById('filterProject').style.display = 'none';
+  onActivityActionFilterChange();
+}
+
+function getLogDetailsObj(log) {
+  try {
+    return log && log.details ? JSON.parse(log.details) : {};
+  } catch(e) {
+    return {};
+  }
+}
+
+function getLogProjectName(log) {
+  const details = getLogDetailsObj(log);
+  return String(details.projectName || details.project || '').trim();
+}
+
+function getLogDisplayDescription(log) {
+  if (log && log.entityType === 'Punch List') {
+    const details = getLogDetailsObj(log);
+    if (details.deleted && details.deleted.description) {
+      return 'Deleted punch item: ' + details.deleted.description;
+    }
+    if (details.description) {
+      if (log.action === 'completePunchItem') return 'Completed punch item: ' + details.description;
+      if (log.action === 'incompletePunchItem') return 'Marked punch item incomplete: ' + details.description;
+      if (log.action === 'reopenPunchItem') return 'Re-opened punch item: ' + details.description;
+      if (log.action === 'deletePunchItem') return 'Deleted punch item: ' + details.description;
+      return 'Punch item: ' + details.description;
+    }
+  }
+  return log.description || '';
+}
+
+function getFilteredLogsBase() {
+  const fUser = document.getElementById('filterUser').value;
+  const fAction = document.getElementById('filterAction').value;
+  let filtered = allLogs;
+  if (fUser) filtered = filtered.filter(l => l.email === fUser);
+  if (fAction) filtered = filtered.filter(l => l.action === fAction);
+  return filtered;
+}
+
+function onActivityActionFilterChange() {
+  const entitySel = document.getElementById('filterEntityType');
+  const currentEntity = entitySel.value;
+  const logs = getFilteredLogsBase();
+  const entityTypes = [...new Set(logs.map(l => l.entityType).filter(Boolean))].sort();
+  entitySel.innerHTML = '<option value="">All Entity Types</option>' +
+    entityTypes.map(type => `<option value="${escHtml(type)}">${escHtml(type)}</option>`).join('');
+  if (entityTypes.includes(currentEntity)) entitySel.value = currentEntity;
+  else entitySel.value = '';
+  onActivityEntityFilterChange();
+}
+
+function onActivityEntityFilterChange() {
+  const projectSel = document.getElementById('filterProject');
+  const fEntity = document.getElementById('filterEntityType').value;
+  let logs = getFilteredLogsBase();
+  if (fEntity) logs = logs.filter(l => l.entityType === fEntity);
+  const projectNames = [...new Set(logs.map(getLogProjectName).filter(Boolean))].sort();
+  if (fEntity === 'Project' || projectNames.length) {
+    const currentProject = projectSel.value;
+    projectSel.innerHTML = '<option value="">All Projects</option>' +
+      projectNames.map(name => `<option value="${escHtml(name)}">${escHtml(name)}</option>`).join('');
+    projectSel.value = projectNames.includes(currentProject) ? currentProject : '';
+    projectSel.style.display = 'inline-block';
+  } else {
+    projectSel.value = '';
+    projectSel.style.display = 'none';
+  }
   renderLog();
 }
 
@@ -537,11 +613,13 @@ function renderLog() {
   const fUser   = document.getElementById('filterUser').value;
   const fAction = document.getElementById('filterAction').value;
   const fEntity = document.getElementById('filterEntityType').value;
+  const fProject = document.getElementById('filterProject').value;
 
   let filtered = allLogs;
   if (fUser)   filtered = filtered.filter(l => l.email === fUser);
   if (fAction) filtered = filtered.filter(l => l.action === fAction);
   if (fEntity) filtered = filtered.filter(l => l.entityType === fEntity);
+  if (fProject) filtered = filtered.filter(l => getLogProjectName(l) === fProject);
 
   filtered.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
@@ -561,7 +639,7 @@ function renderLog() {
     return `<div class="log-row">
       <div class="log-dot ${actionClass}"></div>
       <div class="log-content">
-        <div class="log-desc">${escHtml(log.description)}</div>
+        <div class="log-desc">${escHtml(getLogDisplayDescription(log))}</div>
         <div class="log-meta">
           <span>${escHtml(log.name || log.email)}</span>
           <span class="log-role-tag">${escHtml(log.role)}</span>
@@ -700,6 +778,7 @@ function getActionLabel(action) {
     createMaterialRequest: 'Create Request', updateMaterialRequestStatus: 'Update Request',
     editMaterialRequest: 'Edit Request', deleteMaterialRequest: 'Delete Request', reopenMaterialRequest: 'Re-Open Request',
     createPunchItem: 'Create Punch', editPunchItem: 'Edit Punch', completePunchItem: 'Complete Punch',
+    incompletePunchItem: 'Incomplete Punch',
     reopenPunchItem: 'Re-Open Punch', deletePunchItem: 'Delete Punch',
     createDailyLog: 'Daily Log', createProjectTrackingItem: 'Create Tracking', updateProjectTrackingItem: 'Update Tracking',
     addUserManually: 'Add User', updateUserRole: 'Update User',
@@ -708,7 +787,7 @@ function getActionLabel(action) {
 }
 
 function escHtml(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 // ============================================================
