@@ -303,6 +303,12 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .timeline-filters{display:flex;gap:0.35rem;flex-wrap:wrap;margin-bottom:0.75rem;}
 .timeline-filter{font-family:'Rajdhani',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid rgba(200,146,42,0.16);padding:0.28rem 0.6rem;cursor:pointer;}
 .timeline-filter.active{color:var(--black);background:var(--gold);border-color:var(--gold);}
+.ops-module-menu{display:flex;gap:0.35rem;flex-wrap:wrap;margin-bottom:0.85rem;border-bottom:1px solid rgba(0,180,255,0.12);padding-bottom:0.55rem;}
+.ops-module-btn{font-family:'Rajdhani',sans-serif;font-size:0.64rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid rgba(200,146,42,0.16);padding:0.38rem 0.72rem;cursor:pointer;transition:all 0.18s;}
+.ops-module-btn:hover{color:var(--gold-light);border-color:var(--border-neon);}
+.ops-module-btn.active{color:var(--black);background:var(--gold);border-color:var(--gold);}
+.ops-subpanel{display:none;}
+.ops-subpanel.active{display:block;}
 .ops-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--border);margin-bottom:1rem;}
 .ops-panel{background:var(--black3);padding:0.9rem;}
 .ops-panel-head{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.65rem;}
@@ -1764,28 +1770,34 @@ async function openProject(id) {
           <input class="share-link-input" id="projectShareLink" readonly value="${location.origin + '/proyectos?project=' + encodeURIComponent(currentProject.id)}">
           <button class="btn-sm view" onclick="copyProjectShareLink()">Copy</button>
         </div>
-        <div class="ops-grid">
-          <div class="ops-panel">
+        <div class="ops-module-menu">
+          <button class="ops-module-btn active" data-ops-tab="punch" onclick="switchOpsModule('punch')">Punch List</button>
+          ${canUseDailyLog() ? `<button class="ops-module-btn" data-ops-tab="daily" onclick="switchOpsModule('daily')">Daily Log</button>` : ''}
+          ${!isWorkerOrBelow() ? `<button class="ops-module-btn" data-ops-tab="material" onclick="switchOpsModule('material')">Material Tracking</button>
+          <button class="ops-module-btn" data-ops-tab="tool" onclick="switchOpsModule('tool')">Tool Tracking</button>` : ''}
+        </div>
+        <div>
+          <div class="ops-panel ops-subpanel active" data-ops-module="punch">
             <div class="ops-panel-head">
               <div class="ops-title">Punch List</div>
               ${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole ? `<button class="btn-sm view" onclick="openPunchModal()">+ Add</button>` : ''}
             </div>
             <div id="punchListOps" class="ops-list"><div class="ops-empty">Loading...</div></div>
           </div>
-          ${canUseDailyLog() ? `<div class="ops-panel">
+          ${canUseDailyLog() ? `<div class="ops-panel ops-subpanel" data-ops-module="daily">
             <div class="ops-panel-head">
               <div class="ops-title">Daily Log</div>
               ${canUseDailyLog() && !completedLowRole ? `<button class="btn-sm view" onclick="openDailyLogModal()">+ Log</button>` : ''}
             </div>
             <div id="dailyLogOps" class="ops-list"><div class="ops-empty">Loading...</div></div>
           </div>` : ''}
-          ${!isWorkerOrBelow() ? `<div class="ops-panel">
+          ${!isWorkerOrBelow() ? `<div class="ops-panel ops-subpanel" data-ops-module="material">
             <div class="ops-panel-head">
               <div class="ops-title">Material Tracking</div>
             </div>
             <div id="materialTrackingOps" class="ops-list"><div class="ops-empty">Loading...</div></div>
           </div>
-          <div class="ops-panel">
+          <div class="ops-panel ops-subpanel" data-ops-module="tool">
             <div class="ops-panel-head">
               <div class="ops-title">Tool Tracking</div>
             </div>
@@ -1957,6 +1969,15 @@ function switchProjectModule(moduleName) {
   });
   document.querySelectorAll('[data-module-tab]').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.moduleTab === moduleName);
+  });
+}
+
+function switchOpsModule(moduleName) {
+  document.querySelectorAll('[data-ops-module]').forEach(section => {
+    section.classList.toggle('active', section.dataset.opsModule === moduleName);
+  });
+  document.querySelectorAll('[data-ops-tab]').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.opsTab === moduleName);
   });
 }
 
