@@ -338,6 +338,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .punch-status-top{font-size:0.58rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-light);margin-bottom:0.18rem;}
 .punch-status-top.done{color:var(--green);}
 .punch-status-top.pending{color:var(--gold-light);}
+.punch-status-top.incomplete{color:var(--red);}
 .punch-full-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;gap:0.75rem;}
 .punch-full-title{font-family:'Cinzel',serif;font-size:0.95rem;font-weight:700;color:var(--gold-light);}
 .punch-draft-list{border:1px solid var(--border);background:var(--black);min-height:88px;margin-top:0.75rem;}
@@ -878,12 +879,36 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <button class="modal-close" onclick="closeModal('inspection-item')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="field-group"><label class="field-label">Description <span>*</span></label><textarea class="field-input" id="in-description" rows="3" style="resize:vertical;"></textarea></div>
-      <div class="field-group"><label class="field-label">Comments</label><input class="field-input" id="in-comments"></div>
+      <div class="field-row">
+        <div>
+          <label class="field-label">Category</label>
+          <select class="field-input" id="in-category-select" onchange="onInspectionSmartSelect('category')"></select>
+          <input class="field-input" id="in-category-input" placeholder="Type category..." style="display:none;margin-top:0.45rem;" onblur="onInspectionSmartInputBlur('category')">
+        </div>
+        <div>
+          <label class="field-label">Floor</label>
+          <select class="field-input" id="in-floor-select" onchange="onInspectionSmartSelect('floor')"></select>
+          <input class="field-input" id="in-floor-input" placeholder="Type floor..." style="display:none;margin-top:0.45rem;" onblur="onInspectionSmartInputBlur('floor')">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Area</label>
+        <select class="field-input" id="in-area-select" onchange="onInspectionSmartSelect('area')"></select>
+        <input class="field-input" id="in-area-input" placeholder="Master bedroom, kitchen, garage..." style="display:none;margin-top:0.45rem;" onblur="onInspectionSmartInputBlur('area')">
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Description <span>*</span></label><input class="field-input" id="in-description" placeholder="Inspector correction item..."></div>
+        <div style="display:flex;align-items:flex-end;"><button type="button" class="btn-submit" onclick="addInspectionDraftItem()" style="width:100%;">ADD</button></div>
+      </div>
+      <div class="field-group"><label class="field-label">Comments</label><input class="field-input" id="in-comments" placeholder="Optional"></div>
+      <div class="request-builder">
+        <label class="field-label">List</label>
+        <div class="punch-draft-list" id="in-draft-list"></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('inspection-item')">Cancel</button>
-      <button class="btn-submit" onclick="saveInspectionItem()">Save</button>
+      <button class="btn-submit" onclick="saveInspectionItems()">Save</button>
     </div>
   </div>
 </div>
@@ -900,18 +925,18 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div>
           <label class="field-label">Category</label>
           <select class="field-input" id="pl-category-select" onchange="onPunchSmartSelect('category')"></select>
-          <input class="field-input" id="pl-category-input" placeholder="Type category..." style="display:none;margin-top:0.45rem;">
+          <input class="field-input" id="pl-category-input" placeholder="Type category..." style="display:none;margin-top:0.45rem;" onblur="onPunchSmartInputBlur('category')">
         </div>
         <div>
           <label class="field-label">Floor</label>
           <select class="field-input" id="pl-floor-select" onchange="onPunchSmartSelect('floor')"></select>
-          <input class="field-input" id="pl-floor-input" placeholder="Type floor..." style="display:none;margin-top:0.45rem;">
+          <input class="field-input" id="pl-floor-input" placeholder="Type floor..." style="display:none;margin-top:0.45rem;" onblur="onPunchSmartInputBlur('floor')">
         </div>
       </div>
       <div class="field-group">
         <label class="field-label">Area</label>
         <select class="field-input" id="pl-area-select" onchange="onPunchSmartSelect('area')"></select>
-        <input class="field-input" id="pl-area-input" placeholder="Master bedroom, kitchen, garage..." style="display:none;margin-top:0.45rem;">
+        <input class="field-input" id="pl-area-input" placeholder="Master bedroom, kitchen, garage..." style="display:none;margin-top:0.45rem;" onblur="onPunchSmartInputBlur('area')">
       </div>
       <div class="field-row">
         <div><label class="field-label">Description <span>*</span></label><input class="field-input" id="pl-description" placeholder="Missing blocking, hardware, shear nail..."></div>
@@ -1577,6 +1602,7 @@ let projectTrackingItems = [];
 let projectInspectionItems = [];
 let selectedPunchArea = null;
 let punchDraftItems = [];
+let inspectionDraftItems = [];
 let activePunchModalGroup = null;
 let activePunchModalFloor = null;
 let projectTimelineFilter = 'all';
@@ -2021,12 +2047,15 @@ function buildActivityFeedItems() {
   });
 
   projectPunchItems.forEach(p => {
+    const punchTitle = p.status === 'Done' ? 'Punch Done: '
+      : p.status === 'Incomplete' ? 'Punch Incomplete: '
+      : 'Punch Item: ';
     items.push({
       date: (p.updatedAt || p.completedAt || p.createdAt || '').slice(0, 10),
       sortDate: p.updatedAt || p.completedAt || p.createdAt || getLocalDateString() + ' 00:00:00',
       type: 'punch',
-      title: (p.status === 'Done' ? 'Punch Done: ' : 'Punch Item: ') + p.description,
-      sub: [p.id, p.floor || 'General', p.area || 'General', p.category, p.status, p.completedByName ? 'by ' + p.completedByName : ''].filter(Boolean).join(' · '),
+      title: punchTitle + p.description,
+      sub: [p.floor || 'General', p.area || 'General', p.category, p.status, p.completedAt ? 'done at ' + p.completedAt : '', p.completedByName ? 'by ' + p.completedByName : ''].filter(Boolean).join(' · '),
       amount: null,
       seq: seq++
     });
@@ -2062,7 +2091,7 @@ function buildActivityFeedItems() {
       sortDate: ins.updatedAt || ins.createdAt || getLocalDateString() + ' 00:00:00',
       type: 'inspection',
       title: 'Inspection: ' + ins.description,
-      sub: [ins.id, ins.status, ins.createdByName ? 'by ' + ins.createdByName : ''].filter(Boolean).join(' · '),
+      sub: [ins.floor || 'General', ins.area || 'General', ins.category || 'Inspection', ins.status, ins.completedAt ? 'done at ' + ins.completedAt : '', ins.createdByName ? 'by ' + ins.createdByName : ''].filter(Boolean).join(' · '),
       amount: null,
       seq: seq++
     });
@@ -2172,14 +2201,15 @@ function renderPunchListOps() {
   const areaItems = getPunchItemsForGroup(selectedPunchArea);
   el.innerHTML = `<button class="punch-back" onclick="closePunchArea()">← Floors</button>` + areaItems.map(item => {
     const done = item.status === 'Done';
+    const incomplete = item.status === 'Incomplete';
     const canWork = canCompletePunch() && !(isProjectCompleted(currentProject) && isLowProjectRole());
     return `<div class="ops-row ${done ? 'done' : ''}">
-      <div class="punch-status-top ${done ? 'done' : 'pending'}">${item.status}</div>
+      <div class="punch-status-top ${done ? 'done' : incomplete ? 'incomplete' : 'pending'}">${item.status}</div>
       <div class="ops-row-title">${item.description}</div>
       <div class="ops-row-meta">${item.category || 'General'}${item.completedByName ? ' · by ' + item.completedByName : ''}${item.completedAt ? ' · ' + item.completedAt : ''}</div>
       ${item.comments ? `<div class="ops-row-meta">${item.comments}</div>` : ''}
       ${canWork ? `<div class="ops-row-actions">
-        ${done ? `<button class="btn-sm view" onclick="setPunchStatus('${item.id}','Pending')">Reopen</button>` : `<button class="btn-sm done" onclick="setPunchStatus('${item.id}','Done')">Done</button>`}
+        ${done ? `<button class="btn-sm view" onclick="setPunchStatus('${item.id}','Pending')">Reopen</button>` : `<button class="btn-sm done" onclick="setPunchStatus('${item.id}','Done')">Done</button><button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="setPunchStatus('${item.id}','Incomplete')">Incomplete</button>`}
         ${['Owner','Manager'].includes(CURRENT_ROLE) ? `<button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="deletePunch('${item.id}')">Delete</button>` : ''}
       </div>` : ''}
     </div>`;
@@ -2316,14 +2346,15 @@ function renderFullPunchArea(groupKey) {
     <div class="punch-full-title">${getPunchGroupLabelFromKey(groupKey)}</div>
   </div>` + items.map(item => {
     const done = item.status === 'Done';
+    const incomplete = item.status === 'Incomplete';
     const canWork = canCompletePunch() && !(isProjectCompleted(currentProject) && isLowProjectRole());
     return `<div class="ops-row ${done ? 'done' : ''}">
-      <div class="punch-status-top ${done ? 'done' : 'pending'}">${item.status}</div>
+      <div class="punch-status-top ${done ? 'done' : incomplete ? 'incomplete' : 'pending'}">${item.status}</div>
       <div class="ops-row-title">${item.description}</div>
       <div class="ops-row-meta">${item.category || 'General'}${item.completedByName ? ' · by ' + item.completedByName : ''}${item.completedAt ? ' · ' + item.completedAt : ''}</div>
       ${item.comments ? `<div class="ops-row-meta">${item.comments}</div>` : ''}
       ${canWork ? `<div class="ops-row-actions">
-        ${done ? `<button class="btn-sm view" onclick="setPunchStatus('${item.id}','Pending')">Reopen</button>` : `<button class="btn-sm done" onclick="setPunchStatus('${item.id}','Done')">Done</button>`}
+        ${done ? `<button class="btn-sm view" onclick="setPunchStatus('${item.id}','Pending')">Reopen</button>` : `<button class="btn-sm done" onclick="setPunchStatus('${item.id}','Done')">Done</button><button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="setPunchStatus('${item.id}','Incomplete')">Incomplete</button>`}
         ${['Owner','Manager'].includes(CURRENT_ROLE) ? `<button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="deletePunch('${item.id}')">Delete</button>` : ''}
       </div>` : ''}
     </div>`;
@@ -2362,47 +2393,176 @@ function renderInspectionOps() {
   }
   el.innerHTML = projectInspectionItems.map(item => {
     const done = item.status === 'Done';
+    const incomplete = item.status === 'Incomplete';
     return `<div class="ops-row ${done ? 'done' : ''}">
-      <div class="punch-status-top ${done ? 'done' : 'pending'}">${item.status}</div>
+      <div class="punch-status-top ${done ? 'done' : incomplete ? 'incomplete' : 'pending'}">${item.status}</div>
       <div class="ops-row-title">${item.description}</div>
+      <div class="ops-row-meta">${[item.category || 'Inspection', item.floor || 'General', item.area || 'General', item.completedByName ? 'by ' + item.completedByName : '', item.completedAt || ''].filter(Boolean).join(' · ')}</div>
       ${item.comments ? `<div class="ops-row-meta">${item.comments}</div>` : ''}
       <div class="ops-row-actions">
-        ${done ? `<button class="btn-sm view" onclick="setInspectionStatus('${item.id}','Pending')">Reopen</button>` : `<button class="btn-sm done" onclick="setInspectionStatus('${item.id}','Done')">Done</button>`}
+        ${done ? `<button class="btn-sm view" onclick="setInspectionStatus('${item.id}','Pending')">Reopen</button>` : `<button class="btn-sm done" onclick="setInspectionStatus('${item.id}','Done')">Done</button><button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="setInspectionStatus('${item.id}','Incomplete')">Incomplete</button>`}
       </div>
     </div>`;
   }).join('');
 }
 
 function openInspectionModal() {
+  inspectionDraftItems = [];
+  setupInspectionSmartFields();
   document.getElementById('in-description').value = '';
   document.getElementById('in-comments').value = '';
+  renderInspectionDraftItems();
   document.getElementById('modal-inspection-item').classList.add('open');
 }
 
-async function saveInspectionItem() {
+function getInspectionOptions(field) {
+  return [...new Set([
+    ...projectInspectionItems.map(item => item[field] || '').filter(Boolean),
+    ...projectPunchItems.map(item => item[field] || '').filter(Boolean),
+    ...inspectionDraftItems.map(item => item[field] || '').filter(Boolean),
+  ])].sort((a,b) => a.localeCompare(b));
+}
+
+function setupInspectionSmartFields() {
+  setupInspectionSmartField('category');
+  setupInspectionSmartField('floor');
+  setupInspectionSmartField('area');
+}
+
+function setupInspectionSmartField(field) {
+  const select = document.getElementById('in-' + field + '-select');
+  const input = document.getElementById('in-' + field + '-input');
+  if (!select || !input) return;
+  const options = getInspectionOptions(field);
+  if (!options.length) {
+    select.style.display = 'none';
+    input.style.display = 'block';
+    input.value = '';
+    return;
+  }
+  select.style.display = 'block';
+  input.style.display = 'none';
+  select.innerHTML = options.map(opt => `<option value="${opt}">${opt}</option>`).join('') +
+    `<option value="__add_new__">+ Add New ${getPunchSmartLabel(field)}</option>`;
+}
+
+function onInspectionSmartSelect(field) {
+  const select = document.getElementById('in-' + field + '-select');
+  const input = document.getElementById('in-' + field + '-input');
+  if (select.value === '__add_new__') {
+    select.style.display = 'none';
+    input.style.display = 'block';
+    input.value = '';
+    input.focus();
+  }
+}
+
+function onInspectionSmartInputBlur(field) {
+  const input = document.getElementById('in-' + field + '-input');
+  if (input && !input.value.trim()) setupInspectionSmartField(field);
+}
+
+function getInspectionSmartValue(field) {
+  const select = document.getElementById('in-' + field + '-select');
+  const input = document.getElementById('in-' + field + '-input');
+  if (input.style.display !== 'none') return input.value.trim();
+  return select.value === '__add_new__' ? '' : select.value.trim();
+}
+
+function addInspectionDraftItem() {
   const description = document.getElementById('in-description').value.trim();
   if (!description) { showToast('Description required'); return; }
+  const category = getInspectionSmartValue('category') || 'Inspection';
+  const floor = getInspectionSmartValue('floor') || 'General';
+  const area = getInspectionSmartValue('area') || 'General';
+  inspectionDraftItems.push({
+    category,
+    floor,
+    area,
+    description,
+    comments: document.getElementById('in-comments').value.trim(),
+  });
+  document.getElementById('in-description').value = '';
+  document.getElementById('in-comments').value = '';
+  setupInspectionSmartFields();
+  setInspectionSmartValue('category', category);
+  setInspectionSmartValue('floor', floor);
+  setInspectionSmartValue('area', area);
+  renderInspectionDraftItems();
+}
+
+function setInspectionSmartValue(field, value) {
+  const select = document.getElementById('in-' + field + '-select');
+  const input = document.getElementById('in-' + field + '-input');
+  const options = getInspectionOptions(field);
+  if (options.includes(value)) {
+    select.style.display = 'block';
+    input.style.display = 'none';
+    select.value = value;
+  } else {
+    select.style.display = 'none';
+    input.style.display = 'block';
+    input.value = value || '';
+  }
+}
+
+function renderInspectionDraftItems() {
+  const list = document.getElementById('in-draft-list');
+  if (!list) return;
+  if (!inspectionDraftItems.length) {
+    list.innerHTML = '<div class="request-empty">No items added yet.</div>';
+    return;
+  }
+  list.innerHTML = inspectionDraftItems.map((item, index) => `
+    <div class="punch-draft-item">
+      <div>
+        <div class="punch-draft-title">${item.description}</div>
+        <div class="punch-draft-meta">${item.category} · ${item.floor} · ${item.area}${item.comments ? ' · ' + item.comments : ''}</div>
+      </div>
+      <button class="request-icon-btn danger" onclick="removeInspectionDraftItem(${index})">Del</button>
+    </div>
+  `).join('');
+}
+
+function removeInspectionDraftItem(index) {
+  inspectionDraftItems.splice(index, 1);
+  setupInspectionSmartFields();
+  renderInspectionDraftItems();
+}
+
+async function saveInspectionItems() {
+  if (!inspectionDraftItems.length) { showToast('Add at least one inspection item'); return; }
   try {
-    const result = await apiPost({
-      action: 'createInspectionItem',
-      projectId: currentProject.id,
-      projectName: currentProject.name,
-      description,
-      comments: document.getElementById('in-comments').value.trim(),
-    });
-    if (result.success) {
-      closeModal('inspection-item');
-      projectInspectionItems = result.items || projectInspectionItems;
-      renderInspectionOps();
-      renderActivityFeed();
-      showToast('Inspection item saved');
-    } else showToast('Error: ' + result.message);
+    let failed = 0;
+    for (const item of inspectionDraftItems) {
+      const result = await apiPost({
+        action: 'createInspectionItem',
+        projectId: currentProject.id,
+        projectName: currentProject.name,
+        description: item.description,
+        category: item.category,
+        floor: item.floor,
+        area: item.area,
+        comments: item.comments,
+      });
+      if (!result.success) failed++;
+    }
+    closeModal('inspection-item');
+    inspectionDraftItems = [];
+    showToast(failed ? 'Saved with ' + failed + ' failed item(s)' : 'Inspection list saved');
+    await reloadProjectOperations();
   } catch(e) { showToast('Connection error'); }
 }
 
 async function setInspectionStatus(id, status) {
   try {
-    const result = await apiPost({ action: 'updateInspectionItem', id, status });
+    const payload = { action: 'updateInspectionItem', id, status };
+    if (status === 'Incomplete') {
+      const reason = prompt('Why is this inspection item incomplete?');
+      if (!reason || !reason.trim()) { showToast('Incomplete reason required'); return; }
+      payload.comments = reason.trim();
+    }
+    const result = await apiPost(payload);
     if (result.success) {
       projectInspectionItems = result.items || projectInspectionItems;
       renderInspectionOps();
@@ -2699,6 +2859,11 @@ function onPunchSmartSelect(field) {
   }
 }
 
+function onPunchSmartInputBlur(field) {
+  const input = document.getElementById('pl-' + field + '-input');
+  if (input && !input.value.trim()) setupPunchSmartField(field);
+}
+
 function getPunchSmartValue(field) {
   const select = document.getElementById('pl-' + field + '-select');
   const input = document.getElementById('pl-' + field + '-input');
@@ -2790,6 +2955,10 @@ async function setPunchStatus(id, status) {
     if (status === 'Done') {
       const comment = prompt('Comment for this punch item? (optional)');
       if (comment !== null && comment.trim()) payload.comments = comment.trim();
+    } else if (status === 'Incomplete') {
+      const reason = prompt('Why is this punch item incomplete?');
+      if (!reason || !reason.trim()) { showToast('Incomplete reason required'); return; }
+      payload.comments = reason.trim();
     }
     const result = await apiPost(payload);
     if (result.success) {
