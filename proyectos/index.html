@@ -3296,10 +3296,47 @@ function formatBytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
-// Docs se guardan como "nombre|url" separados por coma
+function splitDocEntries(raw) {
+  const entries = [];
+  let buffer = '';
+  String(raw || '').split(',').forEach(part => {
+    const piece = part.trim();
+    if (!piece) return;
+    if (!buffer && /^https?:\/\//i.test(piece)) {
+      entries.push(piece);
+      return;
+    }
+    buffer = buffer ? buffer + ',' + piece : piece;
+    if (buffer.includes('|')) {
+      entries.push(buffer);
+      buffer = '';
+    }
+  });
+  if (buffer) entries.push(buffer);
+  return entries;
+}
+
+function encodeDocName(name) {
+  return encodeURIComponent(String(name || 'Document'));
+}
+
+function decodeDocName(name) {
+  const raw = String(name || '');
+  try {
+    return decodeURIComponent(raw);
+  } catch(e) {
+    return raw;
+  }
+}
+
+function makeDocEntry(category, fileName, url) {
+  return (category || 'Contracts') + '::' + encodeDocName(fileName) + '|' + url;
+}
+
+// Docs se guardan como "categoria::nombre|url" separados por coma
 function parseDocEntry(entry) {
   const parts = entry.split('|');
-  if (parts.length >= 2) return { name: parts[0], url: parts.slice(1).join('|') };
+  if (parts.length >= 2) return { name: decodeDocName(parts[0]), url: parts.slice(1).join('|') };
   return { name: null, url: entry };
 }
 
@@ -3330,13 +3367,14 @@ function canViewDocCategory(category) {
 function renderEditDocList() {
   const el = document.getElementById('ep-doc-current');
   if (!el) return;
-  const urls = (currentProject.contractFileUrl || '').split(',').map(u => u.trim()).filter(Boolean);
+  const urls = splitDocEntries(currentProject.contractFileUrl);
   if (!urls.length) {
     el.innerHTML = '<div style="font-size:0.78rem;color:var(--muted);padding:0.4rem 0;">No documents attached</div>';
     return;
   }
   el.innerHTML = urls.map((entry, i) => {
     const {name, url} = parseDocEntry(entry);
+    if (!url) return '';
     const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(url);
     const category = inferDocCategory(name, url);
     const label = cleanDocLabel(name, isImg ? 'Image ' + (i+1) : 'Document ' + (i+1));
@@ -3352,11 +3390,11 @@ function renderEditDocList() {
         ${allowEditDocs ? `<button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="removeEditDocByIndex(${i})">🗑</button>` : ''}
       </div>
     </div>`;
-  }).join('');
+  }).join('') || '<div style="font-size:0.78rem;color:var(--muted);padding:0.4rem 0;">No documents attached</div>';
 }
 
 function removeEditDocByIndex(idx) {
-  const entries = (currentProject.contractFileUrl || '').split(',').map(u => u.trim()).filter(Boolean);
+  const entries = splitDocEntries(currentProject.contractFileUrl);
   entries.splice(idx, 1);
   currentProject.contractFileUrl = entries.join(',');
   window._updatedDocUrls = currentProject.contractFileUrl;
@@ -3388,17 +3426,18 @@ function renderDocumentationFile() {
   const el = document.getElementById('documentsList');
   if (!el) return;
   // Los docs se guardan como URLs separadas por coma en contractFileUrl
-  const urls = (currentProject.contractFileUrl || '').split(',').map(u => u.trim()).filter(Boolean);
+  const urls = splitDocEntries(currentProject.contractFileUrl);
   if (!urls.length) {
     el.innerHTML = '<div class="module-empty">No documents uploaded yet. Add plans, contracts, permits or revisions from Edit Project.</div>';
     return;
   }
   const docs = urls.map((entry, i) => {
     const {name, url} = parseDocEntry(entry);
+    if (!url) return null;
     const isImg = /\.(jpg|jpeg|png|gif|webp)/i.test(url);
     const category = inferDocCategory(name, url);
     return { name, url, isImg, label: cleanDocLabel(name, isImg ? 'Image ' + (i+1) : 'Document ' + (i+1)), category };
-  }).filter(doc => canViewDocCategory(doc.category));
+  }).filter(doc => doc && canViewDocCategory(doc.category));
   if (!docs.length) {
     el.innerHTML = '<div class="module-empty">No documents available for your role.</div>';
     return;
@@ -3701,7 +3740,7 @@ async function createProject() {
             });
             if (uploadResult.success) {
               const category = docEntry.category || 'Contracts';
-              const entry = category + '::' + processed.name + '|' + uploadResult.fileUrl;
+              const entry = makeDocEntry(category, processed.name, uploadResult.fileUrl);
               existingUrls = existingUrls ? existingUrls + ',' + entry : entry;
             }
           } catch(e) { console.error('Doc upload error:', e); }
@@ -3861,7 +3900,7 @@ async function saveEditProject() {
             });
             if (uploadResult.success) {
               const category = docEntry.category || 'Contracts';
-              const entry = category + '::' + processed.name + '|' + uploadResult.fileUrl;
+              const entry = makeDocEntry(category, processed.name, uploadResult.fileUrl);
               existingUrls = existingUrls ? existingUrls + ',' + entry : entry;
             }
           } catch(e) { console.error(e); }
