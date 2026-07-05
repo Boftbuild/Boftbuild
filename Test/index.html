@@ -48,6 +48,17 @@
       font: inherit;
     }
 
+    button,
+    .nav-item,
+    .project-row,
+    .quick-action,
+    .task-card,
+    .see-full,
+    .location,
+    .dots {
+      cursor: pointer;
+    }
+
     .app {
       display: grid;
       grid-template-columns: 224px 1fr;
@@ -831,6 +842,113 @@
       font-weight: 800;
     }
 
+    .prototype-toast {
+      position: fixed;
+      right: 28px;
+      bottom: 28px;
+      z-index: 100;
+      min-width: 240px;
+      max-width: 360px;
+      padding: 16px 18px;
+      border: 1px solid rgba(38, 184, 255, 0.42);
+      background: rgba(8, 11, 15, 0.96);
+      color: #dff5ff;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.42);
+      transform: translateY(18px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .prototype-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .prototype-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 99;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, 0.68);
+      backdrop-filter: blur(8px);
+    }
+
+    .prototype-modal.show {
+      display: flex;
+    }
+
+    .prototype-modal-card {
+      width: min(760px, 100%);
+      max-height: 82vh;
+      overflow: auto;
+      border: 1px solid rgba(216, 155, 38, 0.42);
+      background: linear-gradient(145deg, rgba(18, 22, 27, 0.98), rgba(8, 10, 13, 0.98));
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+    }
+
+    .prototype-modal-head {
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 0 24px;
+      border-bottom: 1px solid rgba(216, 155, 38, 0.22);
+    }
+
+    .prototype-modal-title {
+      color: var(--gold-bright);
+      font-family: "Cinzel", Georgia, serif;
+      font-size: 22px;
+    }
+
+    .prototype-modal-close {
+      width: 42px;
+      height: 42px;
+      color: #aeb2b6;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: transparent;
+      font-size: 24px;
+    }
+
+    .prototype-modal-body {
+      padding: 24px;
+    }
+
+    .prototype-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .prototype-detail {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.025);
+      padding: 14px 16px;
+    }
+
+    .prototype-detail-label {
+      color: var(--gold-bright);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .prototype-detail-value {
+      color: var(--text);
+      font-size: 17px;
+    }
+
     @media (max-width: 1280px) {
       .content {
         grid-template-columns: 1fr;
@@ -1176,6 +1294,16 @@
       </section>
     </main>
   </div>
+  <div class="prototype-toast" id="prototypeToast"></div>
+  <div class="prototype-modal" id="prototypeModal">
+    <div class="prototype-modal-card">
+      <div class="prototype-modal-head">
+        <div class="prototype-modal-title" id="prototypeModalTitle">Prototype</div>
+        <button class="prototype-modal-close" type="button" onclick="closePrototypeModal()">&times;</button>
+      </div>
+      <div class="prototype-modal-body" id="prototypeModalBody"></div>
+    </div>
+  </div>
   <script>
     const API_URL = '/api/proxy';
     let ACCESS_TOKEN = sessionStorage.getItem('boft_token') || '';
@@ -1268,6 +1396,39 @@
       })[ch]);
     }
 
+    function showPrototypeToast(message) {
+      const toast = document.getElementById('prototypeToast');
+      if (!toast) return;
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(showPrototypeToast.timer);
+      showPrototypeToast.timer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    function showPrototypeModal(title, bodyHtml) {
+      const modal = document.getElementById('prototypeModal');
+      const titleEl = document.getElementById('prototypeModalTitle');
+      const bodyEl = document.getElementById('prototypeModalBody');
+      if (!modal || !titleEl || !bodyEl) return;
+      titleEl.textContent = title;
+      bodyEl.innerHTML = bodyHtml;
+      modal.classList.add('show');
+    }
+
+    function closePrototypeModal() {
+      const modal = document.getElementById('prototypeModal');
+      if (modal) modal.classList.remove('show');
+    }
+
+    function comingSoon(label) {
+      showPrototypeModal('Coming Soon', `
+        <div class="prototype-detail">
+          <div class="prototype-detail-label">${esc(label || 'Module')}</div>
+          <div class="prototype-detail-value">This area is only a placeholder in this prototype. It is not connected yet.</div>
+        </div>
+      `);
+    }
+
     function normalizeStatus(status) {
       const value = String(status || 'Active').trim();
       return value === 'On Hold' ? 'Hold' : value;
@@ -1302,6 +1463,7 @@
     async function loadPrototypeData() {
       hydrateTopUser();
       bindFilters();
+      bindStaticPrototypeActions();
 
       try {
         const data = await apiGet('projects');
@@ -1317,6 +1479,108 @@
       selectedProjectId = prototypeProjects[0] ? prototypeProjects[0].id : '';
       renderPrototypeProjects();
       await openPrototypeProject(selectedProjectId);
+    }
+
+    function bindStaticPrototypeActions() {
+      if (document.body.dataset.prototypeEventsBound === 'yes') return;
+      document.body.dataset.prototypeEventsBound = 'yes';
+
+      document.addEventListener('click', event => {
+        const modal = event.target.closest('#prototypeModal');
+        if (event.target.id === 'prototypeModal') closePrototypeModal();
+        if (modal && event.target.id !== 'prototypeModal') return;
+
+        const navItem = event.target.closest('.nav-item');
+        if (navItem) {
+          const label = navItem.textContent.trim().replace(/\d+$/, '').trim();
+          if (!navItem.classList.contains('active')) comingSoon(label);
+          return;
+        }
+
+        const newProject = event.target.closest('.new-project');
+        if (newProject) {
+          comingSoon('New Project');
+          return;
+        }
+
+        const topButton = event.target.closest('.top-actions button');
+        if (topButton) {
+          const label = topButton.textContent.trim();
+          if (label === 'Sync') {
+            showPrototypeToast('Syncing prototype data');
+            loadPrototypeData();
+          } else {
+            comingSoon(label);
+          }
+          return;
+        }
+
+        const quickAction = event.target.closest('.quick-action');
+        if (quickAction) {
+          const title = quickAction.querySelector('strong')?.textContent || 'Action';
+          const action = quickAction.querySelector('span')?.textContent || '';
+          comingSoon(title + (action ? ' - ' + action : ''));
+          return;
+        }
+
+        const mainTab = event.target.closest('.main-tabs button');
+        if (mainTab) {
+          const label = mainTab.textContent.trim();
+          document.querySelectorAll('.main-tabs button').forEach(btn => btn.classList.remove('active'));
+          mainTab.classList.add('active');
+          if (label !== 'Operations') comingSoon(label);
+          return;
+        }
+
+        const opsTab = event.target.closest('.ops-tabs button');
+        if (opsTab) {
+          const label = opsTab.textContent.trim();
+          document.querySelectorAll('.ops-tabs button').forEach(btn => btn.classList.remove('active'));
+          opsTab.classList.add('active');
+          if (label !== 'Punch List') comingSoon(label);
+          return;
+        }
+
+        const iconButton = event.target.closest('.icon-btn');
+        if (iconButton) {
+          document.querySelectorAll('.icon-btn').forEach(btn => btn.classList.remove('active'));
+          iconButton.classList.add('active');
+          if (iconButton.textContent.trim() !== '▦') comingSoon('List View');
+          else showPrototypeToast('Kanban view active');
+          return;
+        }
+
+        const shareButton = event.target.closest('.share-stack .btn');
+        if (shareButton) {
+          const label = shareButton.textContent.trim();
+          if (label === 'Copy') copyPrototypeLink();
+          else showPrototypeToast('Share link ready');
+          return;
+        }
+
+        const headerButton = event.target.closest('.project-header-actions .btn, .section-bar .btn, .add-row');
+        if (headerButton) {
+          const label = headerButton.textContent.trim();
+          if (label === 'Active' || label === 'Hold' || label === 'Inspection' || label === 'Completed') {
+            showPrototypeToast('Status preview only');
+          } else {
+            comingSoon(label);
+          }
+          return;
+        }
+
+        const taskCard = event.target.closest('.task-card[data-punch-id]');
+        if (taskCard) {
+          openPunchItemDetail(taskCard.dataset.punchId);
+          return;
+        }
+
+        const seeFull = event.target.closest('.see-full');
+        if (seeFull) {
+          openFullPunchList();
+          return;
+        }
+      });
     }
 
     function hydrateTopUser() {
@@ -1540,7 +1804,7 @@
     function renderTaskCard(item) {
       const priority = itemPriority(item);
       return `
-        <div class="task-card">
+        <div class="task-card" data-punch-id="${esc(item.id || '')}">
           <div class="task-name">${esc(item.description || item.item || 'Punch item')}</div>
           <div class="task-meta">
             <span>${esc(item.area || item.floor || item.category || 'General')}</span>
@@ -1579,6 +1843,97 @@
 
       const sectionTitle = document.querySelector('.section-title');
       if (sectionTitle) sectionTitle.textContent = 'Punch List - ' + (project.name || project.id);
+    }
+
+    function getSelectedProject() {
+      return prototypeProjects.find(project => project.id === selectedProjectId) || prototypeProjects[0] || null;
+    }
+
+    function getSelectedPunchItems() {
+      const project = getSelectedProject();
+      if (!project) return [];
+      const ops = prototypeOpsByProject[project.id] || fallbackOps;
+      return ops.punchItems || [];
+    }
+
+    function copyPrototypeLink() {
+      const linkBox = document.querySelector('.link-box');
+      const value = linkBox ? linkBox.textContent.trim() : '';
+      if (!value) {
+        showPrototypeToast('No link available');
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(() => {
+          showPrototypeToast('Project link copied');
+        }).catch(() => {
+          showPrototypeToast('Copy blocked by browser');
+        });
+      } else {
+        showPrototypeToast('Copy not available here');
+      }
+    }
+
+    function openPunchItemDetail(id) {
+      const item = getSelectedPunchItems().find(punch => String(punch.id || '') === String(id || ''));
+      if (!item) {
+        showPrototypeToast('Punch item not found');
+        return;
+      }
+      showPrototypeModal(item.description || 'Punch Item', `
+        <div class="prototype-detail-grid">
+          <div class="prototype-detail">
+            <div class="prototype-detail-label">Status</div>
+            <div class="prototype-detail-value">${esc(item.status || 'Pending')}</div>
+          </div>
+          <div class="prototype-detail">
+            <div class="prototype-detail-label">Category</div>
+            <div class="prototype-detail-value">${esc(item.category || 'General')}</div>
+          </div>
+          <div class="prototype-detail">
+            <div class="prototype-detail-label">Floor</div>
+            <div class="prototype-detail-value">${esc(item.floor || 'General')}</div>
+          </div>
+          <div class="prototype-detail">
+            <div class="prototype-detail-label">Area</div>
+            <div class="prototype-detail-value">${esc(item.area || 'General')}</div>
+          </div>
+          <div class="prototype-detail">
+            <div class="prototype-detail-label">Completed By</div>
+            <div class="prototype-detail-value">${esc(item.completedByName || 'Not completed')}</div>
+          </div>
+          <div class="prototype-detail">
+            <div class="prototype-detail-label">Completed At</div>
+            <div class="prototype-detail-value">${esc(item.completedAt || 'Not completed')}</div>
+          </div>
+        </div>
+        ${item.comments ? '<div class="prototype-detail" style="margin-top:12px;"><div class="prototype-detail-label">Comments</div><div class="prototype-detail-value">' + esc(item.comments) + '</div></div>' : ''}
+      `);
+    }
+
+    function openFullPunchList() {
+      const project = getSelectedProject();
+      const items = getSelectedPunchItems();
+      if (!project) return;
+      if (!items.length) {
+        showPrototypeModal('Punch List', '<div class="prototype-detail"><div class="prototype-detail-value">No punch items for this project.</div></div>');
+        return;
+      }
+
+      const rows = items.map(item => {
+        const priority = itemPriority(item);
+        return `
+          <div class="task-card" data-punch-id="${esc(item.id || '')}" onclick="openPunchItemDetail('${esc(item.id || '')}')" style="margin-bottom:10px;">
+            <div class="task-name">${esc(item.description || 'Punch item')}</div>
+            <div class="task-meta">
+              <span>${esc(item.status || 'Pending')} - ${esc(item.floor || 'General')} / ${esc(item.area || 'General')}</span>
+              <span class="priority"><span class="dot ${priorityClass(priority)}"></span> ${priority}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      showPrototypeModal('Punch List - ' + (project.name || project.id), rows);
     }
 
     document.addEventListener('DOMContentLoaded', loadPrototypeData);
