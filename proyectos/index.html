@@ -1513,6 +1513,48 @@ function renderProjectLocationLink() {
   return ` · <a href="${url}" target="_blank" style="color:var(--neon);">${cityState}</a>`;
 }
 
+function escHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[ch]);
+}
+
+function getProjectCrewList(project) {
+  const crew = Array.isArray(project && project.assignedCrew) ? project.assignedCrew : [];
+  if (crew.length) return crew;
+  return String(project && project.assignedEmails || '').split(',').map(email => ({
+    email: email.trim(),
+    name: '',
+    role: '',
+  })).filter(member => member.email);
+}
+
+function renderProjectCrewOverview() {
+  const crew = getProjectCrewList(currentProject);
+  const rows = crew.length ? crew.map(member => {
+    const name = member.name || member.email || 'Crew Member';
+    const role = member.role || 'Assigned';
+    const email = member.email || '';
+    const inactive = String(member.active || 'Yes') === 'No';
+    return `<div class="module-card" style="display:grid;grid-template-columns:1fr auto;gap:0.75rem;align-items:center;margin-bottom:0.45rem;${inactive ? 'opacity:0.55;' : ''}">
+      <div>
+        <div style="font-size:0.9rem;font-weight:700;color:var(--text);">${escHtml(name)}</div>
+        <div style="font-size:0.74rem;color:var(--muted);">${escHtml(email)}</div>
+      </div>
+      <span class="ops-chip">${escHtml(role)}</span>
+    </div>`;
+  }).join('') : '<div class="module-empty">No crew assigned yet.</div>';
+
+  return `<div class="timeline-section restricted-on-completed project-module active" data-project-module="overview">
+    <div class="timeline-section-label">Crew</div>
+    ${rows}
+  </div>`;
+}
+
 function filterProjects(filter, btn) {
   currentFilter = filter;
   document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
@@ -1651,6 +1693,8 @@ async function openProject(id) {
           <div><span style="color:var(--muted);">Drive:</span> ${currentProject.driveFolderId ? '<a href="https://drive.google.com/drive/folders/' + currentProject.driveFolderId + '" target="_blank" style="color:var(--neon);">Open ↗</a>' : '<span style="color:var(--muted);">—</span>'}</div>
         </div>
       </div>
+
+      ${renderProjectCrewOverview()}
 
       <!-- SCOPE & CONTRACT -->
       <div class="timeline-section restricted-on-completed project-module active" data-project-module="overview">
@@ -3146,13 +3190,15 @@ function onNpDocSelect() {
   const input = document.getElementById('np-doc-file');
   const files = Array.from(input.files);
   if (!files.length) return;
-  const category = document.getElementById('np-doc-category').value || 'Contracts';
+  const categorySelect = document.getElementById('np-doc-category');
+  const category = categorySelect.value || 'Contracts';
   npDocFiles.push(...files.map(file => ({ file, category })));
   renderNpPendingList();
   document.getElementById('np-doc-zone').classList.add('has-file');
   document.getElementById('np-doc-clear').style.display = 'block';
   const label = document.getElementById('np-doc-label');
   label.textContent = npDocFiles.length === 1 ? npDocFiles[0].file.name : npDocFiles.length + ' files selected';
+  categorySelect.value = 'Contracts';
   input.value = '';
 }
 
@@ -3195,13 +3241,15 @@ function onEpDocSelect() {
   const input = document.getElementById('ep-doc-file');
   const files = Array.from(input.files);
   if (!files.length) return;
-  const category = document.getElementById('ep-doc-category').value || 'Contracts';
+  const categorySelect = document.getElementById('ep-doc-category');
+  const category = categorySelect.value || 'Contracts';
   epDocFiles.push(...files.map(file => ({ file, category })));
   renderEpPendingList();
   document.getElementById('ep-doc-zone').classList.add('has-file');
   document.getElementById('ep-doc-clear').style.display = 'block';
   const label = document.getElementById('ep-doc-label');
   label.textContent = epDocFiles.length === 1 ? epDocFiles[0].file.name : epDocFiles.length + ' files selected';
+  categorySelect.value = 'Contracts';
   input.value = '';
 }
 
