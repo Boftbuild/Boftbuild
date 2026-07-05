@@ -325,13 +325,22 @@ function signInWithGoogle() {
 }
 
 // ── SESSION ──
-function tryRestoreSession() {
+async function tryRestoreSession() {
   const token   = sessionStorage.getItem('boft_token');
   const exp     = parseInt(sessionStorage.getItem('boft_token_exp') || '0');
   const userStr = sessionStorage.getItem('boft_user');
   const role    = sessionStorage.getItem('boft_role') || 'Viewer';
   if (token && exp > Date.now() && userStr) {
-    showHub(JSON.parse(userStr), role);
+    const user = JSON.parse(userStr);
+    try {
+      const roleInfo = await fetchUserRole(token, user);
+      const freshRole = roleInfo.role || role || 'Viewer';
+      sessionStorage.setItem('boft_role', freshRole);
+      sessionStorage.setItem('boft_role_name', roleInfo.name || user.name || '');
+      showHub(user, freshRole);
+    } catch(e) {
+      showHub(user, role);
+    }
     return true;
   }
   sessionStorage.removeItem('boft_token');
@@ -385,6 +394,7 @@ function applyRolePermissions(role) {
     Manager: ['Contable','Projects','Requests','Finder'],
     Planner: ['Requests'],
     'Field Lead': ['Projects'],
+    Worker: ['Projects'],
     Helper: ['Projects'],
     Viewer: []
   };
