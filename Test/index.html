@@ -949,6 +949,129 @@
       font-size: 17px;
     }
 
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .module-card,
+    .module-row,
+    .module-empty {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.032), rgba(0, 0, 0, 0.18));
+      border-radius: 4px;
+      padding: 16px;
+    }
+
+    .module-empty {
+      color: var(--muted);
+      min-height: 86px;
+      display: grid;
+      align-items: center;
+    }
+
+    .module-title {
+      color: var(--gold-bright);
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .module-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .module-row-title {
+      color: #fff;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .module-row-meta {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 9px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #d9d9dd;
+      background: rgba(255, 255, 255, 0.035);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .chip.green {
+      color: var(--green);
+      border-color: rgba(66, 201, 131, 0.35);
+      background: rgba(66, 201, 131, 0.08);
+    }
+
+    .chip.gold {
+      color: var(--gold-bright);
+      border-color: rgba(216, 155, 38, 0.35);
+      background: rgba(216, 155, 38, 0.08);
+    }
+
+    .chip.red {
+      color: var(--red);
+      border-color: rgba(255, 76, 85, 0.35);
+      background: rgba(255, 76, 85, 0.08);
+    }
+
+    .doc-section,
+    .photo-section {
+      border: 1px solid rgba(216, 155, 38, 0.18);
+      padding: 16px;
+      margin-bottom: 14px;
+      background: rgba(255, 255, 255, 0.018);
+    }
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+      gap: 10px;
+    }
+
+    .photo-tile {
+      aspect-ratio: 1;
+      overflow: hidden;
+      border: 1px solid rgba(38, 184, 255, 0.2);
+      background: var(--panel-deep);
+    }
+
+    .photo-tile img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .timeline-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .timeline-item {
+      border-left: 2px solid var(--gold-bright);
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.025);
+    }
+
     @media (max-width: 1280px) {
       .content {
         grid-template-columns: 1fr;
@@ -1318,8 +1441,11 @@
     let prototypeProjects = [];
     let prototypeOpsByProject = {};
     let prototypeRequestsByProject = {};
+    let prototypePhotosByProject = {};
     let selectedProjectId = '';
     let selectedFilter = 'all';
+    let activeMainTab = 'Operations';
+    let activeOpsTab = 'Punch List';
 
     const fallbackProjects = [
       {
@@ -1382,8 +1508,15 @@
         { id: 'PL009', description: 'Fix light switch', floor: 'Basement', area: 'Hall', category: 'Electrical', status: 'Done', priority: 'Low' }
       ],
       dailyLogs: [],
-      trackingItems: [],
-      inspectionItems: []
+      trackingItems: [
+        { id: 'MT001', kind: 'Material', item: '2x4 Studs', status: 'Pending', requiredQty: 120, receivedQty: 0, notes: 'Waiting approval' },
+        { id: 'MT002', kind: 'Material', item: 'Simpson Hangers', status: 'Approved', requiredQty: 24, receivedQty: 24, notes: 'Complete' },
+        { id: 'TL001', kind: 'Tool', item: 'Laser Level', status: 'On Site', ownerCarrier: 'Jose', location: 'Deck' },
+        { id: 'TL002', kind: 'Tool', item: 'Compressor', status: 'In Transit', ownerCarrier: 'Martin', location: 'Truck' }
+      ],
+      inspectionItems: [
+        { id: 'IN001', description: 'Add missing blocking at stair landing', status: 'Pending', category: 'Inspection', floor: 'Main', area: 'Stairs' }
+      ]
     };
 
     function esc(value) {
@@ -1413,6 +1546,37 @@
       titleEl.textContent = title;
       bodyEl.innerHTML = bodyHtml;
       modal.classList.add('show');
+    }
+
+    function projectLink(project) {
+      return location.origin
+        ? location.origin + '/projects?project=' + encodeURIComponent(project && project.id || '')
+        : 'https://www.boftbuild.com/projects?project=' + encodeURIComponent(project && project.id || '');
+    }
+
+    function formatMoney(value) {
+      const n = Number(value || 0);
+      if (!n) return '-';
+      return '$' + n.toLocaleString();
+    }
+
+    function chipClass(status) {
+      const raw = String(status || '').toLowerCase();
+      if (raw.includes('done') || raw.includes('complete') || raw.includes('approved') || raw.includes('active') || raw.includes('on site')) return 'green';
+      if (raw.includes('reject') || raw.includes('missing') || raw.includes('incomplete')) return 'red';
+      return 'gold';
+    }
+
+    function activeClass(label, active) {
+      return label === active ? ' class="active"' : '';
+    }
+
+    function currentOps(project) {
+      return prototypeOpsByProject[project && project.id] || fallbackOps;
+    }
+
+    function currentRequests(project) {
+      return prototypeRequestsByProject[project && project.id] || [];
     }
 
     function closePrototypeModal() {
@@ -1526,18 +1690,16 @@
         const mainTab = event.target.closest('.main-tabs button');
         if (mainTab) {
           const label = mainTab.textContent.trim();
-          document.querySelectorAll('.main-tabs button').forEach(btn => btn.classList.remove('active'));
-          mainTab.classList.add('active');
-          if (label !== 'Operations') comingSoon(label);
+          activeMainTab = label;
+          renderProjectShell(getSelectedProject());
           return;
         }
 
         const opsTab = event.target.closest('.ops-tabs button');
         if (opsTab) {
           const label = opsTab.textContent.trim();
-          document.querySelectorAll('.ops-tabs button').forEach(btn => btn.classList.remove('active'));
-          opsTab.classList.add('active');
-          if (label !== 'Punch List') comingSoon(label);
+          activeOpsTab = label;
+          renderProjectShell(getSelectedProject());
           return;
         }
 
@@ -1555,6 +1717,24 @@
           const label = shareButton.textContent.trim();
           if (label === 'Copy') copyPrototypeLink();
           else showPrototypeToast('Share link ready');
+          return;
+        }
+
+        const docOpen = event.target.closest('[data-doc-url]');
+        if (docOpen) {
+          window.open(docOpen.dataset.docUrl, '_blank');
+          return;
+        }
+
+        const photoOpen = event.target.closest('[data-photo-url]');
+        if (photoOpen) {
+          window.open(photoOpen.dataset.photoUrl, '_blank');
+          return;
+        }
+
+        const detailRow = event.target.closest('[data-prototype-detail]');
+        if (detailRow) {
+          showPrototypeModal(detailRow.dataset.prototypeTitle || 'Details', detailRow.dataset.prototypeDetail);
           return;
         }
 
@@ -1716,23 +1896,39 @@
           inspectionItems: opsData.inspectionItems || []
         };
         prototypeRequestsByProject[project.id] = requestData.requests || [];
+        prototypePhotosByProject[project.id] = await loadProjectPhotos(project);
       } catch (err) {
         prototypeOpsByProject[project.id] = fallbackOps;
         prototypeRequestsByProject[project.id] = [
           { id: 'MR001', status: 'Approved', type: 'Material', projectId: project.id }
         ];
+        prototypePhotosByProject[project.id] = {};
       }
     }
 
+    async function loadProjectPhotos(project) {
+      if (!project || !project.driveFolderId) return {};
+      const phases = [
+        { key: 'before', name: '01_Antes', label: 'Before' },
+        { key: 'progress', name: '02_Proceso', label: 'In Progress' },
+        { key: 'complete', name: '03_Terminado', label: 'Complete' }
+      ];
+      const photos = {};
+      await Promise.all(phases.map(async phase => {
+        try {
+          const data = await apiGet('projectPhotos', { folderId: project.driveFolderId, phase: phase.name });
+          photos[phase.key] = data.photos || [];
+        } catch (err) {
+          photos[phase.key] = [];
+        }
+      }));
+      return photos;
+    }
+
     function renderProjectShell(project) {
+      if (!project) return;
       const header = document.querySelector('.project-header');
-      const metrics = document.querySelector('.metrics');
-      const linkBox = document.querySelector('.link-box');
-      const summary = projectSummary(project);
       const city = cityState(project);
-      const latestLog = summary.dailyLogs[0]
-        ? (summary.dailyLogs[0].logDate || String(summary.dailyLogs[0].createdAt || '').slice(0, 10))
-        : 'No daily log';
 
       if (header) {
         header.innerHTML = `
@@ -1749,8 +1945,26 @@
         `;
       }
 
-      if (metrics) {
-        metrics.innerHTML = `
+      const body = document.querySelector('.project-body');
+      if (body) body.innerHTML = renderProjectBody(project);
+    }
+
+    function renderProjectBody(project) {
+      return `
+        ${renderProjectMetrics(project)}
+        ${renderQuickActions()}
+        ${renderMainTabs()}
+        ${renderMainTabContent(project)}
+      `;
+    }
+
+    function renderProjectMetrics(project) {
+      const summary = projectSummary(project);
+      const latestLog = summary.dailyLogs[0]
+        ? (summary.dailyLogs[0].logDate || String(summary.dailyLogs[0].createdAt || '').slice(0, 10))
+        : 'No daily log';
+      return `
+        <div class="metrics">
           <div class="metric status">
             <div class="metric-name">Status</div>
             <div class="metric-number">${esc(project.status || 'Active')}</div>
@@ -1771,14 +1985,331 @@
             <div class="metric-number">${summary.dailyLogs.length}</div>
             <div class="metric-note">${esc(latestLog)}</div>
           </div>
-        `;
-      }
+        </div>
+      `;
+    }
 
-      if (linkBox) {
-        linkBox.textContent = location.origin
-          ? location.origin + '/projects?project=' + encodeURIComponent(project.id || '')
-          : 'https://www.boftbuild.com/projects?project=' + encodeURIComponent(project.id || '');
-      }
+    function renderQuickActions() {
+      return `
+        <div class="quick-actions">
+          <div class="quick-action"><div class="quick-icon">Q</div><div><strong>Request</strong><span>Create</span></div><div class="plus">+</div></div>
+          <div class="quick-action"><div class="quick-icon">P</div><div><strong>Punch</strong><span>Add Item</span></div><div class="plus">+</div></div>
+          <div class="quick-action"><div class="quick-icon">L</div><div><strong>Daily</strong><span>New Log</span></div><div></div></div>
+          <div class="quick-action"><div class="quick-icon">U</div><div><strong>Photos</strong><span>Upload</span></div><div></div></div>
+          <div class="quick-action"><div class="quick-icon">N</div><div><strong>Note</strong><span>Add</span></div><div></div></div>
+        </div>
+      `;
+    }
+
+    function renderMainTabs() {
+      const tabs = ['Overview', 'Operations', 'Photos', 'Documents', 'Inspection', 'Timeline', 'Settings'];
+      return '<div class="main-tabs">' + tabs.map(tab => `<button${activeClass(tab, activeMainTab)}>${tab}</button>`).join('') + '</div>';
+    }
+
+    function renderMainTabContent(project) {
+      if (activeMainTab === 'Overview') return renderOverviewTab(project);
+      if (activeMainTab === 'Photos') return renderPhotosTab(project);
+      if (activeMainTab === 'Documents') return renderDocumentsTab(project);
+      if (activeMainTab === 'Inspection') return renderInspectionTab(project);
+      if (activeMainTab === 'Timeline') return renderTimelineTab(project);
+      if (activeMainTab === 'Settings') return renderSettingsTab(project);
+      return renderOperationsTab(project);
+    }
+
+    function renderOverviewTab(project) {
+      const crew = Array.isArray(project.assignedCrew) ? project.assignedCrew : [];
+      const assignedEmails = String(project.assignedEmails || '').split(',').map(v => v.trim()).filter(Boolean);
+      const crewRows = crew.length ? crew.map(member => `
+        <div class="module-row">
+          <div>
+            <div class="module-row-title">${esc(member.name || member.email || 'Crew Member')}</div>
+            <div class="module-row-meta">${esc(member.email || '')}</div>
+          </div>
+          <span class="chip">${esc(member.role || 'Assigned')}</span>
+        </div>
+      `).join('') : assignedEmails.map(email => `
+        <div class="module-row">
+          <div><div class="module-row-title">${esc(email)}</div><div class="module-row-meta">Assigned crew</div></div>
+          <span class="chip">Assigned</span>
+        </div>
+      `).join('');
+
+      return `
+        <div class="module-grid">
+          <div class="module-card">
+            <div class="module-title">Project Details</div>
+            ${detailLine('Project ID', project.id)}
+            ${detailLine('Client', project.client)}
+            ${detailLine('City / State', cityState(project))}
+            ${detailLine('Address', project.address)}
+            ${detailLine('Start Date', project.startDate)}
+            ${detailLine('Estimated End', project.endDate)}
+            ${detailLine('Contract Value', formatMoney(project.contractValue))}
+          </div>
+          <div class="module-card">
+            <div class="module-title">Crew</div>
+            ${crewRows || '<div class="module-empty">No crew assigned.</div>'}
+          </div>
+          <div class="module-card">
+            <div class="module-title">Scope</div>
+            ${renderLongText(project.objective, 'No scope defined yet.')}
+          </div>
+          <div class="module-card">
+            <div class="module-title">Notes</div>
+            ${renderLongText(project.notes, 'No notes yet.')}
+          </div>
+        </div>
+      `;
+    }
+
+    function detailLine(label, value) {
+      return `
+        <div class="module-row" style="grid-template-columns:150px 1fr;">
+          <div class="module-row-meta">${esc(label)}</div>
+          <div class="module-row-title" style="font-size:15px;">${esc(value || '-')}</div>
+        </div>
+      `;
+    }
+
+    function renderLongText(text, empty) {
+      const lines = String(text || '').split('\n').map(line => line.trim()).filter(Boolean);
+      if (!lines.length) return `<div class="module-empty">${esc(empty)}</div>`;
+      if (lines.length === 1) return `<div class="module-row-meta" style="line-height:1.6;color:var(--text);">${esc(lines[0])}</div>`;
+      return lines.map(line => `<div class="module-row-meta" style="line-height:1.5;color:var(--text);">- ${esc(line.replace(/^[-*]\s*/, ''))}</div>`).join('');
+    }
+
+    function renderOperationsTab(project) {
+      return `
+        <div class="operations-header">
+          <h2>Project Operations</h2>
+          <div class="share-stack">
+            <button class="btn blue">Share Link</button>
+            <button class="btn blue">Copy</button>
+          </div>
+          <div class="link-box">${esc(projectLink(project))}</div>
+        </div>
+        <div class="ops-tabs">
+          ${['Punch List', 'Daily Log', 'Material Tracking', 'Tool Tracking'].map(tab => `<button${activeClass(tab, activeOpsTab)}>${tab}</button>`).join('')}
+        </div>
+        ${renderOpsTabContent(project)}
+      `;
+    }
+
+    function renderOpsTabContent(project) {
+      if (activeOpsTab === 'Daily Log') return renderDailyLogTab(project);
+      if (activeOpsTab === 'Material Tracking') return renderTrackingTab(project, 'Material');
+      if (activeOpsTab === 'Tool Tracking') return renderTrackingTab(project, 'Tool');
+      return `
+        <div class="section-bar">
+          <div class="section-title">Punch List - ${esc(project.name || project.id)}</div>
+          <div class="view-controls">
+            <button class="btn blue">+ Add Item</button>
+            <button class="icon-btn active">▦</button>
+            <button class="icon-btn">☰</button>
+          </div>
+        </div>
+        <div class="kanban">${renderPunchKanbanHtml(project)}</div>
+        <button class="see-full">See Full Punch List &rsaquo;</button>
+      `;
+    }
+
+    function renderDailyLogTab(project) {
+      const logs = currentOps(project).dailyLogs || [];
+      return `
+        <div class="section-bar">
+          <div class="section-title">Daily Log</div>
+          <div class="view-controls"><button class="btn blue">New Log</button></div>
+        </div>
+        ${logs.length ? logs.map(log => `
+          <div class="module-row">
+            <div>
+              <div class="module-row-title">${esc(log.logDate || String(log.createdAt || '').slice(0, 10) || 'Daily Log')}</div>
+              <div class="module-row-meta">${esc(log.createdByName || log.createdByEmail || '')}</div>
+              ${log.doneToday ? `<div class="module-row-meta"><strong>Work Done:</strong> ${esc(log.doneToday)}</div>` : ''}
+              ${log.problems ? `<div class="module-row-meta"><strong>Problems:</strong> ${esc(log.problems)}</div>` : ''}
+              ${log.tomorrowNotes ? `<div class="module-row-meta"><strong>Tomorrow:</strong> ${esc(log.tomorrowNotes)}</div>` : ''}
+              ${log.safety ? `<div class="module-row-meta"><strong>Safety:</strong> ${esc(log.safety)}</div>` : ''}
+            </div>
+            <span class="chip green">Logged</span>
+          </div>
+        `).join('') : '<div class="module-empty">No daily logs yet.</div>'}
+      `;
+    }
+
+    function renderTrackingTab(project, kind) {
+      const tracking = (currentOps(project).trackingItems || []).filter(item => String(item.kind || '').toLowerCase() === kind.toLowerCase());
+      const requests = kind === 'Material'
+        ? currentRequests(project).filter(req => ['Material', 'Hardware', 'Lumber'].includes(String(req.category || req.type || 'Material')))
+        : currentRequests(project).filter(req => String(req.category || req.type || '').toLowerCase() === 'tool');
+      const rows = [
+        ...tracking.map(item => ({ source: 'Tracking', ...item })),
+        ...requests.map(item => ({ source: 'Request', kind, item: item.title || item.description || item.summary || item.type || 'Request', status: item.status || 'Pending', notes: item.description || item.notes || '', id: item.id }))
+      ];
+      return `
+        <div class="section-bar">
+          <div class="section-title">${kind} Tracking</div>
+          <div class="view-controls"><button class="btn blue">Update</button></div>
+        </div>
+        ${rows.length ? rows.map(row => `
+          <div class="module-row">
+            <div>
+              <div class="module-row-title">${esc(row.item || row.name || 'Item')}</div>
+              <div class="module-row-meta">${esc(row.source)}${row.requiredQty ? ' - Required: ' + esc(row.requiredQty) : ''}${row.receivedQty ? ' - Received: ' + esc(row.receivedQty) : ''}</div>
+              ${row.ownerCarrier ? `<div class="module-row-meta">Owner / Carrier: ${esc(row.ownerCarrier)}</div>` : ''}
+              ${row.location ? `<div class="module-row-meta">Location: ${esc(row.location)}</div>` : ''}
+              ${row.notes ? `<div class="module-row-meta">${esc(row.notes)}</div>` : ''}
+            </div>
+            <span class="chip ${chipClass(row.status)}">${esc(row.status || 'Pending')}</span>
+          </div>
+        `).join('') : `<div class="module-empty">No ${kind.toLowerCase()} tracking items yet.</div>`}
+      `;
+    }
+
+    function renderInspectionTab(project) {
+      const items = currentOps(project).inspectionItems || [];
+      return `
+        <div class="section-bar">
+          <div class="section-title">Inspection</div>
+          <div class="view-controls"><button class="btn blue">Add Item</button></div>
+        </div>
+        ${items.length ? items.map(item => `
+          <div class="module-row">
+            <div>
+              <div class="module-row-title">${esc(item.description || 'Inspection item')}</div>
+              <div class="module-row-meta">${esc([item.category || 'Inspection', item.floor || 'General', item.area || 'General'].filter(Boolean).join(' - '))}</div>
+              ${item.comments ? `<div class="module-row-meta">${esc(item.comments)}</div>` : ''}
+            </div>
+            <span class="chip ${chipClass(item.status)}">${esc(item.status || 'Pending')}</span>
+          </div>
+        `).join('') : '<div class="module-empty">No inspection items yet.</div>'}
+      `;
+    }
+
+    function renderPhotosTab(project) {
+      const photos = prototypePhotosByProject[project.id] || {};
+      const phases = [
+        { key: 'before', label: 'Before' },
+        { key: 'progress', label: 'In Progress' },
+        { key: 'complete', label: 'Complete' }
+      ];
+      return phases.map(phase => {
+        const items = photos[phase.key] || [];
+        return `
+          <div class="photo-section">
+            <div class="module-title">${phase.label} (${items.length})</div>
+            ${items.length ? `<div class="photo-grid">${items.map(photo => {
+              const thumb = photo.id ? 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(photo.id) + '&sz=w400' + (ACCESS_TOKEN ? '&access_token=' + encodeURIComponent(ACCESS_TOKEN) : '') : photo.thumbnailUrl || '';
+              return `<div class="photo-tile" data-photo-url="${esc(photo.url || thumb)}"><img src="${esc(thumb || photo.thumbnailUrl || photo.url || '')}" alt="${esc(photo.name || 'Project photo')}" loading="lazy"></div>`;
+            }).join('')}</div>` : '<div class="module-empty">No photos in this phase yet.</div>'}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function splitDocEntries(raw) {
+      const entries = [];
+      let buffer = '';
+      String(raw || '').split(',').forEach(part => {
+        const piece = part.trim();
+        if (!piece) return;
+        if (!buffer && /^https?:\/\//i.test(piece)) {
+          entries.push(piece);
+          return;
+        }
+        buffer = buffer ? buffer + ',' + piece : piece;
+        if (buffer.includes('|')) {
+          entries.push(buffer);
+          buffer = '';
+        }
+      });
+      if (buffer) entries.push(buffer);
+      return entries;
+    }
+
+    function parseDocEntry(entry) {
+      const raw = String(entry || '');
+      const parts = raw.split('|');
+      let name = parts.length >= 2 ? parts[0] : '';
+      const url = parts.length >= 2 ? parts.slice(1).join('|') : raw;
+      const categoryMatch = name.match(/^(Contracts|Plans|Permits|Change Orders|Warranty|Inspection)::(.+)$/i);
+      const category = categoryMatch ? categoryMatch[1] : inferDocCategory(name, url);
+      name = categoryMatch ? categoryMatch[2] : name;
+      try { name = decodeURIComponent(name); } catch (err) {}
+      return { category, name: name || 'Document', url };
+    }
+
+    function inferDocCategory(name, url) {
+      const raw = String(name || '') + ' ' + String(url || '');
+      if (/plan|layout|schedule|window/i.test(raw)) return 'Plans';
+      if (/inspection|inspector/i.test(raw)) return 'Inspection';
+      if (/permit/i.test(raw)) return 'Permits';
+      if (/change\s*order/i.test(raw)) return 'Change Orders';
+      if (/warranty/i.test(raw)) return 'Warranty';
+      return 'Contracts';
+    }
+
+    function renderDocumentsTab(project) {
+      const entries = splitDocEntries(project.contractFileUrl).map(parseDocEntry).filter(doc => doc.url);
+      const groups = entries.reduce((acc, doc) => {
+        (acc[doc.category] = acc[doc.category] || []).push(doc);
+        return acc;
+      }, {});
+      const categories = ['Contracts', 'Plans', 'Permits', 'Change Orders', 'Warranty', 'Inspection'];
+      return categories.map(category => {
+        const docs = groups[category] || [];
+        return `
+          <div class="doc-section">
+            <div class="module-title">${category} (${docs.length})</div>
+            ${docs.length ? docs.map(doc => `
+              <div class="module-row">
+                <div>
+                  <div class="module-row-title">${esc(doc.name)}</div>
+                  <div class="module-row-meta">${esc(doc.url)}</div>
+                </div>
+                <button class="btn blue" data-doc-url="${esc(doc.url)}">Open</button>
+              </div>
+            `).join('') : '<div class="module-empty">No documents in this category.</div>'}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderTimelineTab(project) {
+      const ops = currentOps(project);
+      const events = [];
+      (ops.punchItems || []).forEach(item => events.push({ title: item.description || 'Punch item', meta: 'Punch List - ' + (item.status || 'Pending'), date: item.updatedAt || item.completedAt || item.createdAt || '' }));
+      (ops.dailyLogs || []).forEach(log => events.push({ title: log.doneToday || 'Daily Log', meta: 'Daily Log - ' + (log.createdByName || log.createdByEmail || ''), date: log.logDate || log.createdAt || '' }));
+      (ops.trackingItems || []).forEach(item => events.push({ title: item.item || 'Tracking Item', meta: (item.kind || 'Tracking') + ' - ' + (item.status || 'Pending'), date: item.updatedAt || item.createdAt || '' }));
+      currentRequests(project).forEach(req => events.push({ title: req.title || req.description || req.type || 'Request', meta: 'Request - ' + (req.status || 'Pending'), date: req.updatedAt || req.createdAt || '' }));
+      (ops.inspectionItems || []).forEach(item => events.push({ title: item.description || 'Inspection Item', meta: 'Inspection - ' + (item.status || 'Pending'), date: item.updatedAt || item.createdAt || '' }));
+      return `
+        <div class="timeline-list">
+          ${events.length ? events.map(event => `
+            <div class="timeline-item">
+              <div class="module-row-title">${esc(event.title)}</div>
+              <div class="module-row-meta">${esc(event.meta)}${event.date ? ' - ' + esc(event.date) : ''}</div>
+            </div>
+          `).join('') : '<div class="module-empty">No timeline data yet.</div>'}
+        </div>
+      `;
+    }
+
+    function renderSettingsTab(project) {
+      return `
+        <div class="module-grid">
+          <div class="module-card">
+            <div class="module-title">Read Only Project Settings</div>
+            ${detailLine('Project ID', project.id)}
+            ${detailLine('Drive Folder ID', project.driveFolderId)}
+            ${detailLine('Maps URL', project.mapsUrl)}
+            ${detailLine('Assigned Emails', project.assignedEmails)}
+          </div>
+          <div class="module-card">
+            <div class="module-title">Prototype Note</div>
+            <div class="module-empty">Editing settings is disabled in this prototype. This screen is only reading live project data.</div>
+          </div>
+        </div>
+      `;
     }
 
     function itemPriority(item) {
@@ -1814,16 +2345,14 @@
       `;
     }
 
-    function renderPunchKanban(project) {
-      const container = document.querySelector('.kanban');
-      if (!container) return;
+    function renderPunchKanbanHtml(project) {
       const ops = prototypeOpsByProject[project.id] || fallbackOps;
       const items = ops.punchItems || [];
       const pending = items.filter(item => statusBucket(item) === 'pending');
       const progress = items.filter(item => statusBucket(item) === 'progress');
       const done = items.filter(item => statusBucket(item) === 'done');
 
-      container.innerHTML = `
+      return `
         <div class="kanban-column pending">
           <div class="column-title"><span>Pending&nbsp;&nbsp;${pending.length}</span><span class="spin"></span></div>
           ${pending.slice(0, 3).map(renderTaskCard).join('') || '<div class="task-card"><div class="task-name">No pending items</div><div class="task-meta"><span>This project is clear</span></div></div>'}
@@ -1840,6 +2369,12 @@
           <button class="add-row">+ Add Item</button>
         </div>
       `;
+    }
+
+    function renderPunchKanban(project) {
+      const container = document.querySelector('.kanban');
+      if (!container || !project) return;
+      container.innerHTML = renderPunchKanbanHtml(project);
 
       const sectionTitle = document.querySelector('.section-title');
       if (sectionTitle) sectionTitle.textContent = 'Punch List - ' + (project.name || project.id);
