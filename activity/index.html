@@ -364,7 +364,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <label class="field-label">Role <span>*</span></label>
         <select class="field-input" id="au-role">
           <option value="Viewer">Viewer — read only</option>
-          <option value="Helper">Helper — upload photos only</option>
+          <option value="Helper">Helper — assigned plans/location only</option>
+          <option value="Worker">Worker — punch completion only</option>
           <option value="Field Lead">Field Lead — Projects scope/notes/photos</option>
           <option value="Planner">Planner — material requests</option>
           <option value="Manager">Manager — full access, no delete</option>
@@ -772,13 +773,13 @@ function renderTeam() {
 }
 
 function getRoleOptionsForCurrentUser() {
-  if (CURRENT_ROLE === 'Owner') return ['Owner','Manager','Planner','Field Lead','Helper','Viewer'];
-  if (CURRENT_ROLE === 'Manager') return ['Manager','Planner','Field Lead','Helper','Viewer'];
+  if (CURRENT_ROLE === 'Owner') return ['Owner','Manager','Planner','Field Lead','Worker','Helper','Viewer'];
+  if (CURRENT_ROLE === 'Manager') return ['Manager','Planner','Field Lead','Worker','Helper','Viewer'];
   return [];
 }
 
 function roleRank(role) {
-  return { 'Viewer':1, 'Helper':2, 'Field Lead':3, 'Planner':4, 'Manager':5, 'Owner':6 }[role] || 0;
+  return { 'Viewer':1, 'Helper':2, 'Worker':3, 'Field Lead':4, 'Planner':5, 'Manager':6, 'Owner':7 }[role] || 0;
 }
 
 function canEditTeamUser(user) {
@@ -858,7 +859,8 @@ function renderAddUserRoleOptions() {
   const roleSelect = document.getElementById('au-role');
   const labels = {
     Viewer: 'Viewer — read only',
-    Helper: 'Helper — upload photos only',
+    Helper: 'Helper — assigned plans/location only',
+    Worker: 'Worker — punch completion only',
     'Field Lead': 'Field Lead — Projects scope/notes/photos',
     Planner: 'Planner — material requests',
     Manager: 'Manager — full access, no delete',
