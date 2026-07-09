@@ -63,6 +63,11 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .success-toast{display:none;align-items:center;gap:0.75rem;background:var(--black3);border:1px solid rgba(76,175,125,0.4);border-left:3px solid var(--green);padding:0.75rem 1rem;margin-bottom:1rem;position:sticky;top:calc(var(--nav-h) + 8px);z-index:40;}
 .success-toast.show{display:flex;}
 .toast-text{font-size:0.85rem;color:var(--green);font-weight:600;}
+.modal-loading-overlay{display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:rgba(5,6,8,0.72);backdrop-filter:blur(3px);pointer-events:auto;}
+.modal-loading-overlay.show{display:flex;}
+.modal-loading-box{border:1px solid var(--border-neon);background:var(--black2);padding:1.1rem 1.4rem;min-width:260px;text-align:center;box-shadow:0 0 30px rgba(0,180,255,0.08);}
+.modal-loading-title{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--neon);margin-bottom:0.45rem;}
+.modal-loading-text{font-size:0.9rem;color:var(--text);}
 
 /* PROJECTS LIST */
 .projects-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.75rem;}
@@ -537,6 +542,12 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div id="toast" class="success-toast">
       <span style="font-size:18px;color:var(--green);">✓</span>
       <span class="toast-text" id="toastText">Done.</span>
+    </div>
+    <div id="modalLoadingOverlay" class="modal-loading-overlay">
+      <div class="modal-loading-box">
+        <div class="modal-loading-title">Processing</div>
+        <div class="modal-loading-text" id="modalLoadingText">Working...</div>
+      </div>
     </div>
 
     <div id="readOnlyBanner" style="display:none;align-items:center;gap:0.75rem;background:var(--black3);border:1px solid var(--border);border-left:3px solid var(--gold);padding:0.75rem 1rem;margin-bottom:1rem;">
@@ -1396,15 +1407,75 @@ async function apiGet(action, params = {}) {
   return data;
 }
 
-async function apiPost(payload) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ACCESS_TOKEN },
-    body: JSON.stringify(payload)
+const pendingPostKeys = new Set();
+
+function postActionLabel(action) {
+  const labels = {
+    createDailyLog: 'Generating Daily Log...',
+    updateDailyLog: 'Updating Daily Log...',
+    createProject: 'Creating Project...',
+    editProject: 'Saving Project...',
+    deleteProject: 'Deleting Project...',
+    createPunchItem: 'Saving Punch List...',
+    updatePunchItem: 'Updating Punch Item...',
+    deletePunchItem: 'Deleting Punch Item...',
+    createInspectionItem: 'Saving Inspection Items...',
+    updateInspectionItem: 'Updating Inspection...',
+    createProjectTrackingItem: 'Saving Tracking Item...',
+    updateProjectTrackingItem: 'Updating Tracking Item...',
+    recordMaterialTrackingDelivery: 'Updating Material Tracking...',
+    removeToolFromProject: 'Updating Tool Tracking...',
+    createMaterialRequest: 'Creating Request...',
+    updateMaterialRequestDetails: 'Updating Request...',
+    deleteMaterialRequest: 'Deleting Request...',
+    reopenMaterialRequest: 'Re-opening Request...',
+    updateMaterialRequestStatus: 'Updating Request...',
+    addExpense: 'Saving Expense...',
+    addIncome: 'Saving Income...',
+    addPayment: 'Saving Payment...',
+    editTransaction: 'Saving Transaction...',
+    uploadProjectPhoto: 'Uploading Photo...',
+    uploadContractFile: 'Uploading Document...',
+  };
+  return labels[action] || 'Working...';
+}
+
+function postLockKey(payload) {
+  const action = payload && payload.action || 'post';
+  return [action, payload && (payload.id || payload.projectId || payload.requestId || payload.folderId || '')].join(':');
+}
+
+function setModalLoading(show, message) {
+  const overlay = document.getElementById('modalLoadingOverlay');
+  const text = document.getElementById('modalLoadingText');
+  if (text && message) text.textContent = message;
+  if (overlay) overlay.classList.toggle('show', !!show);
+  document.querySelectorAll('.modal-overlay.open .btn-submit, .confirm-overlay.open .btn-action, .modal-overlay.open .btn-sm.done, .modal-overlay.open .btn-sm.view').forEach(btn => {
+    btn.disabled = !!show;
   });
-  const data = await res.json();
-  if (data.error === 'Unauthorized' || data.code === 403) { doLogout(); return {}; }
-  return data;
+}
+
+async function apiPost(payload) {
+  const key = postLockKey(payload);
+  if (pendingPostKeys.has(key)) {
+    showToast('Already processing. Please wait...');
+    return { success: false, message: 'Already processing', duplicate: true };
+  }
+  pendingPostKeys.add(key);
+  setModalLoading(true, postActionLabel(payload && payload.action));
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ACCESS_TOKEN },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.error === 'Unauthorized' || data.code === 403) { doLogout(); return {}; }
+    return data;
+  } finally {
+    pendingPostKeys.delete(key);
+    setModalLoading(false);
+  }
 }
 
 async function loadTeamUsersForAssignment() {
