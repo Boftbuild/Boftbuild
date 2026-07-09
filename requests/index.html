@@ -49,6 +49,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .filters{display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;}
 .filter-select{background:var(--black);border:1px solid var(--border);color:var(--muted);padding:0.5rem 0.75rem;font-family:'Rajdhani',sans-serif;font-size:0.82rem;outline:none;}
 .filter-select option{background:var(--black2);}
+.filter-select.has-value{font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
+.filter-select.tag-project.has-value{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
 .btn-action{font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;border:none;padding:0.55rem 1.4rem;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);}
 .btn-action.gold{color:var(--black);background:var(--gold);}
 .btn-action.outline{color:var(--neon);background:transparent;border:1px solid var(--neon);clip-path:none;}
@@ -56,6 +58,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .requests-list{background:var(--black2);margin-top:2px;padding:1.5rem;}
 .request-count{font-size:0.78rem;color:var(--muted);margin-bottom:1rem;}
 .request-row{display:grid;grid-template-columns:1fr auto;gap:1rem;padding:1rem 0;border-bottom:1px solid rgba(200,146,42,0.08);}
+.request-row.clickable{cursor:pointer;}
+.request-row.clickable:hover{background:rgba(0,180,255,0.035);}
 .request-row:last-child{border-bottom:none;}
 .request-title{font-size:0.95rem;color:var(--text);font-weight:700;}
 .request-item-lines{display:flex;flex-direction:column;gap:0.35rem;margin-bottom:0.2rem;}
@@ -103,6 +107,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .request-icon-btn:hover{border-color:var(--gold);color:var(--gold-light);}
 .request-icon-btn.danger{border-color:rgba(224,85,85,0.35);color:var(--red);}
 .request-icon-btn.danger:hover{border-color:var(--red);}
+.split-item{display:grid;grid-template-columns:auto 1fr;gap:0.75rem;align-items:flex-start;padding:0.85rem 0.9rem;border-bottom:1px solid rgba(200,146,42,0.1);background:var(--black);}
+.split-item:last-child{border-bottom:none;}
+.split-check{margin-top:0.2rem;accent-color:var(--gold);}
+.split-note{font-size:0.76rem;color:var(--muted);line-height:1.4;margin-bottom:0.9rem;}
 .btn-submit{font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.65rem 1.8rem;cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
 .btn-cancel{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;}
 @media(max-width:800px){.sticky-nav{height:auto;min-height:var(--nav-h);flex-wrap:wrap;padding:0.55rem 0.85rem;}.nav-username{display:none;}.page{padding:1rem;}.stats-row{grid-template-columns:1fr 1fr;}.request-row{grid-template-columns:1fr;}.request-actions{justify-content:flex-start;}.field-row{grid-template-columns:1fr;}}
@@ -147,8 +155,11 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <select class="filter-select" id="filterStatus" onchange="renderRequests()">
           <option value="">All Status</option><option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option><option value="Ordered">Ordered</option><option value="Completed">Completed</option>
         </select>
-        <select class="filter-select" id="filterType" onchange="renderRequests()">
+        <select class="filter-select" id="filterType" onchange="onRequestTypeFilterChange()">
           <option value="">All Types</option><option value="Project">Project</option><option value="Office">Office</option><option value="Service">Service</option><option value="Tool">Tool</option>
+        </select>
+        <select class="filter-select tag-project" id="filterProject" onchange="renderRequests()" style="display:none;">
+          <option value="">All Projects</option>
         </select>
         <button class="btn-action outline" onclick="clearFilters()" style="font-size:0.65rem;padding:0.45rem 0.9rem;">Clear</button>
       </div>
@@ -181,7 +192,6 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div><label class="field-label">Quantity <span>*</span></label><input type="number" min="1" step="1" inputmode="numeric" class="field-input" id="cr-quantity" placeholder="3"></div>
       </div>
       <div class="field-row">
-        <div><label class="field-label">Date</label><input type="date" class="field-input" id="cr-date"></div>
         <div style="display:flex;align-items:flex-end;"><button type="button" class="btn-submit" id="cr-add-btn" onclick="addOrUpdateCreateRequestItem()" style="width:100%;">ADD+</button></div>
       </div>
       <div class="request-builder">
@@ -206,6 +216,18 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   </div>
 </div>
 
+<div id="modal-split" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="splitModalTitle">Review Request Items</span><button class="modal-close" onclick="closeModal('split')">✕</button></div>
+    <div class="modal-body">
+      <div class="split-note" id="splitHelpText">Select the items that should be approved. If only part of the request is approved, BOFT will create a linked split request.</div>
+      <div class="request-items-list" id="splitItemsList"></div>
+      <div class="field-group" style="margin-top:1rem;"><label class="field-label">Notes</label><textarea class="field-input" id="split-notes" rows="2" placeholder="Optional approval notes"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('split')">Cancel</button><button class="btn-submit" onclick="submitSplitApproval()">Approve Selected</button></div>
+  </div>
+</div>
+
 <script>
 const API_URL = '/api/proxy';
 let ACCESS_TOKEN = null;
@@ -214,6 +236,7 @@ let allRequests = [];
 let allProjects = [];
 let createRequestItems = [];
 let createRequestEditIndex = -1;
+let activeSplitRequestId = null;
 
 function tryRestoreSession() {
   const token = sessionStorage.getItem('boft_token');
@@ -256,6 +279,7 @@ async function loadRequests() {
     showToast('Loading requests...');
     const data = await apiGet('allMaterialRequests');
     allRequests = data.requests || [];
+    populateProjectFilter();
     renderRequests();
     showToast('Requests loaded');
   } catch(e) { showToast('Error loading requests'); }
@@ -266,6 +290,7 @@ async function loadProjectsForDropdown() {
     const data = await apiGet('projects');
     allProjects = data.projects || [];
     populateProjectDropdown();
+    populateProjectFilter();
   } catch(e) {
     allProjects = [];
   }
@@ -274,14 +299,48 @@ async function loadProjectsForDropdown() {
 function renderRequests() {
   const status = document.getElementById('filterStatus').value;
   const type = document.getElementById('filterType').value;
+  const projectId = document.getElementById('filterProject').value;
   let rows = allRequests;
   if (status) rows = rows.filter(r => r.status === status);
   if (type) rows = rows.filter(r => r.type === type);
+  if (type === 'Project' && projectId) rows = rows.filter(r => r.projectId === projectId);
   document.getElementById('requestCount').textContent = rows.length + ' requests shown';
   updateStats();
+  updateRequestFilterStyles();
   const list = document.getElementById('requestList');
   if (!rows.length) { list.innerHTML = '<div class="empty-state">No requests found.</div>'; return; }
   list.innerHTML = rows.map(r => renderRequestRow(r)).join('');
+}
+
+function onRequestTypeFilterChange() {
+  const type = document.getElementById('filterType').value;
+  const projectFilter = document.getElementById('filterProject');
+  projectFilter.style.display = type === 'Project' ? 'inline-block' : 'none';
+  if (type !== 'Project') projectFilter.value = '';
+  populateProjectFilter();
+  renderRequests();
+}
+
+function populateProjectFilter() {
+  const select = document.getElementById('filterProject');
+  if (!select) return;
+  const current = select.value;
+  const requestProjectIds = new Set(allRequests.filter(r => r.type === 'Project' && r.projectId).map(r => r.projectId));
+  const projects = allProjects.filter(p => requestProjectIds.has(p.id));
+  const fallback = [...requestProjectIds].filter(id => !projects.some(p => p.id === id)).map(id => ({ id, name: id }));
+  const options = [...projects, ...fallback];
+  select.innerHTML = '<option value="">All Projects</option>' + options.map(p => {
+    const label = [p.name || p.id, p.client, p.city].filter(Boolean).join(' · ');
+    return `<option value="${escAttr(p.id)}">${esc(label || p.id)}</option>`;
+  }).join('');
+  select.value = options.some(p => p.id === current) ? current : '';
+}
+
+function updateRequestFilterStyles() {
+  ['filterStatus','filterType','filterProject'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('has-value', !!el.value);
+  });
 }
 
 function updateStats() {
@@ -297,14 +356,15 @@ function renderRequestRow(r) {
   const priorityClass = (r.priority || '').toLowerCase();
   const typeLine = getRequestTypeLine(r);
   const cost = r.actualCost !== '' ? ` · Cost $${Number(r.actualCost).toFixed(2)}` : '';
-  return `<div class="request-row">
+  const canSplit = canSplitRequest(r);
+  return `<div class="request-row ${canSplit ? 'clickable' : ''}" ${canSplit ? `onclick="openSplitModal('${escAttr(r.id)}')"` : ''}>
     <div>
       ${renderRequestDescription(r.description)}
       <div class="request-sub">${typeLine} · ${esc(r.quantity || 'No qty')} · Requested by ${esc(r.requestedByName || r.requestedByEmail)}${cost}</div>
       ${r.notes ? `<div class="request-sub">Notes: ${esc(r.notes)}</div>` : ''}
       <div class="request-meta"><span class="tag ${statusClass}">${esc(r.status)}</span><span class="tag ${priorityClass}">${esc(r.priority)}</span><span class="tag">${esc(r.type)}</span>${r.subtype ? `<span class="tag">${esc(r.subtype)}</span>` : ''}<span class="tag">${esc(r.id)}</span><span class="tag">${esc(r.timestamp)}</span></div>
     </div>
-    <div class="request-actions">${renderActions(r)}</div>
+    <div class="request-actions" onclick="event.stopPropagation();">${renderActions(r)}</div>
   </div>`;
 }
 
@@ -314,6 +374,38 @@ function renderRequestDescription(description) {
   const looksLikeItemList = lines.length > 1 || /^1\.\s+\[/.test(text);
   if (!looksLikeItemList) return `<div class="request-title">${esc(text)}</div>`;
   return `<div class="request-item-lines">${lines.map(line => `<div class="request-line-item">${esc(line)}</div>`).join('')}</div>`;
+}
+
+function parseRequestItems(r) {
+  const text = String(r && r.description || '').trim();
+  const lines = text.split(/\n+/).map(line => line.trim()).filter(Boolean);
+  const items = [];
+  lines.forEach((line, index) => {
+    const match = line.match(/^(\d+)\.\s*\[([^\]]*)\]\s*(.*)$/);
+    if (!match) return;
+    const meta = match[2].split('|').map(v => v.trim()).filter(Boolean);
+    let quantity = '';
+    const cleanMeta = [];
+    meta.forEach(part => {
+      const qty = part.match(/^Qty:\s*(.*)$/i);
+      if (qty) quantity = qty[1].trim();
+      else cleanMeta.push(part);
+    });
+    items.push({
+      index: Number(match[1]) || index + 1,
+      category: cleanMeta[0] || r.subtype || '',
+      priority: cleanMeta[1] || r.priority || '',
+      quantity,
+      description: match[3] || line,
+      raw: line
+    });
+  });
+  if (items.length) return items;
+  return text ? [{ index: 1, category: r.subtype || '', priority: r.priority || '', quantity: r.quantity || '', description: text, raw: text }] : [];
+}
+
+function canSplitRequest(r) {
+  return ['Owner','Manager'].includes(CURRENT_ROLE) && r && r.status === 'Pending' && parseRequestItems(r).length > 1;
 }
 
 function getRequestTypeLine(r) {
@@ -326,6 +418,7 @@ function getRequestTypeLine(r) {
 function renderActions(r) {
   const actions = [];
   if (['Owner','Manager'].includes(CURRENT_ROLE) && r.status === 'Pending') {
+    if (canSplitRequest(r)) actions.push(`<button class="btn-sm info" onclick="openSplitModal('${r.id}')">Review Items</button>`);
     actions.push(`<button class="btn-sm good" onclick="quickStatus('${r.id}','Approved')">Approve</button>`);
     actions.push(`<button class="btn-sm bad" onclick="quickStatus('${r.id}','Rejected')">Reject</button>`);
   }
@@ -334,7 +427,13 @@ function renderActions(r) {
   return actions.join('');
 }
 
-function clearFilters() { document.getElementById('filterStatus').value = ''; document.getElementById('filterType').value = ''; renderRequests(); }
+function clearFilters() {
+  document.getElementById('filterStatus').value = '';
+  document.getElementById('filterType').value = '';
+  document.getElementById('filterProject').value = '';
+  document.getElementById('filterProject').style.display = 'none';
+  renderRequests();
+}
 function openCreateModal() {
   populateCreateTypeOptions();
   updateCreateRequestFields();
@@ -399,7 +498,6 @@ function resetCreateRequestItemForm() {
   document.getElementById('cr-priority').value = 'Normal';
   document.getElementById('cr-description').value = '';
   document.getElementById('cr-quantity').value = '';
-  document.getElementById('cr-date').value = '';
   document.getElementById('cr-add-btn').textContent = 'ADD+';
   createRequestEditIndex = -1;
 }
@@ -409,8 +507,7 @@ function addOrUpdateCreateRequestItem() {
     category: document.getElementById('cr-subtype').value,
     priority: document.getElementById('cr-priority').value,
     description: document.getElementById('cr-description').value.trim(),
-    quantity: document.getElementById('cr-quantity').value.trim(),
-    date: document.getElementById('cr-date').value
+    quantity: document.getElementById('cr-quantity').value.trim()
   };
   if (!item.description) { showToast('Description required'); return; }
   if (!item.quantity || Number(item.quantity) <= 0) { showToast('Quantity required'); return; }
@@ -430,7 +527,6 @@ function editCreateRequestItem(index) {
   document.getElementById('cr-priority').value = item.priority;
   document.getElementById('cr-description').value = item.description;
   document.getElementById('cr-quantity').value = item.quantity;
-  document.getElementById('cr-date').value = item.date || '';
   document.getElementById('cr-add-btn').textContent = 'Update';
 }
 
@@ -452,7 +548,7 @@ function renderCreateRequestItems() {
     <div class="request-item">
       <div>
         <div class="request-item-title">${esc(item.description)}</div>
-        <div class="request-item-meta">${esc(item.category)} · ${esc(item.priority)} · Qty ${esc(item.quantity)}${item.date ? ' · ' + esc(item.date) : ''}</div>
+        <div class="request-item-meta">${esc(item.category)} · ${esc(item.priority)} · Qty ${esc(item.quantity)}</div>
       </div>
       <div class="request-item-actions">
         <button type="button" class="request-icon-btn" title="Edit" onclick="editCreateRequestItem(${index})">✎</button>
@@ -464,8 +560,7 @@ function renderCreateRequestItems() {
 
 function buildCreateRequestSummary() {
   return createRequestItems.map((item, index) => {
-    const due = item.date ? ' | Date: ' + item.date : '';
-    return (index + 1) + '. [' + item.category + ' | ' + item.priority + due + ' | Qty: ' + item.quantity + '] ' + item.description;
+    return (index + 1) + '. [' + item.category + ' | ' + item.priority + ' | Qty: ' + item.quantity + '] ' + item.description;
   }).join('\n');
 }
 
@@ -507,7 +602,7 @@ function materialRequestEmailToast_(emailStatus) {
 function clearCreateForm() {
   createRequestItems = [];
   createRequestEditIndex = -1;
-  ['cr-description','cr-quantity','cr-date','cr-notes'].forEach(id => document.getElementById(id).value = '');
+  ['cr-description','cr-quantity','cr-notes'].forEach(id => document.getElementById(id).value = '');
   const projectSelect = document.getElementById('cr-project-select');
   if (projectSelect) projectSelect.value = '';
   document.getElementById('cr-priority').value = 'Normal';
@@ -518,6 +613,46 @@ async function quickStatus(id, status) {
   const result = await apiPost({ action:'updateMaterialRequestStatus', id, status });
   if (result.success) { showToast('Request updated' + materialRequestEmailToast_(result.emailStatus)); loadRequests(); }
   else showToast('Error: ' + result.message);
+}
+
+function openSplitModal(id) {
+  const req = allRequests.find(r => r.id === id);
+  if (!req) return;
+  const items = parseRequestItems(req);
+  if (items.length <= 1) { quickStatus(id, 'Approved'); return; }
+  activeSplitRequestId = id;
+  document.getElementById('splitModalTitle').textContent = 'Review Request ' + id;
+  document.getElementById('split-notes').value = '';
+  document.getElementById('splitItemsList').innerHTML = items.map(item => `
+    <label class="split-item">
+      <input class="split-check" type="checkbox" value="${item.index}">
+      <div>
+        <div class="request-item-title">${esc(item.description)}</div>
+        <div class="request-item-meta">${esc(item.category || 'Item')} · ${esc(item.priority || req.priority || 'Normal')} · Qty ${esc(item.quantity || '-')}</div>
+      </div>
+    </label>
+  `).join('');
+  document.getElementById('modal-split').classList.add('open');
+}
+
+async function submitSplitApproval() {
+  if (!activeSplitRequestId) return;
+  const selectedIndexes = [...document.querySelectorAll('#splitItemsList .split-check:checked')].map(input => Number(input.value));
+  if (!selectedIndexes.length) { showToast('Select at least one item'); return; }
+  const result = await apiPost({
+    action: 'splitMaterialRequestItems',
+    id: activeSplitRequestId,
+    selectedIndexes,
+    notes: document.getElementById('split-notes').value.trim()
+  });
+  if (result.success) {
+    closeModal('split');
+    activeSplitRequestId = null;
+    showToast(result.splitRequest ? 'Request split: ' + result.splitRequest.id : 'Request approved');
+    loadRequests();
+  } else {
+    showToast('Error: ' + result.message);
+  }
 }
 
 function openStatusModal(id, status) {
