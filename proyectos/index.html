@@ -60,9 +60,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .section-title{font-family:'Cinzel',serif;font-size:1.2rem;font-weight:700;color:var(--gold-light);margin-bottom:1.5rem;}
 
 /* TOAST */
-.success-toast{display:none;align-items:center;gap:0.75rem;background:var(--black3);border:1px solid rgba(76,175,125,0.4);border-left:3px solid var(--green);padding:0.75rem 1rem;margin-bottom:1rem;position:sticky;top:calc(var(--nav-h) + 8px);z-index:40;}
+.success-toast{display:none;align-items:center;gap:0.75rem;background:var(--black2);border:1px solid var(--border-neon);border-left:3px solid var(--neon);padding:0.8rem 1rem;margin-bottom:1rem;position:sticky;top:calc(var(--nav-h) + 8px);z-index:40;box-shadow:0 0 30px rgba(0,180,255,0.08);}
 .success-toast.show{display:flex;}
-.toast-text{font-size:0.85rem;color:var(--green);font-weight:600;}
+.success-toast>span:first-child{color:var(--neon)!important;}
+.toast-text{font-size:0.85rem;color:var(--text);font-weight:600;}
 .modal-loading-overlay{display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:rgba(5,6,8,0.72);backdrop-filter:blur(3px);pointer-events:auto;}
 .modal-loading-overlay.show{display:flex;}
 .modal-loading-box{border:1px solid var(--border-neon);background:var(--black2);padding:1.1rem 1.4rem;min-width:260px;text-align:center;box-shadow:0 0 30px rgba(0,180,255,0.08);}
@@ -337,6 +338,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .ops-row{border:1px solid rgba(200,146,42,0.12);background:var(--black);padding:0.55rem 0.65rem;transition:border-color 0.18s,background 0.18s,transform 0.18s;}
 .ops-row.done{border-color:rgba(76,175,125,0.35);background:rgba(76,175,125,0.055);}
 .ops-row.request-linked{border-left:3px solid var(--gold);background:rgba(200,146,42,0.045);}
+.ops-row.locked{opacity:0.72;cursor:default;border-color:rgba(76,175,125,0.24);background:rgba(76,175,125,0.035);}
 .ops-row-title{font-size:0.82rem;color:var(--text);font-weight:700;line-height:1.35;}
 .ops-row-meta{font-size:0.68rem;color:var(--muted);margin-top:0.18rem;}
 .ops-row-actions{display:flex;gap:0.35rem;margin-top:0.45rem;flex-wrap:wrap;}
@@ -345,6 +347,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .ops-chip.approved,.ops-chip.completed{color:var(--green);border-color:rgba(76,175,125,0.45);background:rgba(76,175,125,0.08);}
 .ops-chip.rejected,.ops-chip.wrong-item,.ops-chip.lost,.ops-chip.broken{color:var(--red);border-color:rgba(224,85,85,0.45);background:rgba(224,85,85,0.08);}
 .ops-chip.ordered,.ops-chip.assigned,.ops-chip.on-site,.ops-chip.on-the-way{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
+.ops-chip.side-job{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
 .ops-chip.not-here{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
 .ops-chip.incomplete,.ops-chip.removed,.ops-chip.returned{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
 .ops-empty{font-size:0.76rem;color:var(--muted);font-style:italic;padding:0.35rem 0;}
@@ -885,7 +888,6 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div><label class="field-label">Quantity <span>*</span></label><input type="number" min="1" step="1" inputmode="numeric" class="field-input" id="pr-quantity" placeholder="3"></div>
       </div>
       <div class="field-row">
-        <div><label class="field-label">Date</label><input type="date" class="field-input" id="pr-date"></div>
         <div style="display:flex;align-items:flex-end;">
           <button type="button" class="btn-submit" id="pr-add-btn" onclick="addOrUpdateProjectRequestItem()" style="width:100%;">ADD+</button>
         </div>
@@ -1435,6 +1437,7 @@ function postActionLabel(action) {
     updateProjectTrackingItem: 'Updating Tracking Item...',
     recordMaterialTrackingDelivery: 'Updating Material Tracking...',
     removeToolFromProject: 'Updating Tool Tracking...',
+    recordToolTrackingDelivery: 'Updating Tool Tracking...',
     createMaterialRequest: 'Creating Request...',
     updateMaterialRequestDetails: 'Updating Request...',
     deleteMaterialRequest: 'Deleting Request...',
@@ -2811,23 +2814,33 @@ function getCombinedTrackingItems(kind) {
 }
 
 function isMaterialTrackingRequest(req) {
-  return ['Material','Hardware','Lumber','Nails'].includes(String(req.subtype || '').trim());
+  const subtype = String(req.subtype || '').trim();
+  const haystack = [subtype, req.description || ''].join(' ');
+  return ['Material','Hardware','Lumber','Nails'].some(type => haystack.includes(type));
 }
 
 function isToolTrackingRequest(req) {
-  return ['Tool Needed','Tool','Tools','Equipment'].includes(String(req.subtype || '').trim());
+  const subtype = String(req.subtype || '').trim();
+  const haystack = [subtype, req.description || ''].join(' ');
+  return ['Tool Needed','Tool','Tools','Equipment'].some(type => haystack.includes(type));
 }
 
 function renderTrackingRow(item) {
   const linked = item.source === 'request';
   const statusClass = trackingStatusClass(item.status);
-  return `<div class="ops-row ${linked ? 'request-linked' : ''}" onclick="openTrackingDetail('${item.kind}','${item.source}','${item.id}')">
+  const locked = isTrackingItemLocked(item);
+  return `<div class="ops-row ${linked ? 'request-linked' : ''} ${locked ? 'locked' : ''}" ${locked ? '' : `onclick="openTrackingDetail('${item.kind}','${item.source}','${item.id}')"`}>
     <div class="ops-row-title">${item.item}</div>
     <div class="ops-row-meta"><span class="ops-chip ${statusClass}">${item.status || 'Needed'}</span>${linked ? ' Request ' + item.id + ' · ' : ' '}Required: ${item.requiredQty || '-'} · Ordered/Available: ${item.orderedQty || '-'} · Received: ${item.receivedQty || '-'} · Missing: ${item.missingQty || '-'}</div>
     ${(item.ownerCarrier || item.location) ? `<div class="ops-row-meta">${[item.ownerCarrier ? (linked ? 'Requested by: ' : 'Who: ') + item.ownerCarrier : '', item.location ? 'Category: ' + item.location : ''].filter(Boolean).join(' · ')}</div>` : ''}
     ${item.notes ? `<div class="ops-row-meta">${item.notes}</div>` : ''}
+    ${locked ? '<div class="ops-row-meta">Closed - no further changes.</div>' : ''}
     ${linked ? renderRequestFeedActions({ request: item.request }) : ''}
   </div>`;
+}
+
+function isTrackingItemLocked(item) {
+  return ['Completed'].includes(normalizeTrackingStatus(item && item.status));
 }
 
 function openFullTrackingModal(kind) {
@@ -2863,14 +2876,17 @@ function openTrackingDetail(kind, source, id) {
   const body = document.getElementById('trackingDetailBody');
   const footer = document.getElementById('trackingDetailFooter');
   const item = activeTrackingItem;
-  const statusClass = String(item.status || '').toLowerCase().replace(/\s+/g, '-');
+  const statusClass = trackingStatusClass(item.status);
   let html = `<div class="module-card">
     <div class="module-card-title">${item.item}</div>
     <div class="ops-row-meta"><span class="ops-chip ${statusClass}">${item.status || 'Needed'}</span>${item.source === 'request' ? ' Request ' + item.id : ' Tracking ' + item.id}</div>
     <div class="ops-row-meta">Required: ${item.requiredQty || '-'} · Received: ${item.receivedQty || '-'}</div>
     ${item.notes ? `<div class="ops-row-meta">${item.notes}</div>` : ''}
   </div>`;
-  if (kind === 'Material' && item.source === 'request') {
+  if (isTrackingItemLocked(item)) {
+    html += '<div class="module-empty">This tracking item is completed and locked.</div>';
+    footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Close</button>`;
+  } else if (kind === 'Material' && item.source === 'request') {
     html += `<div class="field-group">
       <label class="field-label">Delivery Result</label>
       <select class="field-input" id="mt-result">
@@ -2882,6 +2898,19 @@ function openTrackingDetail(kind, source, id) {
     <div class="field-group"><label class="field-label">Quantity Received</label><input class="field-input" id="mt-received" placeholder="Only for incomplete"></div>
     <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="mt-notes" rows="2" style="resize:vertical;"></textarea></div>`;
     footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Cancel</button><button class="btn-submit" onclick="saveMaterialDelivery()">Save</button>`;
+  } else if (kind === 'Tool' && item.source === 'request') {
+    html += `<div class="field-group">
+      <label class="field-label">Tool Status</label>
+      <select class="field-input" id="tq-status">
+        <option value="On The Way">On The Way</option>
+        <option value="On Site">On Site</option>
+        <option value="Side Job">Side Job</option>
+        <option value="Not Here">Not Here</option>
+        <option value="Completed">Completed</option>
+      </select>
+    </div>
+    <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="tq-notes" rows="2" style="resize:vertical;"></textarea></div>`;
+    footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Cancel</button><button class="btn-submit" onclick="saveToolRequestTracking()">Save</button>`;
   } else if (kind === 'Tool' && item.source === 'tracking') {
     html += `<div class="field-group">
       <label class="field-label">Action</label>
@@ -2930,6 +2959,7 @@ function renderToolTrackingActionFields() {
 
 async function saveMaterialDelivery() {
   if (!activeTrackingItem || activeTrackingItem.source !== 'request') return;
+  if (isTrackingItemLocked(activeTrackingItem)) { showToast('This tracking item is closed'); return; }
   const resultType = document.getElementById('mt-result').value;
   const notes = document.getElementById('mt-notes').value.trim();
   if (resultType === 'Wrong Item' && !notes) { showToast('Explain what was wrong'); return; }
@@ -2949,8 +2979,29 @@ async function saveMaterialDelivery() {
   } catch(e) { showToast('Connection error'); }
 }
 
+async function saveToolRequestTracking() {
+  if (!activeTrackingItem || activeTrackingItem.source !== 'request') return;
+  if (isTrackingItemLocked(activeTrackingItem)) { showToast('This tracking item is closed'); return; }
+  const status = document.getElementById('tq-status').value;
+  const notes = document.getElementById('tq-notes').value.trim();
+  try {
+    const result = await apiPost({
+      action: 'recordToolTrackingDelivery',
+      requestId: activeTrackingItem.id,
+      status,
+      notes,
+    });
+    if (result.success) {
+      closeModal('tracking-detail');
+      showToast('Tool tracking updated');
+      await reloadProjectRequestsAndFeed();
+    } else showToast('Error: ' + result.message);
+  } catch(e) { showToast('Connection error'); }
+}
+
 async function saveToolTrackingAction() {
   if (!activeTrackingItem || activeTrackingItem.source !== 'tracking') return;
+  if (isTrackingItemLocked(activeTrackingItem)) { showToast('This tracking item is closed'); return; }
   const action = document.getElementById('tt-action')?.value || 'Update';
   const reason = action === 'Remove'
     ? document.getElementById('tt-reason').value
@@ -3433,7 +3484,6 @@ function resetProjectRequestItemForm() {
   document.getElementById('pr-priority').value = 'Normal';
   document.getElementById('pr-description').value = '';
   document.getElementById('pr-quantity').value = '';
-  document.getElementById('pr-date').value = '';
   document.getElementById('pr-add-btn').textContent = 'ADD+';
   projectRequestEditIndex = -1;
 }
@@ -3443,8 +3493,7 @@ function addOrUpdateProjectRequestItem() {
     category: document.getElementById('pr-subtype').value,
     priority: document.getElementById('pr-priority').value,
     description: document.getElementById('pr-description').value.trim(),
-    quantity: document.getElementById('pr-quantity').value.trim(),
-    date: document.getElementById('pr-date').value
+    quantity: document.getElementById('pr-quantity').value.trim()
   };
   if (!item.description) { showToast('Description required'); return; }
   if (!item.quantity || Number(item.quantity) <= 0) { showToast('Quantity required'); return; }
@@ -3464,7 +3513,6 @@ function editProjectRequestItem(index) {
   document.getElementById('pr-priority').value = item.priority;
   document.getElementById('pr-description').value = item.description;
   document.getElementById('pr-quantity').value = item.quantity;
-  document.getElementById('pr-date').value = item.date || '';
   document.getElementById('pr-add-btn').textContent = 'Update';
 }
 
@@ -3500,8 +3548,7 @@ function renderProjectRequestItems() {
     meta.textContent = [
       item.category || '',
       item.priority || '',
-      'Qty ' + (item.quantity || ''),
-      item.date || ''
+      'Qty ' + (item.quantity || '')
     ].filter(Boolean).join(' | ');
 
     copy.appendChild(title);
@@ -3534,8 +3581,7 @@ function renderProjectRequestItems() {
 
 function buildProjectRequestSummary() {
   return projectRequestItems.map((item, index) => {
-    const due = item.date ? ' | Date: ' + item.date : '';
-    return (index + 1) + '. [' + item.category + ' | ' + item.priority + due + ' | Qty: ' + item.quantity + '] ' + item.description;
+    return (index + 1) + '. [' + item.category + ' | ' + item.priority + ' | Qty: ' + item.quantity + '] ' + item.description;
   }).join('\n');
 }
 
