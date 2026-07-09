@@ -74,6 +74,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .filters-bar{background:var(--black2);padding:1.25rem;margin-top:2px;display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;}
 .filter-select{background:var(--black);border:1px solid var(--border);color:var(--muted);padding:0.5rem 0.75rem;font-family:'Rajdhani',sans-serif;font-size:0.82rem;outline:none;}
 .filter-select option{background:var(--black2);}
+.filter-select.has-value{font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
+.filter-select.tag-action.has-value{color:var(--green);border-color:rgba(76,175,125,0.34);background:rgba(76,175,125,0.08);}
+.filter-select.tag-entity.has-value{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
+.filter-select.tag-project.has-value{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
 .btn-clear-filters{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid var(--border);padding:0.5rem 0.9rem;cursor:pointer;transition:color 0.2s;}
 .btn-clear-filters:hover{color:var(--gold-light);}
 
@@ -258,10 +262,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 
     <!-- FILTERS -->
     <div class="filters-bar">
-      <select class="filter-select" id="filterUser" onchange="renderLog()">
+      <select class="filter-select tag-entity" id="filterUser" onchange="renderLog()">
         <option value="">All Team Members</option>
       </select>
-      <select class="filter-select" id="filterAction" onchange="onActivityActionFilterChange()">
+      <select class="filter-select tag-action" id="filterAction" onchange="onActivityActionFilterChange()">
         <option value="">All Actions</option>
         <option value="addExpense">Add Expense</option>
         <option value="addIncome">Add Income</option>
@@ -293,7 +297,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <option value="addUserManually">Add User</option>
         <option value="updateUserRole">Update User</option>
       </select>
-      <select class="filter-select" id="filterEntityType" onchange="onActivityEntityFilterChange()">
+      <select class="filter-select tag-entity" id="filterEntityType" onchange="onActivityEntityFilterChange()">
         <option value="">All Entity Types</option>
         <option value="Transaction">Transactions</option>
         <option value="Project">Projects</option>
@@ -305,7 +309,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <option value="Material">Material</option>
         <option value="Tool">Tools</option>
       </select>
-      <select class="filter-select" id="filterProject" onchange="renderLog()" style="display:none;">
+      <select class="filter-select tag-project" id="filterProject" onchange="renderLog()" style="display:none;">
         <option value="">All Projects</option>
       </select>
       <button class="btn-clear-filters" onclick="clearLogFilters()">Clear Filters</button>
@@ -539,6 +543,13 @@ function clearLogFilters() {
   onActivityActionFilterChange();
 }
 
+function updateActivityFilterStyles() {
+  ['filterUser','filterAction','filterEntityType','filterProject'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('has-value', !!el.value);
+  });
+}
+
 function getLogDetailsObj(log) {
   try {
     return log && log.details ? JSON.parse(log.details) : {};
@@ -606,6 +617,7 @@ function onActivityEntityFilterChange() {
     projectSel.value = '';
     projectSel.style.display = 'none';
   }
+  updateActivityFilterStyles();
   renderLog();
 }
 
@@ -620,6 +632,7 @@ function renderLog() {
   if (fAction) filtered = filtered.filter(l => l.action === fAction);
   if (fEntity) filtered = filtered.filter(l => l.entityType === fEntity);
   if (fProject) filtered = filtered.filter(l => getLogProjectName(l) === fProject);
+  updateActivityFilterStyles();
 
   filtered.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
