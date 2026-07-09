@@ -300,13 +300,18 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .feed-action-btn:hover{border-color:var(--gold);color:var(--gold-light);}
 .feed-action-btn.danger{border-color:rgba(224,85,85,0.35);color:var(--red);}
 .feed-action-btn.reopen{width:auto;padding:0 0.55rem;color:var(--gold-light);border-color:var(--border);}
-.timeline-filters{display:flex;gap:0.35rem;flex-wrap:wrap;margin-bottom:0.75rem;}
-.timeline-filter{font-family:'Rajdhani',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid rgba(200,146,42,0.16);padding:0.28rem 0.6rem;cursor:pointer;}
-.timeline-filter.active{color:var(--black);background:var(--gold);border-color:var(--gold);}
-.ops-module-menu{display:flex;gap:0.35rem;flex-wrap:wrap;margin-bottom:0.85rem;border-bottom:1px solid rgba(0,180,255,0.12);padding-bottom:0.55rem;}
-.ops-module-btn{font-family:'Rajdhani',sans-serif;font-size:0.64rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid rgba(200,146,42,0.16);padding:0.38rem 0.72rem;cursor:pointer;transition:all 0.18s;}
-.ops-module-btn:hover{color:var(--gold-light);border-color:var(--border-neon);}
-.ops-module-btn.active{color:var(--black);background:var(--gold);border-color:var(--gold);}
+.timeline-filters,.ops-module-menu,.photo-phase-tabs{display:flex;gap:0;margin-bottom:0.85rem;border-bottom:1px solid rgba(0,180,255,0.18);overflow-x:auto;}
+.timeline-filter,.ops-module-btn,.photo-phase-tab{font-family:'Rajdhani',sans-serif;font-size:0.64rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);background:transparent;border:none;border-bottom:2px solid transparent;padding:0.48rem 0.82rem;cursor:pointer;transition:all 0.18s;white-space:nowrap;}
+.timeline-filter:hover,.ops-module-btn:hover,.photo-phase-tab:hover{color:var(--gold-light);background:rgba(200,146,42,0.04);}
+.timeline-filter.active,.ops-module-btn.active,.photo-phase-tab.active{color:var(--gold-light);border-bottom-color:var(--gold);background:var(--gold-dim);}
+.daily-log-row{cursor:pointer;}
+.daily-log-row:hover{border-color:var(--border-neon);background:rgba(0,180,255,0.04);}
+.daily-detail-grid{display:grid;grid-template-columns:1fr;gap:0.7rem;}
+.daily-detail-block{border:1px solid rgba(200,146,42,0.12);background:rgba(200,146,42,0.03);padding:0.75rem;}
+.daily-detail-label{font-size:0.66rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-light);margin-bottom:0.35rem;}
+.daily-detail-value{font-size:0.88rem;color:var(--text);line-height:1.45;white-space:pre-wrap;}
+.photo-phase-panel{display:none;}
+.photo-phase-panel.active{display:block;}
 .ops-subpanel{display:none;}
 .ops-subpanel.active{display:block;}
 .ops-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--border);margin-bottom:1rem;}
@@ -985,6 +990,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <button class="modal-close" onclick="closeModal('daily-log')">✕</button>
     </div>
     <div class="modal-body">
+      <div class="field-group"><label class="field-label">Title</label><input type="text" class="field-input" id="dl-title" placeholder="Basement framing, inspection prep..."></div>
       <div class="field-group"><label class="field-label">Date</label><input type="date" class="field-input" id="dl-date"></div>
       <div class="field-group"><label class="field-label">What was done today?</label><textarea class="field-input" id="dl-done" rows="3" style="resize:vertical;"></textarea></div>
       <div class="field-group" style="display:none;"><label class="field-label">What is pending?</label><textarea class="field-input" id="dl-pending" rows="2" style="resize:vertical;"></textarea></div>
@@ -995,6 +1001,22 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('daily-log')">Cancel</button>
       <button class="btn-submit" onclick="saveDailyLog()">Save Log</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DAILY LOG DETAIL -->
+<div id="modal-daily-log-detail" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="dailyDetailTitle">Daily Log</span>
+      <button class="btn-sm view" id="dailyDetailEditBtn" onclick="enableDailyLogEdit()">Edit</button>
+      <button class="modal-close" onclick="closeModal('daily-log-detail')">✕</button>
+    </div>
+    <div class="modal-body" id="dailyDetailBody"></div>
+    <div class="modal-footer" id="dailyDetailFooter" style="display:none;">
+      <button class="btn-cancel" onclick="renderDailyLogDetail(false)">Cancel</button>
+      <button class="btn-submit" onclick="updateDailyLog()">Update</button>
     </div>
   </div>
 </div>
@@ -1266,7 +1288,7 @@ let teamUsers = [];
 const assignedCrewState = { np: [], ep: [] };
 
 function canSeeProjectMoney() {
-  return !['Field Lead','Worker','Helper'].includes(CURRENT_ROLE);
+  return !['Field Lead','Worker','Helper','Viewer'].includes(CURRENT_ROLE);
 }
 
 function canViewEstimateDocs() {
@@ -1287,6 +1309,18 @@ function canUseDailyLog() {
 
 function canUploadProjectPhotos() {
   return ['Owner','Manager','Field Lead'].includes(CURRENT_ROLE);
+}
+
+function canSeeProjectDocuments() {
+  return ['Owner','Manager','Field Lead','Worker','Helper','Viewer'].includes(CURRENT_ROLE);
+}
+
+function canSeeInspectionItems() {
+  return ['Owner','Manager','Field Lead','Worker','Helper'].includes(CURRENT_ROLE);
+}
+
+function canSeeProjectOperations() {
+  return !['Viewer'].includes(CURRENT_ROLE);
 }
 
 function canCompletePunch() {
@@ -1612,6 +1646,8 @@ let inspectionDraftItems = [];
 let activePunchModalGroup = null;
 let activePunchModalFloor = null;
 let projectTimelineFilter = 'all';
+let activeDailyLog = null;
+let dailyLogEditMode = false;
 
 function resetProjectRuntimeState() {
   projectTransactions = [];
@@ -1625,6 +1661,8 @@ function resetProjectRuntimeState() {
   activePunchModalFloor = null;
   activeTrackingItem = null;
   projectTimelineFilter = 'all';
+  activeDailyLog = null;
+  dailyLogEditMode = false;
 }
 
 async function openProject(id) {
@@ -1647,8 +1685,11 @@ async function openProject(id) {
   const canAddNote          = canUseDailyLog() && !completedLowRole;
   const canCreateRequest    = canUseProjectRequests() && !completedLowRole;
   const canSeeTimeline      = !isWorkerOrBelow();
-  const canSeeOperations    = !['Helper','Viewer'].includes(CURRENT_ROLE);
-  const canSeeDocuments     = ['Owner','Manager','Field Lead','Worker','Helper'].includes(CURRENT_ROLE);
+  const canSeeOperations    = canSeeProjectOperations();
+  const canSeeDocuments     = canSeeProjectDocuments();
+  const canSeeInspection    = canSeeInspectionItems();
+  const canSeeOverview      = CURRENT_ROLE !== 'Viewer';
+  const initialProjectModule = canSeeOverview ? 'overview' : 'documents';
   const showMoney           = canSeeProjectMoney();
   const priceText           = showMoney ? (currentProject.contractValue ? fmt(currentProject.contractValue) : '—') : 'Restricted';
 
@@ -1692,20 +1733,12 @@ async function openProject(id) {
         </div>
       </div>
 
-      <div class="quick-actions-strip">
-        ${canCreateRequest ? `<button class="quick-action" onclick="openProjectRequestModal()"><div class="quick-action-label">Request</div><div class="quick-action-title">Create</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Request</div><div class="quick-action-title">Locked</div></button>`}
-        ${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole ? `<button class="quick-action" onclick="openPunchModal()"><div class="quick-action-label">Punch</div><div class="quick-action-title">Add Item</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Punch</div><div class="quick-action-title">Locked</div></button>`}
-        ${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) && !completedLowRole ? `<button class="quick-action" onclick="openDailyLogModal()"><div class="quick-action-label">Daily</div><div class="quick-action-title">New Log</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Daily</div><div class="quick-action-title">Locked</div></button>`}
-        ${canUploadPhotos ? `<button class="quick-action" onclick="switchProjectModule('photos')"><div class="quick-action-label">Photos</div><div class="quick-action-title">Upload</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Photos</div><div class="quick-action-title">Locked</div></button>`}
-        ${canAddNote && canSeeTimeline ? `<button class="quick-action" onclick="switchProjectModule('timeline')"><div class="quick-action-label">Note</div><div class="quick-action-title">Add</div></button>` : `<button class="quick-action" disabled><div class="quick-action-label">Note</div><div class="quick-action-title">Locked</div></button>`}
-      </div>
-
       <div class="project-module-nav">
-        <button class="project-module-tab active" data-module-tab="overview" onclick="switchProjectModule('overview')">Overview</button>
+        ${canSeeOverview ? `<button class="project-module-tab ${initialProjectModule === 'overview' ? 'active' : ''}" data-module-tab="overview" onclick="switchProjectModule('overview')">Overview</button>` : ''}
         ${canSeeOperations ? `<button class="project-module-tab" data-module-tab="operations" onclick="switchProjectModule('operations')">Operations</button>` : ''}
         ${canUploadPhotos ? `<button class="project-module-tab" data-module-tab="photos" onclick="switchProjectModule('photos')">Photos</button>` : ''}
-        ${canSeeDocuments ? `<button class="project-module-tab" data-module-tab="documents" onclick="switchProjectModule('documents')">Documents</button>` : ''}
-        ${canUseDailyLog() ? `<button class="project-module-tab" data-module-tab="inspection" onclick="switchProjectModule('inspection')">Inspection</button>` : ''}
+        ${canSeeDocuments ? `<button class="project-module-tab ${initialProjectModule === 'documents' ? 'active' : ''}" data-module-tab="documents" onclick="switchProjectModule('documents')">Documents</button>` : ''}
+        ${canSeeInspection ? `<button class="project-module-tab" data-module-tab="inspection" onclick="switchProjectModule('inspection')">Inspection</button>` : ''}
         ${showMoney ? `<button class="project-module-tab" data-module-tab="financial" onclick="switchProjectModule('financial')">Financial</button>` : ''}
         ${canSeeTimeline ? `<button class="project-module-tab" data-module-tab="timeline" onclick="switchProjectModule('timeline')">Timeline</button>` : ''}
         ${canOwnerManager || CURRENT_ROLE === 'Field Lead' ? `<button class="project-module-tab" data-module-tab="settings" onclick="switchProjectModule('settings')">Settings</button>` : ''}
@@ -1720,7 +1753,7 @@ async function openProject(id) {
       </div>` : ''}
 
       <!-- INFO RÁPIDA -->
-      <div class="timeline-section restricted-on-completed project-module active" data-project-module="overview">
+      ${canSeeOverview ? `<div class="timeline-section restricted-on-completed project-module ${initialProjectModule === 'overview' ? 'active' : ''}" data-project-module="overview">
         <div class="timeline-section-label">Project Info</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:0.82rem;">
           <div><span style="color:var(--muted);">Start:</span> <span style="color:var(--text);">${currentProject.startDate || '—'}</span></div>
@@ -1728,12 +1761,12 @@ async function openProject(id) {
           <div><span style="color:var(--muted);">Price:</span> <span style="color:var(--green);font-weight:700;">${priceText}</span></div>
           <div><span style="color:var(--muted);">Drive:</span> ${currentProject.driveFolderId ? '<a href="https://drive.google.com/drive/folders/' + currentProject.driveFolderId + '" target="_blank" style="color:var(--neon);">Open ↗</a>' : '<span style="color:var(--muted);">—</span>'}</div>
         </div>
-      </div>
+      </div>` : ''}
 
-      ${renderProjectCrewOverview()}
+      ${canSeeOverview ? renderProjectCrewOverview() : ''}
 
       <!-- SCOPE & CONTRACT -->
-      <div class="timeline-section restricted-on-completed project-module active" data-project-module="overview">
+      ${canSeeOverview ? `<div class="timeline-section restricted-on-completed project-module ${initialProjectModule === 'overview' ? 'active' : ''}" data-project-module="overview">
         <div class="timeline-section-label" style="display:flex;justify-content:space-between;">
           <span>Scope of Work</span>
         </div>
@@ -1743,19 +1776,19 @@ async function openProject(id) {
             <span style="color:var(--muted);font-style:italic;">No scope defined — edit project to add.</span>
           </div>
         </div>
-      </div>
+      </div>` : ''}
 
-      <div class="timeline-section restricted-on-completed project-module" data-project-module="documents">
+      <div class="timeline-section restricted-on-completed project-module ${initialProjectModule === 'documents' ? 'active' : ''}" data-project-module="documents">
         <div class="timeline-section-label">Documents</div>
         <div id="documentsList" style="margin-bottom:0.5rem;">
           <div class="module-empty">No documents yet. Use Edit Project to add plans, contracts, permits or revisions.</div>
         </div>
       </div>
 
-      ${canUseDailyLog() ? `<div class="timeline-section restricted-on-completed project-module" data-project-module="inspection">
+      ${canSeeInspection ? `<div class="timeline-section restricted-on-completed project-module" data-project-module="inspection">
         <div class="timeline-section-label" style="display:flex;justify-content:space-between;align-items:center;">
           <span>Inspection</span>
-          <button class="btn-sm view" onclick="openInspectionModal()">+ Item</button>
+          ${canUseDailyLog() ? `<button class="btn-sm view" onclick="openInspectionModal()">+ Item</button>` : ''}
         </div>
         <div id="inspectionOps" class="ops-list"><div class="ops-empty">Loading...</div></div>
       </div>` : ''}
@@ -1834,9 +1867,13 @@ async function openProject(id) {
       <!-- PHOTOS BY PHASE -->
       ${canUploadPhotos ? `<div class="timeline-section project-module" data-project-module="photos">
         <div class="timeline-section-label">Photos</div>
+        <div class="photo-phase-tabs">
+          <button class="photo-phase-tab active" data-photo-phase-tab="antes" onclick="switchPhotoPhase('antes')">Before</button>
+          <button class="photo-phase-tab" data-photo-phase-tab="proceso" onclick="switchPhotoPhase('proceso')">In Progress</button>
+          <button class="photo-phase-tab" data-photo-phase-tab="terminado" onclick="switchPhotoPhase('terminado')">Complete</button>
+        </div>
 
-        <!-- Before -->
-        <div style="margin-bottom:1rem;">
+        <div class="photo-phase-panel active" data-photo-phase-panel="antes">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
             <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">Before <span id="photo-count-antes">(0)</span></span>
             ${canUploadPhotos ? `<button class="btn-upload-phase" id="btn-upload-antes" onclick="triggerUpload('antes')" style="font-size:0.58rem;">+ Add</button>` : ''}
@@ -1845,8 +1882,7 @@ async function openProject(id) {
           <div class="upload-progress" id="progress-antes"></div>
         </div>
 
-        <!-- In Progress -->
-        <div style="margin-bottom:1rem;">
+        <div class="photo-phase-panel" data-photo-phase-panel="proceso">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
             <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">In Progress <span id="photo-count-proceso">(0)</span></span>
             ${canUploadPhotos ? `<button class="btn-upload-phase" id="btn-upload-proceso" onclick="triggerUpload('proceso')" style="font-size:0.58rem;">+ Add</button>` : ''}
@@ -1855,10 +1891,9 @@ async function openProject(id) {
           <div class="upload-progress" id="progress-proceso"></div>
         </div>
 
-        <!-- Completed -->
-        <div style="margin-bottom:0.5rem;">
+        <div class="photo-phase-panel" data-photo-phase-panel="terminado">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
-            <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">Completed <span id="photo-count-terminado">(0)</span></span>
+            <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">Complete <span id="photo-count-terminado">(0)</span></span>
             ${canUploadPhotos ? `<button class="btn-upload-phase" id="btn-upload-terminado" onclick="triggerUpload('terminado')" style="font-size:0.58rem;">+ Add</button>` : ''}
           </div>
           <div id="grid-terminado" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(75px,1fr));gap:3px;"></div>
@@ -1981,6 +2016,15 @@ function switchOpsModule(moduleName) {
   });
 }
 
+function switchPhotoPhase(phase) {
+  document.querySelectorAll('[data-photo-phase-panel]').forEach(panel => {
+    panel.classList.toggle('active', panel.dataset.photoPhasePanel === phase);
+  });
+  document.querySelectorAll('[data-photo-phase-tab]').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.photoPhaseTab === phase);
+  });
+}
+
 function renderActivityFeed() {
   const feed = document.getElementById('activityFeed');
   if (!feed) return;
@@ -2087,7 +2131,7 @@ function buildActivityFeedItems() {
       date: log.logDate || (log.createdAt || '').slice(0, 10),
       sortDate: (log.logDate || getLocalDateString()) + ' ' + ((log.createdAt || '').split(' ')[1] || '00:00:00'),
       type: 'daily',
-      title: 'Daily Log: ' + (log.doneToday ? log.doneToday.slice(0, 80) : 'Project update'),
+      title: 'Daily Log: ' + (log.title || (log.doneToday ? log.doneToday.slice(0, 80) : 'Project update')),
       sub: [log.id, log.createdByName || log.createdByEmail, log.problems ? 'Problems noted' : ''].filter(Boolean).join(' · '),
       amount: null,
       seq: seq++
@@ -2389,15 +2433,16 @@ function renderDailyLogOps() {
     el.innerHTML = `<div class="module-empty">No daily logs yet.${['Owner','Manager','Field Lead'].includes(CURRENT_ROLE) ? ' <button class="btn-sm view" onclick="openDailyLogModal()" style="margin-left:0.5rem;">New Log</button>' : ''}</div>`;
     return;
   }
-  el.innerHTML = projectDailyLogs.slice(0, 4).map(log => `
-    <div class="daily-card">
-      <div class="ops-row-title">${log.logDate || 'Daily Log'} · ${log.createdByName || log.createdByEmail || ''}</div>
-      ${log.doneToday ? `<div class="ops-row-meta"><strong>Done:</strong> ${log.doneToday}</div>` : ''}
-      ${log.pending ? `<div class="ops-row-meta"><strong>Pending:</strong> ${log.pending}</div>` : ''}
-      ${log.problems ? `<div class="ops-row-meta"><strong>Problems:</strong> ${log.problems}</div>` : ''}
-      ${log.tomorrowNotes ? `<div class="ops-row-meta"><strong>Tomorrow:</strong> ${log.tomorrowNotes}</div>` : ''}
-      ${log.safety ? `<div class="ops-row-meta"><strong>Safety:</strong> ${log.safety}</div>` : ''}
-    </div>`).join('');
+  el.innerHTML = projectDailyLogs.map(log => {
+    const title = log.title || ('Daily Log - ' + (log.logDate || (log.createdAt || '').slice(0, 10) || log.id));
+    return `<div class="ops-row daily-log-row" onclick="openDailyLogDetail('${log.id}')">
+      <div>
+        <div class="ops-row-title">${escHtml(title)}</div>
+        <div class="ops-row-meta">${escHtml(log.logDate || (log.createdAt || '').slice(0, 10) || 'No date')}</div>
+      </div>
+      <div class="punch-area-count">›</div>
+    </div>`;
+  }).join('');
 }
 
 function renderTrackingOps() {
@@ -3007,6 +3052,7 @@ async function deletePunch(id) {
 }
 
 function openDailyLogModal() {
+  document.getElementById('dl-title').value = '';
   document.getElementById('dl-date').value = getLocalDateString();
   ['dl-done','dl-pending','dl-problems','dl-tomorrow','dl-safety'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('modal-daily-log').classList.add('open');
@@ -3018,6 +3064,7 @@ async function saveDailyLog() {
       action: 'createDailyLog',
       projectId: currentProject.id,
       projectName: currentProject.name,
+      title: document.getElementById('dl-title').value.trim(),
       logDate: document.getElementById('dl-date').value,
       doneToday: document.getElementById('dl-done').value.trim(),
       pending: document.getElementById('dl-pending').value.trim(),
@@ -3029,6 +3076,100 @@ async function saveDailyLog() {
       closeModal('daily-log');
       showToast('Daily log saved');
       await reloadProjectOperations();
+    } else showToast('Error: ' + result.message);
+  } catch(e) { showToast('Connection error'); }
+}
+
+function openDailyLogDetail(id) {
+  activeDailyLog = projectDailyLogs.find(log => log.id === id) || null;
+  if (!activeDailyLog) return;
+  dailyLogEditMode = false;
+  renderDailyLogDetail(false);
+  document.getElementById('modal-daily-log-detail').classList.add('open');
+}
+
+function dailyLogTitle(log) {
+  if (!log) return 'Daily Log';
+  return log.title || ('Daily Log - ' + (log.logDate || (log.createdAt || '').slice(0, 10) || log.id));
+}
+
+function dailyDetailBlock(label, value) {
+  return `<div class="daily-detail-block">
+    <div class="daily-detail-label">${label}</div>
+    <div class="daily-detail-value">${escHtml(value || '—')}</div>
+  </div>`;
+}
+
+function dailyEditField(label, id, value, type) {
+  if (type === 'date') {
+    return `<div class="field-group"><label class="field-label">${label}</label><input type="date" class="field-input" id="${id}" value="${escHtml(value || '')}"></div>`;
+  }
+  if (type === 'input') {
+    return `<div class="field-group"><label class="field-label">${label}</label><input type="text" class="field-input" id="${id}" value="${escHtml(value || '')}"></div>`;
+  }
+  return `<div class="field-group"><label class="field-label">${label}</label><textarea class="field-input" id="${id}" rows="3" style="resize:vertical;">${escHtml(value || '')}</textarea></div>`;
+}
+
+function renderDailyLogDetail(editMode) {
+  if (!activeDailyLog) return;
+  dailyLogEditMode = !!editMode;
+  const titleEl = document.getElementById('dailyDetailTitle');
+  const bodyEl = document.getElementById('dailyDetailBody');
+  const editBtn = document.getElementById('dailyDetailEditBtn');
+  const footer = document.getElementById('dailyDetailFooter');
+  if (titleEl) titleEl.textContent = dailyLogTitle(activeDailyLog);
+  if (editBtn) editBtn.style.display = dailyLogEditMode ? 'none' : (canUseDailyLog() ? 'inline-block' : 'none');
+  if (footer) footer.style.display = dailyLogEditMode ? 'flex' : 'none';
+
+  if (!bodyEl) return;
+  if (!dailyLogEditMode) {
+    bodyEl.innerHTML = `<div class="daily-detail-grid">
+      ${dailyDetailBlock('Title', dailyLogTitle(activeDailyLog))}
+      ${dailyDetailBlock('Date', activeDailyLog.logDate || (activeDailyLog.createdAt || '').slice(0, 10))}
+      ${dailyDetailBlock('Work Done', activeDailyLog.doneToday)}
+      ${dailyDetailBlock('Problems', activeDailyLog.problems)}
+      ${dailyDetailBlock('Tomorrow', activeDailyLog.tomorrowNotes)}
+      ${dailyDetailBlock('Safety', activeDailyLog.safety)}
+      ${activeDailyLog.pending ? dailyDetailBlock('Pending', activeDailyLog.pending) : ''}
+      ${dailyDetailBlock('Created By', activeDailyLog.createdByName || activeDailyLog.createdByEmail)}
+    </div>`;
+    return;
+  }
+
+  bodyEl.innerHTML = `
+    ${dailyEditField('Title', 'ddl-title', activeDailyLog.title || dailyLogTitle(activeDailyLog), 'input')}
+    ${dailyEditField('Date', 'ddl-date', activeDailyLog.logDate || '', 'date')}
+    ${dailyEditField('Work Done', 'ddl-done', activeDailyLog.doneToday || '')}
+    <div style="display:none;">${dailyEditField('Pending', 'ddl-pending', activeDailyLog.pending || '')}</div>
+    ${dailyEditField('Problems', 'ddl-problems', activeDailyLog.problems || '')}
+    ${dailyEditField('Tomorrow', 'ddl-tomorrow', activeDailyLog.tomorrowNotes || '')}
+    ${dailyEditField('Safety', 'ddl-safety', activeDailyLog.safety || '')}
+  `;
+}
+
+function enableDailyLogEdit() {
+  renderDailyLogDetail(true);
+}
+
+async function updateDailyLog() {
+  if (!activeDailyLog) return;
+  try {
+    const result = await apiPost({
+      action: 'updateDailyLog',
+      id: activeDailyLog.id,
+      title: document.getElementById('ddl-title').value.trim(),
+      logDate: document.getElementById('ddl-date').value,
+      doneToday: document.getElementById('ddl-done').value.trim(),
+      pending: document.getElementById('ddl-pending').value.trim(),
+      problems: document.getElementById('ddl-problems').value.trim(),
+      tomorrowNotes: document.getElementById('ddl-tomorrow').value.trim(),
+      safety: document.getElementById('ddl-safety').value.trim(),
+    });
+    if (result.success) {
+      showToast('Daily log updated');
+      await reloadProjectOperations();
+      activeDailyLog = projectDailyLogs.find(log => log.id === activeDailyLog.id) || activeDailyLog;
+      renderDailyLogDetail(false);
     } else showToast('Error: ' + result.message);
   } catch(e) { showToast('Connection error'); }
 }
@@ -3551,6 +3692,7 @@ function canViewDocCategory(category) {
   if (['Owner','Manager'].includes(CURRENT_ROLE)) return true;
   if (CURRENT_ROLE === 'Field Lead') return ['Plans','Inspection'].includes(category);
   if (['Worker','Helper'].includes(CURRENT_ROLE)) return category === 'Plans';
+  if (CURRENT_ROLE === 'Viewer') return true;
   return false;
 }
 
