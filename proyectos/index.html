@@ -309,6 +309,16 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .timeline-filter,.ops-module-btn,.photo-phase-tab{font-family:'Rajdhani',sans-serif;font-size:0.64rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);background:transparent;border:none;border-bottom:2px solid transparent;padding:0.48rem 0.82rem;cursor:pointer;transition:all 0.18s;white-space:nowrap;}
 .timeline-filter:hover,.ops-module-btn:hover,.photo-phase-tab:hover{color:var(--gold-light);background:rgba(200,146,42,0.04);}
 .timeline-filter.active,.ops-module-btn.active,.photo-phase-tab.active{color:var(--gold-light);border-bottom-color:var(--gold);background:var(--gold-dim);}
+.tracking-status-bar{display:flex;gap:0.4rem;flex-wrap:wrap;margin:0 0 0.65rem;}
+.tracking-status-btn{font-family:'Rajdhani',sans-serif;font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);background:var(--black);border:1px solid rgba(200,146,42,0.16);padding:0.32rem 0.65rem;cursor:pointer;transition:all 0.18s;}
+.tracking-status-btn:hover{color:var(--gold-light);border-color:var(--border);}
+.tracking-status-btn.active{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
+.tracking-status-btn.status-approved,.tracking-status-btn.status-completed{color:var(--green);border-color:rgba(76,175,125,0.36);background:rgba(76,175,125,0.06);}
+.tracking-status-btn.status-approved.active,.tracking-status-btn.status-completed.active{background:rgba(76,175,125,0.12);}
+.tracking-status-btn.status-rejected,.tracking-status-btn.status-wrong-item{color:var(--red);border-color:rgba(224,85,85,0.36);background:rgba(224,85,85,0.06);}
+.tracking-status-btn.status-rejected.active,.tracking-status-btn.status-wrong-item.active{background:rgba(224,85,85,0.12);}
+.tracking-status-btn.status-ordered,.tracking-status-btn.status-on-site,.tracking-status-btn.status-on-the-way{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
+.tracking-status-btn.status-incomplete,.tracking-status-btn.status-pending,.tracking-status-btn.status-needed{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
 .daily-log-row{cursor:pointer;}
 .daily-log-row:hover{border-color:var(--border-neon);background:rgba(0,180,255,0.04);}
 .daily-detail-grid{display:grid;grid-template-columns:1fr;gap:0.7rem;}
@@ -1719,6 +1729,7 @@ let activePunchModalFloor = null;
 let projectTimelineFilter = 'all';
 let activeDailyLog = null;
 let dailyLogEditMode = false;
+let materialTrackingStatusFilter = 'All';
 
 function resetProjectRuntimeState() {
   projectTransactions = [];
@@ -1732,6 +1743,7 @@ function resetProjectRuntimeState() {
   activePunchModalFloor = null;
   activeTrackingItem = null;
   projectTimelineFilter = 'all';
+  materialTrackingStatusFilter = 'All';
   activeDailyLog = null;
   dailyLogEditMode = false;
 }
@@ -2025,15 +2037,23 @@ async function loadTimelineData() {
     } else {
       projectMaterialRequests = [];
     }
-    try {
-      const opsData = await apiGet('projectOperations', { projectId: currentProject.id });
-      if (!currentProject || currentProject.id !== loadingProjectId) return;
-      projectPunchItems = opsData.punchItems || [];
-      projectDailyLogs = opsData.dailyLogs || [];
-      projectTrackingItems = opsData.trackingItems || [];
-      projectInspectionItems = opsData.inspectionItems || [];
-      renderProjectOperations();
-    } catch(e) {
+    if (canSeeProjectOperations() || canSeeInspectionItems()) {
+      try {
+        const opsData = await apiGet('projectOperations', { projectId: currentProject.id });
+        if (!currentProject || currentProject.id !== loadingProjectId) return;
+        projectPunchItems = opsData.punchItems || [];
+        projectDailyLogs = opsData.dailyLogs || [];
+        projectTrackingItems = opsData.trackingItems || [];
+        projectInspectionItems = opsData.inspectionItems || [];
+        renderProjectOperations();
+      } catch(e) {
+        projectPunchItems = [];
+        projectDailyLogs = [];
+        projectTrackingItems = [];
+        projectInspectionItems = [];
+        renderProjectOperations();
+      }
+    } else {
       projectPunchItems = [];
       projectDailyLogs = [];
       projectTrackingItems = [];
@@ -2716,8 +2736,53 @@ function renderTrackingList(kind, el) {
     el.innerHTML = `<div class="module-empty">No ${kind.toLowerCase()} tracking yet.</div>`;
     return;
   }
-  el.innerHTML = items.slice(0, 3).map(renderTrackingRow).join('') +
-    (items.length > 3 ? `<button class="feed-more" onclick="openFullTrackingModal('${kind}')">See Full</button>` : '');
+  const visibleItems = kind === 'Material' ? filterMaterialTrackingItems(items) : items;
+  el.innerHTML = (kind === 'Material' ? renderMaterialTrackingStatusButtons(items) : '') +
+    (visibleItems.length ? visibleItems.slice(0, 3).map(renderTrackingRow).join('') : `<div class="module-empty">No material tracking in ${escHtml(materialTrackingStatusFilter)} yet.</div>`) +
+    (visibleItems.length > 3 ? `<button class="feed-more" onclick="openFullTrackingModal('${kind}')">See Full</button>` : '');
+}
+
+function normalizeTrackingStatus(status) {
+  return String(status || 'Needed').trim() || 'Needed';
+}
+
+function trackingStatusClass(status) {
+  return normalizeTrackingStatus(status).toLowerCase().replace(/\s+/g, '-');
+}
+
+function getMaterialTrackingStatuses(items) {
+  const preferred = ['Pending','Approved','Ordered','Completed','Incomplete','Wrong Item','Rejected','Needed'];
+  const seen = new Set(items.map(item => normalizeTrackingStatus(item.status)));
+  const ordered = preferred.filter(status => seen.has(status));
+  const extra = [...seen].filter(status => !preferred.includes(status)).sort();
+  return ['All', ...ordered, ...extra];
+}
+
+function filterMaterialTrackingItems(items) {
+  if (!items.length) return [];
+  const statuses = getMaterialTrackingStatuses(items);
+  if (!statuses.includes(materialTrackingStatusFilter)) materialTrackingStatusFilter = 'All';
+  if (materialTrackingStatusFilter === 'All') return items;
+  return items.filter(item => normalizeTrackingStatus(item.status) === materialTrackingStatusFilter);
+}
+
+function renderMaterialTrackingStatusButtons(items) {
+  const counts = items.reduce((acc, item) => {
+    const status = normalizeTrackingStatus(item.status);
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+  return `<div class="tracking-status-bar">` + getMaterialTrackingStatuses(items).map(status => {
+    const active = status === materialTrackingStatusFilter ? ' active' : '';
+    const count = status === 'All' ? items.length : (counts[status] || 0);
+    return `<button type="button" class="tracking-status-btn status-${trackingStatusClass(status)}${active}" onclick="setMaterialTrackingStatusFilter('${escAttr(status)}')">${escHtml(status)} ${count}</button>`;
+  }).join('') + `</div>`;
+}
+
+function setMaterialTrackingStatusFilter(status) {
+  materialTrackingStatusFilter = status || 'All';
+  renderTrackingList('Material', document.getElementById('materialTrackingOps'));
+  refreshOpenTrackingModal('Material');
 }
 
 function getCombinedTrackingItems(kind) {
@@ -2755,7 +2820,7 @@ function isToolTrackingRequest(req) {
 
 function renderTrackingRow(item) {
   const linked = item.source === 'request';
-  const statusClass = String(item.status || 'Needed').toLowerCase().replace(/\s+/g, '-');
+  const statusClass = trackingStatusClass(item.status);
   return `<div class="ops-row ${linked ? 'request-linked' : ''}" onclick="openTrackingDetail('${item.kind}','${item.source}','${item.id}')">
     <div class="ops-row-title">${item.item}</div>
     <div class="ops-row-meta"><span class="ops-chip ${statusClass}">${item.status || 'Needed'}</span>${linked ? ' Request ' + item.id + ' · ' : ' '}Required: ${item.requiredQty || '-'} · Ordered/Available: ${item.orderedQty || '-'} · Received: ${item.receivedQty || '-'} · Missing: ${item.missingQty || '-'}</div>
@@ -2769,11 +2834,22 @@ function openFullTrackingModal(kind) {
   const title = document.getElementById('trackingFullTitle');
   const content = document.getElementById('trackingFullContent');
   if (title) title.textContent = kind + ' Tracking';
-  if (content) {
-    const items = getCombinedTrackingItems(kind);
-    content.innerHTML = items.length ? items.map(renderTrackingRow).join('') : `<div class="module-empty">No ${kind.toLowerCase()} tracking yet.</div>`;
-  }
+  refreshOpenTrackingModal(kind);
   document.getElementById('modal-tracking-full').classList.add('open');
+}
+
+function refreshOpenTrackingModal(kind) {
+  const modal = document.getElementById('modal-tracking-full');
+  const content = document.getElementById('trackingFullContent');
+  if (!content || (modal && modal.classList.contains('open') && !String(document.getElementById('trackingFullTitle')?.textContent || '').startsWith(kind))) return;
+  const items = getCombinedTrackingItems(kind);
+  if (!items.length) {
+    content.innerHTML = `<div class="module-empty">No ${kind.toLowerCase()} tracking yet.</div>`;
+    return;
+  }
+  const visibleItems = kind === 'Material' ? filterMaterialTrackingItems(items) : items;
+  content.innerHTML = (kind === 'Material' ? renderMaterialTrackingStatusButtons(items) : '') +
+    (visibleItems.length ? visibleItems.map(renderTrackingRow).join('') : `<div class="module-empty">No material tracking in ${escHtml(materialTrackingStatusFilter)} yet.</div>`);
 }
 
 function findCombinedTrackingItem(kind, source, id) {
