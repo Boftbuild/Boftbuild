@@ -1492,7 +1492,7 @@ async function apiPost(payload) {
 }
 
 async function loadTeamUsersForAssignment() {
-  if (teamUsers.length || !['Owner','Manager'].includes(CURRENT_ROLE)) return;
+  if (teamUsers.length || !['Owner','Manager','Field Lead','Planner'].includes(CURRENT_ROLE)) return;
   try {
     const data = await apiGet('getAllUsers');
     teamUsers = (data.users || []).filter(u => String(u.active || 'Yes') !== 'No');
@@ -2791,9 +2791,11 @@ function setMaterialTrackingStatusFilter(status) {
 function getCombinedTrackingItems(kind) {
   const manualItems = projectTrackingItems
     .filter(item => item.kind === kind)
+    .filter(item => kind !== 'Tool' || !isToolTrackingHiddenStatus(item.status))
     .map(item => ({ source: 'tracking', sortDate: item.updatedAt || item.createdAt || '', ...item }));
   const requestItems = projectMaterialRequests
     .filter(req => kind === 'Material' ? isMaterialTrackingRequest(req) : isToolTrackingRequest(req))
+    .filter(req => kind !== 'Tool' || !isToolTrackingHiddenStatus(req.status))
     .map(req => ({
       source: 'request',
       id: req.id,
@@ -2834,13 +2836,19 @@ function renderTrackingRow(item) {
     <div class="ops-row-meta"><span class="ops-chip ${statusClass}">${item.status || 'Needed'}</span>${linked ? ' Request ' + item.id + ' · ' : ' '}Required: ${item.requiredQty || '-'} · Ordered/Available: ${item.orderedQty || '-'} · Received: ${item.receivedQty || '-'} · Missing: ${item.missingQty || '-'}</div>
     ${(item.ownerCarrier || item.location) ? `<div class="ops-row-meta">${[item.ownerCarrier ? (linked ? 'Requested by: ' : 'Who: ') + item.ownerCarrier : '', item.location ? 'Category: ' + item.location : ''].filter(Boolean).join(' · ')}</div>` : ''}
     ${item.notes ? `<div class="ops-row-meta">${item.notes}</div>` : ''}
-    ${locked ? '<div class="ops-row-meta">Closed - no further changes.</div>' : ''}
+    ${locked ? `<div class="ops-row-meta">${item.kind === 'Tool' ? 'Final status - no further actions.' : 'Closed - no further changes.'}</div>` : ''}
     ${linked ? renderRequestFeedActions({ request: item.request }) : ''}
   </div>`;
 }
 
 function isTrackingItemLocked(item) {
-  return ['Completed'].includes(normalizeTrackingStatus(item && item.status));
+  const status = normalizeTrackingStatus(item && item.status);
+  if (item && item.kind === 'Tool') return ['Lost'].includes(status);
+  return ['Completed'].includes(status);
+}
+
+function isToolTrackingHiddenStatus(status) {
+  return ['Removed','Picked Up','Returned'].includes(normalizeTrackingStatus(status));
 }
 
 function openFullTrackingModal(kind) {
@@ -2869,9 +2877,10 @@ function findCombinedTrackingItem(kind, source, id) {
   return getCombinedTrackingItems(kind).find(item => item.source === source && item.id === id);
 }
 
-function openTrackingDetail(kind, source, id) {
+async function openTrackingDetail(kind, source, id) {
   activeTrackingItem = findCombinedTrackingItem(kind, source, id);
   if (!activeTrackingItem) return;
+  if (kind === 'Tool') await loadTeamUsersForAssignment();
   document.getElementById('trackingDetailTitle').textContent = kind + ' Tracking';
   const body = document.getElementById('trackingDetailBody');
   const footer = document.getElementById('trackingDetailFooter');
@@ -2901,14 +2910,18 @@ function openTrackingDetail(kind, source, id) {
   } else if (kind === 'Tool' && item.source === 'request') {
     html += `<div class="field-group">
       <label class="field-label">Tool Status</label>
-      <select class="field-input" id="tq-status">
+      <select class="field-input" id="tq-status" onchange="renderToolRequestPickedUpByField()">
         <option value="On The Way">On The Way</option>
         <option value="On Site">On Site</option>
         <option value="Side Job">Side Job</option>
         <option value="Not Here">Not Here</option>
+        <option value="Broken">Broken</option>
+        <option value="Lost">Lost</option>
+        <option value="Picked Up">Picked Up / Removed</option>
         <option value="Completed">Completed</option>
       </select>
     </div>
+    <div id="tq-picked-up-by-wrap"></div>
     <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="tq-notes" rows="2" style="resize:vertical;"></textarea></div>`;
     footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Cancel</button><button class="btn-submit" onclick="saveToolRequestTracking()">Save</button>`;
   } else if (kind === 'Tool' && item.source === 'tracking') {
@@ -2928,6 +2941,27 @@ function openTrackingDetail(kind, source, id) {
   body.innerHTML = html;
   document.getElementById('modal-tracking-detail').classList.add('open');
   if (kind === 'Tool' && item.source === 'tracking') renderToolTrackingActionFields();
+  if (kind === 'Tool' && item.source === 'request') renderToolRequestPickedUpByField();
+}
+
+function renderToolRequestPickedUpByField() {
+  const status = document.getElementById('tq-status')?.value || '';
+  const wrap = document.getElementById('tq-picked-up-by-wrap');
+  if (!wrap) return;
+  if (status !== 'Picked Up') {
+    wrap.innerHTML = '';
+    return;
+  }
+  const options = teamUsers.length
+    ? teamUsers.map(u => `<option value="${escAttr(u.email || '')}">${escHtml(u.name || u.email)}${u.role ? ' - ' + escHtml(u.role) : ''}</option>`).join('')
+    : '<option value="">Team list unavailable</option>';
+  wrap.innerHTML = `<div class="field-group">
+    <label class="field-label">Picked Up By</label>
+    <select class="field-input" id="tq-picked-up-by" ${teamUsers.length ? '' : 'disabled'}>
+      <option value="">Select employee</option>
+      ${options}
+    </select>
+  </div>`;
 }
 
 function renderToolTrackingActionFields() {
@@ -2937,14 +2971,16 @@ function renderToolTrackingActionFields() {
   if (action === 'Remove') {
     el.innerHTML = `<div class="field-group">
       <label class="field-label">Remove Reason</label>
-      <select class="field-input" id="tt-reason">
-        <option value="Removed">Picked Up</option>
+      <select class="field-input" id="tt-reason" onchange="renderPickedUpByField()">
+        <option value="Picked Up">Picked Up</option>
         <option value="Broken">Broken</option>
         <option value="Lost">Lost</option>
         <option value="Returned">Returned</option>
         <option value="Other">Other</option>
       </select>
-    </div>`;
+    </div>
+    <div id="tt-picked-up-by-wrap"></div>`;
+    renderPickedUpByField();
   } else {
     el.innerHTML = `<div class="field-group">
       <label class="field-label">Status</label>
@@ -2952,9 +2988,32 @@ function renderToolTrackingActionFields() {
         <option value="Not Here">Not Here</option>
         <option value="On Site">On Site</option>
         <option value="On The Way">On The Way</option>
+        <option value="Side Job">Side Job</option>
+        <option value="Broken">Broken</option>
+        <option value="Lost">Lost</option>
       </select>
     </div>`;
   }
+}
+
+function renderPickedUpByField() {
+  const reason = document.getElementById('tt-reason')?.value || '';
+  const wrap = document.getElementById('tt-picked-up-by-wrap');
+  if (!wrap) return;
+  if (reason !== 'Picked Up') {
+    wrap.innerHTML = '';
+    return;
+  }
+  const options = teamUsers.length
+    ? teamUsers.map(u => `<option value="${escAttr(u.email || '')}">${escHtml(u.name || u.email)}${u.role ? ' - ' + escHtml(u.role) : ''}</option>`).join('')
+    : '<option value="">Team list unavailable</option>';
+  wrap.innerHTML = `<div class="field-group">
+    <label class="field-label">Picked Up By</label>
+    <select class="field-input" id="tt-picked-up-by" ${teamUsers.length ? '' : 'disabled'}>
+      <option value="">Select employee</option>
+      ${options}
+    </select>
+  </div>`;
 }
 
 async function saveMaterialDelivery() {
@@ -2989,6 +3048,7 @@ async function saveToolRequestTracking() {
       action: 'recordToolTrackingDelivery',
       requestId: activeTrackingItem.id,
       status,
+      pickedUpBy: document.getElementById('tq-picked-up-by')?.value || '',
       notes,
     });
     if (result.success) {
@@ -3011,6 +3071,7 @@ async function saveToolTrackingAction() {
       action: 'removeToolFromProject',
       id: activeTrackingItem.id,
       reason,
+      pickedUpBy: document.getElementById('tt-picked-up-by')?.value || '',
       notes: document.getElementById('tt-notes').value.trim(),
     });
     if (result.success) {
