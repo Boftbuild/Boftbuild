@@ -344,6 +344,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .ops-row-actions{display:flex;gap:0.35rem;margin-top:0.45rem;flex-wrap:wrap;}
 .ops-chip{font-size:0.6rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;border:1px solid var(--border);color:var(--gold-light);padding:0.12rem 0.45rem;background:var(--gold-dim);}
 .ops-chip.pending{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
+.ops-chip.pending-approval{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
 .ops-chip.approved,.ops-chip.completed{color:var(--green);border-color:rgba(76,175,125,0.45);background:rgba(76,175,125,0.08);}
 .ops-chip.rejected,.ops-chip.wrong-item,.ops-chip.lost,.ops-chip.broken{color:var(--red);border-color:rgba(224,85,85,0.45);background:rgba(224,85,85,0.08);}
 .ops-chip.ordered,.ops-chip.assigned,.ops-chip.on-site,.ops-chip.on-the-way{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
@@ -858,7 +859,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 <div id="modal-project-request" class="modal-overlay">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">New Request</span>
+      <span class="modal-title" id="projectRequestModalTitle">New Request</span>
       <button class="modal-close" onclick="closeModal('project-request')">✕</button>
     </div>
     <div class="modal-body">
@@ -900,7 +901,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('project-request')">Cancel</button>
-      <button class="btn-submit" onclick="submitProjectRequest()">Create Request</button>
+      <button class="btn-submit" id="projectRequestSubmitBtn" onclick="submitProjectRequest()">Create Request</button>
     </div>
   </div>
 </div>
@@ -2794,25 +2795,66 @@ function getCombinedTrackingItems(kind) {
     .filter(item => kind !== 'Tool' || !isToolTrackingHiddenStatus(item.status))
     .map(item => ({ source: 'tracking', sortDate: item.updatedAt || item.createdAt || '', ...item }));
   const requestItems = projectMaterialRequests
-    .filter(req => kind === 'Material' ? isMaterialTrackingRequest(req) : isToolTrackingRequest(req))
-    .filter(req => kind !== 'Tool' || !isToolTrackingHiddenStatus(req.status))
-    .map(req => ({
+    .flatMap(req => getRequestTrackingItemsForKind(req, kind))
+    .filter(item => kind !== 'Tool' || !isToolTrackingHiddenStatus(item.status));
+  return [...requestItems, ...manualItems].sort((a,b) => String(b.sortDate || '').localeCompare(String(a.sortDate || '')));
+}
+
+function getRequestTrackingItemsForKind(req, kind) {
+  const parsed = parseProjectRequestItems(req);
+  const matched = parsed.filter(item => kind === 'Material' ? isMaterialCategory(item.category) : isToolCategory(item.category));
+  const items = matched.length ? matched : ((kind === 'Material' ? isMaterialTrackingRequest(req) : isToolTrackingRequest(req)) ? [{
+    index: 1,
+    category: req.subtype || '',
+    priority: req.priority || '',
+    quantity: req.quantity || '',
+    description: req.description || req.subtype || req.id,
+  }] : []);
+  return items.map(item => ({
       source: 'request',
-      id: req.id,
+      id: req.id + '::' + item.index,
+      requestId: req.id,
       kind,
-      item: req.description || req.subtype || req.id,
-      requiredQty: req.quantity || '',
-      orderedQty: ['Approved','Ordered','Completed'].includes(req.status) ? req.quantity || '' : '',
-      receivedQty: req.status === 'Completed' ? req.quantity || '' : '',
-      missingQty: req.status === 'Rejected' ? req.quantity || '' : '',
+      item: item.description || req.description || req.subtype || req.id,
+      requiredQty: item.quantity || req.quantity || '',
+      orderedQty: ['Approved','Ordered','Completed'].includes(req.status) ? item.quantity || req.quantity || '' : '',
+      receivedQty: req.status === 'Completed' ? item.quantity || req.quantity || '' : '',
+      missingQty: req.status === 'Rejected' ? item.quantity || req.quantity || '' : '',
       status: req.status || 'Pending',
       ownerCarrier: req.requestedByName || req.requestedByEmail || '',
-      location: req.subtype || '',
+      location: item.category || req.subtype || '',
       notes: req.notes || '',
       sortDate: req.completedAt || req.orderedAt || req.approvedAt || req.timestamp || '',
       request: req,
+      requestItemIndex: item.index,
     }));
-  return [...requestItems, ...manualItems].sort((a,b) => String(b.sortDate || '').localeCompare(String(a.sortDate || '')));
+}
+
+function parseProjectRequestItems(req) {
+  const text = String(req && req.description || '').trim();
+  const lines = text.split(/\n+/).map(line => line.trim()).filter(Boolean);
+  const items = [];
+  lines.forEach((line, index) => {
+    const match = line.match(/^(\d+)\.\s*\[([^\]]*)\]\s*(.*)$/);
+    if (!match) return;
+    const meta = match[2].split('|').map(v => v.trim()).filter(Boolean);
+    let quantity = '';
+    const cleanMeta = [];
+    meta.forEach(part => {
+      const qty = part.match(/^Qty:\s*(.*)$/i);
+      if (qty) quantity = qty[1].trim();
+      else cleanMeta.push(part);
+    });
+    items.push({
+      index: Number(match[1]) || index + 1,
+      category: cleanMeta[0] || req.subtype || '',
+      priority: cleanMeta[1] || req.priority || '',
+      quantity,
+      description: match[3] || line,
+    });
+  });
+  if (items.length) return items;
+  return text ? [{ index: 1, category: req.subtype || '', priority: req.priority || '', quantity: req.quantity || '', description: text }] : [];
 }
 
 function isMaterialTrackingRequest(req) {
@@ -2827,24 +2869,40 @@ function isToolTrackingRequest(req) {
   return ['Tool Needed','Tool','Tools','Equipment'].some(type => haystack.includes(type));
 }
 
+function isMaterialCategory(category) {
+  return ['Material','Hardware','Lumber','Nails'].includes(String(category || '').trim());
+}
+
+function isToolCategory(category) {
+  return ['Tool Needed','Tool','Tools','Equipment','New Tool','Maintenance','Repair','Replacement'].includes(String(category || '').trim());
+}
+
 function renderTrackingRow(item) {
   const linked = item.source === 'request';
   const statusClass = trackingStatusClass(item.status);
   const locked = isTrackingItemLocked(item);
-  return `<div class="ops-row ${linked ? 'request-linked' : ''} ${locked ? 'locked' : ''}" ${locked ? '' : `onclick="openTrackingDetail('${item.kind}','${item.source}','${item.id}')"`}>
+  const canOpenTracking = !locked && isRequestApprovedForTracking(item);
+  return `<div class="ops-row ${linked ? 'request-linked' : ''} ${locked ? 'locked' : ''}" ${canOpenTracking ? `onclick="openTrackingDetail('${item.kind}','${item.source}','${item.id}')"` : ''}>
     <div class="ops-row-title">${item.item}</div>
-    <div class="ops-row-meta"><span class="ops-chip ${statusClass}">${item.status || 'Needed'}</span>${linked ? ' Request ' + item.id + ' · ' : ' '}Required: ${item.requiredQty || '-'} · Ordered/Available: ${item.orderedQty || '-'} · Received: ${item.receivedQty || '-'} · Missing: ${item.missingQty || '-'}</div>
+    <div class="ops-row-meta"><span class="ops-chip ${statusClass}">${item.status || 'Needed'}</span>${linked ? ' Request ' + (item.requestId || item.id) + ' · ' : ' '}Required: ${item.requiredQty || '-'} · Ordered/Available: ${item.orderedQty || '-'} · Received: ${item.receivedQty || '-'} · Missing: ${item.missingQty || '-'}</div>
     ${(item.ownerCarrier || item.location) ? `<div class="ops-row-meta">${[item.ownerCarrier ? (linked ? 'Requested by: ' : 'Who: ') + item.ownerCarrier : '', item.location ? 'Category: ' + item.location : ''].filter(Boolean).join(' · ')}</div>` : ''}
     ${item.notes ? `<div class="ops-row-meta">${item.notes}</div>` : ''}
-    ${locked ? `<div class="ops-row-meta">${item.kind === 'Tool' ? 'Final status - no further actions.' : 'Closed - no further changes.'}</div>` : ''}
+    ${locked ? `<div class="ops-row-meta">${item.status === 'Rejected' ? 'Rejected - closed until re-opened by Owner/Manager.' : item.kind === 'Tool' ? 'Final status - no further actions.' : 'Closed - no further changes.'}</div>` : ''}
+    ${linked && !locked && !canOpenTracking ? '<div class="ops-row-meta">Waiting for approval. Edit or delete only.</div>' : ''}
     ${linked ? renderRequestFeedActions({ request: item.request }) : ''}
   </div>`;
 }
 
 function isTrackingItemLocked(item) {
   const status = normalizeTrackingStatus(item && item.status);
+  if (status === 'Rejected') return true;
   if (item && item.kind === 'Tool') return ['Lost'].includes(status);
   return ['Completed'].includes(status);
+}
+
+function isRequestApprovedForTracking(item) {
+  if (!item || item.source !== 'request') return true;
+  return ['Approved','Ordered','On The Way','On Site','Side Job','Not Here','Broken','Completed','Incomplete','Wrong Item'].includes(normalizeTrackingStatus(item.status));
 }
 
 function isToolTrackingHiddenStatus(status) {
@@ -3025,7 +3083,7 @@ async function saveMaterialDelivery() {
   try {
     const result = await apiPost({
       action: 'recordMaterialTrackingDelivery',
-      requestId: activeTrackingItem.id,
+      requestId: activeTrackingItem.requestId || activeTrackingItem.id,
       resultType,
       receivedQty: document.getElementById('mt-received').value.trim(),
       notes,
@@ -3046,7 +3104,7 @@ async function saveToolRequestTracking() {
   try {
     const result = await apiPost({
       action: 'recordToolTrackingDelivery',
-      requestId: activeTrackingItem.id,
+      requestId: activeTrackingItem.requestId || activeTrackingItem.id,
       status,
       pickedUpBy: document.getElementById('tq-picked-up-by')?.value || '',
       notes,
@@ -3499,13 +3557,13 @@ function refreshOpenPunchModal() {
 function renderRequestFeedActions(item) {
   const r = item.request;
   if (!r || !['Owner','Manager','Planner','Field Lead'].includes(CURRENT_ROLE) || isProjectCompleted(currentProject) && isLowProjectRole()) return '';
-  if (r.status === 'Pending') {
+  if (['Pending','Pending Approval'].includes(r.status)) {
     return `<div class="feed-actions">
       <button class="feed-action-btn" title="Edit request" onclick="event.stopPropagation();openEditProjectRequestModal('${r.id}')">✎</button>
       <button class="feed-action-btn danger" title="Delete request" onclick="event.stopPropagation();deleteProjectRequest('${r.id}')">⌫</button>
     </div>`;
   }
-  if (r.status === 'Rejected') {
+  if (r.status === 'Rejected' && ['Owner','Manager'].includes(CURRENT_ROLE)) {
     return `<div class="feed-actions">
       <button class="feed-action-btn reopen" title="Re-open request" onclick="event.stopPropagation();reopenProjectRequest('${r.id}')">Re-Open</button>
     </div>`;
@@ -3532,9 +3590,12 @@ function openFullActivityFeed() {
 
 function openProjectRequestModal() {
   if (!currentProject) return;
+  editingProjectRequestId = null;
   projectRequestItems = [];
   projectRequestEditIndex = -1;
   resetProjectRequestItemForm();
+  document.getElementById('projectRequestModalTitle').textContent = 'New Request';
+  document.getElementById('projectRequestSubmitBtn').textContent = 'Create Request';
   document.getElementById('pr-notes').value = '';
   renderProjectRequestItems();
   document.getElementById('modal-project-request').classList.add('open');
@@ -3650,6 +3711,10 @@ async function submitProjectRequest() {
   if (!currentProject) return;
   if (projectRequestEditIndex >= 0) { showToast('Update the item before creating request'); return; }
   if (!projectRequestItems.length) { showToast('Add at least one item'); return; }
+  if (editingProjectRequestId) {
+    await saveProjectRequestFromBuilder();
+    return;
+  }
   const firstItem = projectRequestItems[0];
   const hasUrgent = projectRequestItems.some(item => item.priority === 'Urgent');
   const description = buildProjectRequestSummary();
@@ -3702,15 +3767,47 @@ async function reloadProjectRequestsAndFeed() {
 function openEditProjectRequestModal(requestId) {
   const r = projectMaterialRequests.find(req => req.id === requestId);
   if (!r) return;
-  if (r.status !== 'Pending') { showToast('Only Pending requests can be edited'); return; }
+  if (!['Pending','Pending Approval'].includes(r.status)) { showToast('Only requests waiting approval can be edited'); return; }
   editingProjectRequestId = requestId;
-  document.getElementById('er-id').value = r.id;
-  document.getElementById('er-subtype').value = r.subtype || 'Material';
-  document.getElementById('er-priority').value = r.priority || 'Normal';
-  document.getElementById('er-description').value = r.description || '';
-  document.getElementById('er-quantity').value = r.quantity || '';
-  document.getElementById('er-notes').value = r.notes || '';
-  document.getElementById('modal-edit-project-request').classList.add('open');
+  projectRequestItems = parseProjectRequestItems(r).map(item => ({
+    category: item.category || r.subtype || 'Material',
+    priority: item.priority || r.priority || 'Normal',
+    description: item.description || '',
+    quantity: item.quantity || r.quantity || '',
+  }));
+  projectRequestEditIndex = -1;
+  resetProjectRequestItemForm();
+  document.getElementById('projectRequestModalTitle').textContent = 'Edit Request ' + r.id;
+  document.getElementById('projectRequestSubmitBtn').textContent = 'Save';
+  document.getElementById('pr-notes').value = r.notes || '';
+  renderProjectRequestItems();
+  document.getElementById('modal-project-request').classList.add('open');
+}
+
+async function saveProjectRequestFromBuilder() {
+  const id = editingProjectRequestId;
+  const firstItem = projectRequestItems[0];
+  const hasUrgent = projectRequestItems.some(item => item.priority === 'Urgent');
+  const description = buildProjectRequestSummary();
+  try {
+    const result = await apiPost({
+      action: 'updateMaterialRequestDetails',
+      id,
+      subtype: projectRequestItems.length === 1 ? firstItem.category : 'Multiple Items',
+      priority: hasUrgent ? 'Urgent' : 'Normal',
+      description,
+      quantity: projectRequestItems.length === 1 ? firstItem.quantity : projectRequestItems.length + ' items',
+      notes: document.getElementById('pr-notes').value.trim(),
+    });
+    if (result.success) {
+      closeModal('project-request');
+      editingProjectRequestId = null;
+      showToast('✓ Request updated');
+      await reloadProjectRequestsAndFeed();
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
 }
 
 async function saveProjectRequestEdit() {
