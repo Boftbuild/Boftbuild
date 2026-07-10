@@ -1575,7 +1575,7 @@ function removeAssignedCrew(prefix, email) {
 // ============================================================
 async function loadProjects() {
   try {
-    showToast('Loading projects...');
+    setModalLoading(true, 'Loading Projects...');
     const data = await apiGet('projects');
     allProjects = data.projects || [];
     renderProjects();
@@ -1583,8 +1583,8 @@ async function loadProjects() {
     if (projectFromUrl && allProjects.some(p => p.id === projectFromUrl)) {
       openProject(projectFromUrl);
     }
-    showToast('Projects loaded ✓');
   } catch(e) { console.error(e); showToast('Error loading projects'); }
+  finally { setModalLoading(false); }
 }
 
 function renderProjects() {
@@ -1734,6 +1734,8 @@ let projectTimelineFilter = 'all';
 let activeDailyLog = null;
 let dailyLogEditMode = false;
 let materialTrackingStatusFilter = 'All';
+let materialDeliveryDraft = [];
+let toolRequestUpdateDraft = [];
 
 function resetProjectRuntimeState() {
   projectTransactions = [];
@@ -2954,18 +2956,33 @@ async function openTrackingDetail(kind, source, id) {
     html += '<div class="module-empty">This tracking item is completed and locked.</div>';
     footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Close</button>`;
   } else if (kind === 'Material' && item.source === 'request') {
+    materialDeliveryDraft = [];
+    const matItems = parseProjectRequestItems(item.request).filter(reqItem => isMaterialCategory(reqItem.category));
+    const materialOptions = (matItems.length ? matItems : [{ index: item.requestItemIndex || 1, description: item.item, quantity: item.requiredQty, category: item.location }])
+      .map(reqItem => `<option value="${reqItem.index}">${escHtml(reqItem.description || reqItem.category || 'Item')} (${escHtml(reqItem.quantity || '-')})</option>`).join('');
     html += `<div class="field-group">
       <label class="field-label">Delivery Result</label>
-      <select class="field-input" id="mt-result">
+      <select class="field-input" id="mt-result" onchange="renderMaterialDeliveryFields()">
         <option value="Completed">Complete Delivery</option>
         <option value="Incomplete">Incomplete Delivery</option>
         <option value="Wrong Item">Wrong Item</option>
       </select>
     </div>
-    <div class="field-group"><label class="field-label">Quantity Received</label><input class="field-input" id="mt-received" placeholder="Only for incomplete"></div>
+    <div id="mt-incomplete-fields" style="display:none;">
+      <div class="field-row">
+        <div><label class="field-label">Item</label><select class="field-input" id="mt-item">${materialOptions}</select></div>
+        <div><label class="field-label">Qty Received</label><input class="field-input" id="mt-received" placeholder="How many arrived?"></div>
+      </div>
+      <button type="button" class="btn-sm view" onclick="addMaterialDeliveryDraft()">Update Item</button>
+      <div class="request-items-list" id="mt-delivery-list" style="margin-top:0.65rem;"></div>
+    </div>
     <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="mt-notes" rows="2" style="resize:vertical;"></textarea></div>`;
     footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Cancel</button><button class="btn-submit" onclick="saveMaterialDelivery()">Save</button>`;
   } else if (kind === 'Tool' && item.source === 'request') {
+    toolRequestUpdateDraft = [];
+    const toolItems = parseProjectRequestItems(item.request).filter(reqItem => isToolCategory(reqItem.category));
+    const toolOptions = (toolItems.length ? toolItems : [{ index: item.requestItemIndex || 1, description: item.item, category: item.location }])
+      .map(reqItem => `<option value="${reqItem.index}">${escHtml(reqItem.description || reqItem.category || 'Tool')}</option>`).join('');
     html += `<div class="field-group">
       <label class="field-label">Tool Status</label>
       <select class="field-input" id="tq-status" onchange="renderToolRequestPickedUpByField()">
@@ -2979,7 +2996,12 @@ async function openTrackingDetail(kind, source, id) {
         <option value="Completed">Completed</option>
       </select>
     </div>
+    <div class="field-row">
+      <div><label class="field-label">Tool Item</label><select class="field-input" id="tq-item">${toolOptions}</select></div>
+      <div style="display:flex;align-items:flex-end;"><button type="button" class="btn-sm view" onclick="addToolRequestUpdateDraft()">Update Item</button></div>
+    </div>
     <div id="tq-picked-up-by-wrap"></div>
+    <div class="request-items-list" id="tq-update-list" style="margin-bottom:0.75rem;"></div>
     <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="tq-notes" rows="2" style="resize:vertical;"></textarea></div>`;
     footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Cancel</button><button class="btn-submit" onclick="saveToolRequestTracking()">Save</button>`;
   } else if (kind === 'Tool' && item.source === 'tracking') {
@@ -2999,7 +3021,72 @@ async function openTrackingDetail(kind, source, id) {
   body.innerHTML = html;
   document.getElementById('modal-tracking-detail').classList.add('open');
   if (kind === 'Tool' && item.source === 'tracking') renderToolTrackingActionFields();
-  if (kind === 'Tool' && item.source === 'request') renderToolRequestPickedUpByField();
+  if (kind === 'Material' && item.source === 'request') renderMaterialDeliveryFields();
+  if (kind === 'Tool' && item.source === 'request') {
+    renderToolRequestPickedUpByField();
+    renderToolRequestUpdateDraft();
+  }
+}
+
+function getActiveTrackingRequestItems(kind) {
+  if (!activeTrackingItem || !activeTrackingItem.request) return [];
+  const items = parseProjectRequestItems(activeTrackingItem.request);
+  const filtered = kind === 'Material'
+    ? items.filter(reqItem => isMaterialCategory(reqItem.category))
+    : items.filter(reqItem => isToolCategory(reqItem.category));
+  return filtered.length ? filtered : [{ index: activeTrackingItem.requestItemIndex || 1, description: activeTrackingItem.item, quantity: activeTrackingItem.requiredQty, category: activeTrackingItem.location }];
+}
+
+function findActiveTrackingRequestItem(kind, indexValue) {
+  const index = Number(indexValue);
+  return getActiveTrackingRequestItems(kind).find(item => Number(item.index) === index) || null;
+}
+
+function renderMaterialDeliveryFields() {
+  const result = document.getElementById('mt-result')?.value || '';
+  const wrap = document.getElementById('mt-incomplete-fields');
+  if (!wrap) return;
+  wrap.style.display = result === 'Incomplete' ? 'block' : 'none';
+  if (result !== 'Incomplete') {
+    materialDeliveryDraft = [];
+  }
+  renderMaterialDeliveryDraft();
+}
+
+function addMaterialDeliveryDraft() {
+  const selected = findActiveTrackingRequestItem('Material', document.getElementById('mt-item')?.value);
+  const receivedQty = String(document.getElementById('mt-received')?.value || '').trim();
+  if (!selected) { showToast('Select an item'); return; }
+  if (!receivedQty) { showToast('Enter received quantity'); return; }
+  materialDeliveryDraft = materialDeliveryDraft.filter(item => Number(item.index) !== Number(selected.index));
+  materialDeliveryDraft.push({
+    index: selected.index,
+    category: selected.category || '',
+    description: selected.description || activeTrackingItem.item || '',
+    requestedQty: selected.quantity || activeTrackingItem.requiredQty || '',
+    receivedQty
+  });
+  const input = document.getElementById('mt-received');
+  if (input) input.value = '';
+  renderMaterialDeliveryDraft();
+}
+
+function removeMaterialDeliveryDraft(index) {
+  materialDeliveryDraft = materialDeliveryDraft.filter(item => Number(item.index) !== Number(index));
+  renderMaterialDeliveryDraft();
+}
+
+function renderMaterialDeliveryDraft() {
+  const list = document.getElementById('mt-delivery-list');
+  if (!list) return;
+  if (!materialDeliveryDraft.length) {
+    list.innerHTML = '<div class="module-empty">No item updates added yet.</div>';
+    return;
+  }
+  list.innerHTML = materialDeliveryDraft.map(item => `<div class="request-item-row">
+    <div><strong>${escHtml(item.description)}</strong><small>Requested: ${escHtml(item.requestedQty || '-')} · Received: ${escHtml(item.receivedQty || '-')}</small></div>
+    <button type="button" class="btn-icon danger" onclick="removeMaterialDeliveryDraft(${Number(item.index)})">×</button>
+  </div>`).join('');
 }
 
 function renderToolRequestPickedUpByField() {
@@ -3020,6 +3107,45 @@ function renderToolRequestPickedUpByField() {
       ${options}
     </select>
   </div>`;
+}
+
+function addToolRequestUpdateDraft() {
+  const selected = findActiveTrackingRequestItem('Tool', document.getElementById('tq-item')?.value);
+  const status = String(document.getElementById('tq-status')?.value || '').trim();
+  if (!selected) { showToast('Select a tool item'); return; }
+  if (!status) { showToast('Select a status'); return; }
+  const pickedUpBySelect = document.getElementById('tq-picked-up-by');
+  const pickedUpBy = pickedUpBySelect?.value || '';
+  const pickedUpByLabel = pickedUpBySelect && pickedUpBySelect.selectedIndex >= 0 ? pickedUpBySelect.options[pickedUpBySelect.selectedIndex].text : '';
+  toolRequestUpdateDraft = toolRequestUpdateDraft.filter(item => Number(item.index) !== Number(selected.index));
+  toolRequestUpdateDraft.push({
+    index: selected.index,
+    category: selected.category || '',
+    description: selected.description || activeTrackingItem.item || '',
+    requestedQty: selected.quantity || activeTrackingItem.requiredQty || '',
+    status,
+    pickedUpBy,
+    pickedUpByLabel
+  });
+  renderToolRequestUpdateDraft();
+}
+
+function removeToolRequestUpdateDraft(index) {
+  toolRequestUpdateDraft = toolRequestUpdateDraft.filter(item => Number(item.index) !== Number(index));
+  renderToolRequestUpdateDraft();
+}
+
+function renderToolRequestUpdateDraft() {
+  const list = document.getElementById('tq-update-list');
+  if (!list) return;
+  if (!toolRequestUpdateDraft.length) {
+    list.innerHTML = '<div class="module-empty">No tool updates added yet.</div>';
+    return;
+  }
+  list.innerHTML = toolRequestUpdateDraft.map(item => `<div class="request-item-row">
+    <div><strong>${escHtml(item.description)}</strong><small>Status: ${escHtml(item.status)}${item.pickedUpByLabel ? ' · ' + escHtml(item.pickedUpByLabel) : ''}</small></div>
+    <button type="button" class="btn-icon danger" onclick="removeToolRequestUpdateDraft(${Number(item.index)})">×</button>
+  </div>`).join('');
 }
 
 function renderToolTrackingActionFields() {
@@ -3078,14 +3204,18 @@ async function saveMaterialDelivery() {
   if (!activeTrackingItem || activeTrackingItem.source !== 'request') return;
   if (isTrackingItemLocked(activeTrackingItem)) { showToast('This tracking item is closed'); return; }
   const resultType = document.getElementById('mt-result').value;
-  const notes = document.getElementById('mt-notes').value.trim();
-  if (resultType === 'Wrong Item' && !notes) { showToast('Explain what was wrong'); return; }
+  const baseNotes = document.getElementById('mt-notes').value.trim();
+  if (resultType === 'Incomplete' && !materialDeliveryDraft.length) { showToast('Add at least one incomplete item update'); return; }
+  if (resultType === 'Wrong Item' && !baseNotes) { showToast('Explain what was wrong'); return; }
+  const itemLines = materialDeliveryDraft.map(item => `${item.description}: received ${item.receivedQty} of ${item.requestedQty || '-'}`);
+  const notes = [baseNotes, itemLines.length ? 'Incomplete items: ' + itemLines.join('; ') : ''].filter(Boolean).join('\n');
   try {
     const result = await apiPost({
       action: 'recordMaterialTrackingDelivery',
       requestId: activeTrackingItem.requestId || activeTrackingItem.id,
       resultType,
-      receivedQty: document.getElementById('mt-received').value.trim(),
+      receivedQty: itemLines.length ? itemLines.join('; ') : '',
+      itemUpdates: materialDeliveryDraft,
       notes,
     });
     if (result.success) {
@@ -3100,13 +3230,16 @@ async function saveToolRequestTracking() {
   if (!activeTrackingItem || activeTrackingItem.source !== 'request') return;
   if (isTrackingItemLocked(activeTrackingItem)) { showToast('This tracking item is closed'); return; }
   const status = document.getElementById('tq-status').value;
-  const notes = document.getElementById('tq-notes').value.trim();
+  const baseNotes = document.getElementById('tq-notes').value.trim();
+  const itemLines = toolRequestUpdateDraft.map(item => `${item.description}: ${item.status}${item.pickedUpByLabel ? ' by ' + item.pickedUpByLabel : ''}`);
+  const notes = [baseNotes, itemLines.length ? 'Tool item updates: ' + itemLines.join('; ') : ''].filter(Boolean).join('\n');
   try {
     const result = await apiPost({
       action: 'recordToolTrackingDelivery',
       requestId: activeTrackingItem.requestId || activeTrackingItem.id,
       status,
       pickedUpBy: document.getElementById('tq-picked-up-by')?.value || '',
+      itemUpdates: toolRequestUpdateDraft,
       notes,
     });
     if (result.success) {
