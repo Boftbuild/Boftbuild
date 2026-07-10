@@ -70,6 +70,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .tag.normal{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
 .tag.urgent{color:var(--red);border-color:rgba(224,85,85,0.35);background:rgba(224,85,85,0.08);}
 .tag.pending{color:var(--gold-light);}
+.tag.pending-approval{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
 .tag.approved{color:var(--green);border-color:rgba(76,175,125,0.35);background:rgba(76,175,125,0.08);}
 .tag.rejected{color:var(--red);border-color:rgba(224,85,85,0.35);background:rgba(224,85,85,0.08);}
 .tag.ordered{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
@@ -153,7 +154,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
     <div class="toolbar">
       <div class="filters">
         <select class="filter-select" id="filterStatus" onchange="renderRequests()">
-          <option value="">All Status</option><option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option><option value="Ordered">Ordered</option><option value="Completed">Completed</option>
+          <option value="">All Status</option><option value="Pending Approval">Pending Approval</option><option value="Pending">Pending</option><option value="Approved">Approved</option><option value="Rejected">Rejected</option><option value="Ordered">Ordered</option><option value="Completed">Completed</option>
         </select>
         <select class="filter-select" id="filterType" onchange="onRequestTypeFilterChange()">
           <option value="">All Types</option><option value="Project">Project</option><option value="Office">Office</option><option value="Service">Service</option><option value="Tool">Tool</option>
@@ -345,14 +346,14 @@ function updateRequestFilterStyles() {
 
 function updateStats() {
   const count = s => allRequests.filter(r => r.status === s).length;
-  document.getElementById('statPending').textContent = count('Pending');
+  document.getElementById('statPending').textContent = count('Pending') + count('Pending Approval');
   document.getElementById('statApproved').textContent = count('Approved');
   document.getElementById('statOrdered').textContent = count('Ordered');
   document.getElementById('statCompleted').textContent = count('Completed');
 }
 
 function renderRequestRow(r) {
-  const statusClass = (r.status || '').toLowerCase();
+  const statusClass = (r.status || '').toLowerCase().replace(/\s+/g, '-');
   const priorityClass = (r.priority || '').toLowerCase();
   const typeLine = getRequestTypeLine(r);
   const cost = r.actualCost !== '' ? ` · Cost $${Number(r.actualCost).toFixed(2)}` : '';
@@ -405,7 +406,7 @@ function parseRequestItems(r) {
 }
 
 function canSplitRequest(r) {
-  return ['Owner','Manager'].includes(CURRENT_ROLE) && r && r.status === 'Pending' && parseRequestItems(r).length > 1;
+  return ['Owner','Manager'].includes(CURRENT_ROLE) && r && ['Pending','Pending Approval'].includes(r.status) && parseRequestItems(r).length > 1;
 }
 
 function getRequestTypeLine(r) {
@@ -417,11 +418,12 @@ function getRequestTypeLine(r) {
 
 function renderActions(r) {
   const actions = [];
-  if (['Owner','Manager'].includes(CURRENT_ROLE) && r.status === 'Pending') {
+  if (['Owner','Manager'].includes(CURRENT_ROLE) && ['Pending','Pending Approval'].includes(r.status)) {
     if (canSplitRequest(r)) actions.push(`<button class="btn-sm info" onclick="openSplitModal('${r.id}')">Review Items</button>`);
     actions.push(`<button class="btn-sm good" onclick="quickStatus('${r.id}','Approved')">Approve</button>`);
     actions.push(`<button class="btn-sm bad" onclick="quickStatus('${r.id}','Rejected')">Reject</button>`);
   }
+  if (['Owner','Manager'].includes(CURRENT_ROLE) && r.status === 'Rejected') actions.push(`<button class="btn-sm warn" onclick="reopenRequest('${r.id}')">Re-Open</button>`);
   if (['Owner','Manager','Planner'].includes(CURRENT_ROLE) && r.status === 'Approved') actions.push(`<button class="btn-sm info" onclick="openStatusModal('${r.id}','Ordered')">Ordered</button>`);
   if (['Owner','Manager','Planner'].includes(CURRENT_ROLE) && r.status === 'Ordered') actions.push(`<button class="btn-sm good" onclick="openStatusModal('${r.id}','Completed')">Completed</button>`);
   return actions.join('');
@@ -612,6 +614,12 @@ function clearCreateForm() {
 async function quickStatus(id, status) {
   const result = await apiPost({ action:'updateMaterialRequestStatus', id, status });
   if (result.success) { showToast('Request updated' + materialRequestEmailToast_(result.emailStatus)); loadRequests(); }
+  else showToast('Error: ' + result.message);
+}
+
+async function reopenRequest(id) {
+  const result = await apiPost({ action:'reopenMaterialRequest', id });
+  if (result.success) { showToast('Request reopened'); loadRequests(); }
   else showToast('Error: ' + result.message);
 }
 
