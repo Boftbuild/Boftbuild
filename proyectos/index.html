@@ -60,6 +60,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .notification-panel-title{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:var(--neon);margin-bottom:0.65rem;}
 .notification-item{border-top:1px solid rgba(0,180,255,0.12);padding:0.62rem 0;}
 .notification-item:first-of-type{border-top:none;}
+.notification-panel-head{display:flex;align-items:center;justify-content:space-between;gap:0.75rem;margin-bottom:0.35rem;}
+.notification-clear-all,.notification-clear{font-family:'Rajdhani',sans-serif;font-size:0.62rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--neon);background:transparent;border:1px solid var(--border-neon);padding:0.18rem 0.45rem;cursor:pointer;}
+.notification-clear{font-size:0.85rem;line-height:1;padding:0.12rem 0.38rem;color:var(--text-muted);border-color:var(--border);}
+.notification-item-top{display:flex;align-items:flex-start;justify-content:space-between;gap:0.75rem;}
 .notification-title{font-size:0.86rem;font-weight:800;color:var(--text);}
 .notification-meta{font-size:0.72rem;color:var(--muted);margin-top:0.2rem;line-height:1.35;}
 
@@ -1646,9 +1650,12 @@ function renderLiveNotificationPanel() {
   if (!panel) return;
   const items = (liveNotifications || []).filter(n => n.read !== 'Yes').slice(0, 8);
   const visibleItems = items.length ? items : (liveNotifications || []).slice(0, 5);
-  panel.innerHTML = `<div class="notification-panel-title">Latest Updates</div>` +
+  panel.innerHTML = `<div class="notification-panel-head"><div class="notification-panel-title">Latest Updates</div>${items.length ? '<button class="notification-clear-all" onclick="event.stopPropagation();markLiveNotificationsRead()">Clear all</button>' : ''}</div>` +
     (visibleItems.length ? visibleItems.map(n => `<div class="notification-item">
-      <div class="notification-title">${escHtml(n.title || 'BOFT update')}</div>
+      <div class="notification-item-top">
+        <div class="notification-title">${escHtml(n.title || 'BOFT update')}</div>
+        ${n.read !== 'Yes' ? `<button class="notification-clear" onclick="event.stopPropagation();markLiveNotificationRead('${escAttr(n.id || '')}')">×</button>` : ''}
+      </div>
       <div class="notification-meta">${escHtml(n.timestamp || '')}${n.projectName ? ' · ' + escHtml(n.projectName) : ''}</div>
       <div class="notification-meta">${escHtml(n.message || '')}</div>
     </div>`).join('') : '<div class="notification-meta">No new updates.</div>');
@@ -1665,15 +1672,26 @@ async function toggleLiveNotifications(event) {
   }
   renderLiveNotificationPanel();
   panel.classList.remove('hidden');
-  await markLiveNotificationsRead();
+}
+
+async function markLiveNotificationRead(id) {
+  try {
+    if (!id) return;
+    await apiPost({ action: 'markNotificationsRead', ids: [id] });
+    liveNotifications = liveNotifications.map(n => String(n.id || '') === String(id) ? { ...n, read: 'Yes' } : n);
+    renderLiveNotificationPanel();
+    await loadLiveNotifications();
+  } catch(e) {}
 }
 
 async function markLiveNotificationsRead() {
   try {
-    await apiPost({ action: 'markNotificationsRead' });
+    const ids = (liveNotifications || []).filter(n => n.read !== 'Yes').map(n => n.id).filter(Boolean);
+    await apiPost({ action: 'markNotificationsRead', ids });
     const badge = document.getElementById('navNotifyBadge');
     if (badge) badge.classList.add('hidden');
     liveNotifications = liveNotifications.map(n => ({ ...n, read: 'Yes' }));
+    renderLiveNotificationPanel();
   } catch(e) {}
 }
 
@@ -1681,6 +1699,16 @@ function startLiveUpdates(area) {
   if (livePollTimer) clearInterval(livePollTimer);
   pollLiveState(area);
   loadLiveNotifications();
+  if (!window.__boftNotificationClickAway) {
+    window.__boftNotificationClickAway = true;
+    document.addEventListener('click', event => {
+      const panel = document.getElementById('notificationPanel');
+      const badge = document.getElementById('navNotifyBadge');
+      if (!panel || panel.classList.contains('hidden')) return;
+      if (panel.contains(event.target) || badge === event.target) return;
+      panel.classList.add('hidden');
+    });
+  }
   livePollTimer = setInterval(() => pollLiveState(area), 30000);
 }
 
@@ -3192,15 +3220,16 @@ async function openTrackingDetail(kind, source, id) {
     const matItems = getTrackingFamilyRequestItems('Material');
     const materialOptions = (matItems.length ? matItems : [{ index: item.requestItemIndex || 1, value: (item.requestId || item.id) + '::' + (item.requestItemIndex || 1), requestId: item.requestId || item.id, description: item.item, quantity: item.requiredQty, category: item.location }])
       .map(reqItem => `<option value="${escAttr(reqItem.value || (reqItem.requestId + '::' + reqItem.index))}">${escHtml(reqItem.label || reqItem.description || reqItem.category || 'Item')} (${escHtml(reqItem.quantity || '-')})</option>`).join('');
-    html += `<div class="field-group">
+    html += `<label class="check-row" style="margin-bottom:0.85rem;"><input type="checkbox" id="mt-all-complete" onchange="renderMaterialDeliveryFields()"> All Complete</label>
+    <div class="field-group">
       <label class="field-label">Delivery Result</label>
       <select class="field-input" id="mt-result" onchange="renderMaterialDeliveryFields()">
-        <option value="Completed">Complete Delivery</option>
+        <option value="Completed">Item Complete</option>
         <option value="Incomplete">Incomplete Delivery</option>
         <option value="Wrong Item">Wrong Item</option>
       </select>
     </div>
-    <div id="mt-incomplete-fields" style="display:none;">
+    <div id="mt-item-fields">
       <div class="field-row">
         <div><label class="field-label">Item</label><select class="field-input" id="mt-item">${materialOptions}</select></div>
         <div><label class="field-label">Qty Received</label><input class="field-input" id="mt-received" placeholder="How many arrived?"></div>
@@ -3275,10 +3304,21 @@ function findActiveTrackingRequestItem(kind, indexValue) {
 
 function renderMaterialDeliveryFields() {
   const result = document.getElementById('mt-result')?.value || '';
-  const wrap = document.getElementById('mt-incomplete-fields');
+  const allComplete = !!document.getElementById('mt-all-complete')?.checked;
+  const wrap = document.getElementById('mt-item-fields');
+  const resultInput = document.getElementById('mt-result');
+  const itemInput = document.getElementById('mt-item');
+  const receivedInput = document.getElementById('mt-received');
   if (!wrap) return;
-  wrap.style.display = result === 'Incomplete' ? 'block' : 'none';
-  if (result !== 'Incomplete') {
+  wrap.style.display = allComplete ? 'none' : 'block';
+  if (resultInput) resultInput.disabled = allComplete;
+  if (itemInput) itemInput.disabled = allComplete;
+  if (receivedInput) {
+    receivedInput.disabled = allComplete || result !== 'Incomplete';
+    receivedInput.placeholder = result === 'Incomplete' ? 'How many arrived?' : 'Not needed';
+    if (result !== 'Incomplete') receivedInput.value = '';
+  }
+  if (allComplete) {
     materialDeliveryDraft = [];
   }
   renderMaterialDeliveryDraft();
@@ -3286,9 +3326,11 @@ function renderMaterialDeliveryFields() {
 
 function addMaterialDeliveryDraft() {
   const selected = findActiveTrackingRequestItem('Material', document.getElementById('mt-item')?.value);
+  const result = String(document.getElementById('mt-result')?.value || '').trim();
   const receivedQty = String(document.getElementById('mt-received')?.value || '').trim();
   if (!selected) { showToast('Select an item'); return; }
-  if (!receivedQty) { showToast('Enter received quantity'); return; }
+  if (!result) { showToast('Select a delivery result'); return; }
+  if (result === 'Incomplete' && !receivedQty) { showToast('Enter received quantity'); return; }
   const key = selected.value || (selected.requestId + '::' + selected.index);
   materialDeliveryDraft = materialDeliveryDraft.filter(item => item.key !== key);
   materialDeliveryDraft.push({
@@ -3298,7 +3340,8 @@ function addMaterialDeliveryDraft() {
     category: selected.category || '',
     description: selected.description || activeTrackingItem.item || '',
     requestedQty: selected.quantity || activeTrackingItem.requiredQty || '',
-    receivedQty
+    receivedQty,
+    status: result
   });
   const input = document.getElementById('mt-received');
   if (input) input.value = '';
@@ -3318,7 +3361,7 @@ function renderMaterialDeliveryDraft() {
     return;
   }
   list.innerHTML = materialDeliveryDraft.map(item => `<div class="request-item-row">
-    <div><strong>${escHtml(item.description)}</strong><small>${renderRequestId(item.requestId)} · Requested: ${escHtml(item.requestedQty || '-')} · Received: ${escHtml(item.receivedQty || '-')}</small></div>
+    <div><strong>${escHtml(item.description)}</strong><small>${renderRequestId(item.requestId)} · ${escHtml(item.status || 'Updated')} · Requested: ${escHtml(item.requestedQty || '-')} · Received: ${escHtml(item.receivedQty || '-')}</small></div>
     <button type="button" class="btn-icon danger" onclick="removeMaterialDeliveryDraft('${escAttr(item.key)}')">×</button>
   </div>`).join('');
 }
@@ -3440,19 +3483,33 @@ function renderPickedUpByField() {
 async function saveMaterialDelivery() {
   if (!activeTrackingItem || activeTrackingItem.source !== 'request') return;
   if (isTrackingItemLocked(activeTrackingItem)) { showToast('This tracking item is closed'); return; }
-  const resultType = document.getElementById('mt-result').value;
+  const allComplete = !!document.getElementById('mt-all-complete')?.checked;
+  const resultType = allComplete ? 'Completed' : document.getElementById('mt-result').value;
   const baseNotes = document.getElementById('mt-notes').value.trim();
-  if (resultType === 'Incomplete' && !materialDeliveryDraft.length) { showToast('Add at least one incomplete item update'); return; }
-  if (resultType === 'Wrong Item' && !baseNotes) { showToast('Explain what was wrong'); return; }
-  const itemLines = materialDeliveryDraft.map(item => `${item.description}: received ${item.receivedQty} of ${item.requestedQty || '-'}`);
-  const notes = [baseNotes, itemLines.length ? 'Incomplete items: ' + itemLines.join('; ') : ''].filter(Boolean).join('\n');
+  let updates = materialDeliveryDraft;
+  if (allComplete) {
+    updates = getActiveTrackingRequestItems('Material').map(item => ({
+      key: item.value || (item.requestId + '::' + item.index),
+      index: item.index,
+      requestId: item.requestId || activeTrackingItem.requestId || activeTrackingItem.id,
+      category: item.category || '',
+      description: item.description || item.label || activeTrackingItem.item || '',
+      requestedQty: item.quantity || activeTrackingItem.requiredQty || '',
+      receivedQty: item.quantity || activeTrackingItem.requiredQty || '',
+      status: 'Completed'
+    }));
+  }
+  if (!allComplete && !updates.length) { showToast('Add at least one item update'); return; }
+  if (!allComplete && resultType === 'Wrong Item' && !baseNotes && !updates.length) { showToast('Explain what was wrong'); return; }
+  const itemLines = updates.map(item => `${item.description}: ${item.status || resultType}${item.receivedQty ? ' · received ' + item.receivedQty + ' of ' + (item.requestedQty || '-') : ''}`);
+  const notes = [baseNotes, itemLines.length ? 'Material item updates: ' + itemLines.join('; ') : ''].filter(Boolean).join('\n');
   try {
     const result = await apiPost({
       action: 'recordMaterialTrackingDelivery',
       requestId: activeTrackingItem.requestId || activeTrackingItem.id,
       resultType,
       receivedQty: itemLines.length ? itemLines.join('; ') : '',
-      itemUpdates: materialDeliveryDraft,
+      itemUpdates: updates,
       notes,
     });
     if (result.success) {
