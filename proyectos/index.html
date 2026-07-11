@@ -317,12 +317,12 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .tracking-status-btn{font-family:'Rajdhani',sans-serif;font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);background:var(--black);border:1px solid rgba(200,146,42,0.16);padding:0.32rem 0.65rem;cursor:pointer;transition:all 0.18s;}
 .tracking-status-btn:hover{color:var(--gold-light);border-color:var(--border);}
 .tracking-status-btn.active{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
-.tracking-status-btn.status-approved,.tracking-status-btn.status-completed{color:var(--green);border-color:rgba(76,175,125,0.36);background:rgba(76,175,125,0.06);}
-.tracking-status-btn.status-approved.active,.tracking-status-btn.status-completed.active{background:rgba(76,175,125,0.12);}
-.tracking-status-btn.status-rejected,.tracking-status-btn.status-wrong-item{color:var(--red);border-color:rgba(224,85,85,0.36);background:rgba(224,85,85,0.06);}
-.tracking-status-btn.status-rejected.active,.tracking-status-btn.status-wrong-item.active{background:rgba(224,85,85,0.12);}
-.tracking-status-btn.status-ordered,.tracking-status-btn.status-on-site,.tracking-status-btn.status-on-the-way{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
-.tracking-status-btn.status-incomplete,.tracking-status-btn.status-pending,.tracking-status-btn.status-needed{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
+.tracking-status-btn.status-approved,.tracking-status-btn.status-completed,.tracking-status-btn.status-done,.tracking-status-btn.status-on-site{color:var(--green);border-color:rgba(76,175,125,0.36);background:rgba(76,175,125,0.06);}
+.tracking-status-btn.status-approved.active,.tracking-status-btn.status-completed.active,.tracking-status-btn.status-done.active,.tracking-status-btn.status-on-site.active{background:rgba(76,175,125,0.12);}
+.tracking-status-btn.status-rejected,.tracking-status-btn.status-wrong-item,.tracking-status-btn.status-lost,.tracking-status-btn.status-broken{color:var(--red);border-color:rgba(224,85,85,0.36);background:rgba(224,85,85,0.06);}
+.tracking-status-btn.status-rejected.active,.tracking-status-btn.status-wrong-item.active,.tracking-status-btn.status-lost.active,.tracking-status-btn.status-broken.active{background:rgba(224,85,85,0.12);}
+.tracking-status-btn.status-ordered,.tracking-status-btn.status-on-the-way,.tracking-status-btn.status-side-job,.tracking-status-btn.status-not-here{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
+.tracking-status-btn.status-incomplete,.tracking-status-btn.status-pending,.tracking-status-btn.status-pending-approval,.tracking-status-btn.status-needed{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
 .daily-log-row{cursor:pointer;}
 .daily-log-row:hover{border-color:var(--border-neon);background:rgba(0,180,255,0.04);}
 .daily-detail-grid{display:grid;grid-template-columns:1fr;gap:0.7rem;}
@@ -1799,6 +1799,8 @@ let projectTimelineFilter = 'all';
 let activeDailyLog = null;
 let dailyLogEditMode = false;
 let materialTrackingStatusFilter = 'All';
+let toolTrackingStatusFilter = 'All';
+let punchStatusFilter = 'All';
 let materialDeliveryDraft = [];
 let toolRequestUpdateDraft = [];
 
@@ -1815,6 +1817,8 @@ function resetProjectRuntimeState() {
   activeTrackingItem = null;
   projectTimelineFilter = 'all';
   materialTrackingStatusFilter = 'All';
+  toolTrackingStatusFilter = 'All';
+  punchStatusFilter = 'All';
   activeDailyLog = null;
   dailyLogEditMode = false;
 }
@@ -2410,10 +2414,11 @@ function renderPunchListOps() {
     return;
   }
 
+  const statusBar = renderPunchStatusButtons(projectPunchItems);
   if (!selectedPunchArea) {
     const floors = getPunchFloors();
     const visibleFloors = floors.slice(0, 3);
-    el.innerHTML = visibleFloors.map(floor => `
+    el.innerHTML = statusBar + (visibleFloors.length ? visibleFloors.map(floor => `
       <div class="ops-row punch-area-row" onclick="openFullPunchModal('${escAttr(floor.key)}')">
         <div>
           <div class="ops-row-title">${floor.label}</div>
@@ -2421,12 +2426,12 @@ function renderPunchListOps() {
         </div>
         <div class="punch-area-count">${floor.total}</div>
       </div>
-    `).join('') + (floors.length > 3 ? `<button class="feed-more" onclick="openFullPunchModal()">See Full</button>` : '');
+    `).join('') : `<div class="module-empty">No punch items in ${escHtml(punchStatusFilter)} yet.</div>`) + (floors.length > 3 ? `<button class="feed-more" onclick="openFullPunchModal()">See Full</button>` : '');
     return;
   }
 
   const areaItems = getPunchItemsForGroup(selectedPunchArea);
-  el.innerHTML = `<button class="punch-back" onclick="closePunchArea()">← Floors</button>` + areaItems.map(item => {
+  el.innerHTML = statusBar + `<button class="punch-back" onclick="closePunchArea()">← Floors</button>` + (areaItems.length ? areaItems.map(item => {
     const done = item.status === 'Done';
     const incomplete = item.status === 'Incomplete';
     const canWork = canCompletePunch() && !(isProjectCompleted(currentProject) && isLowProjectRole());
@@ -2440,7 +2445,47 @@ function renderPunchListOps() {
         ${['Owner','Manager'].includes(CURRENT_ROLE) ? `<button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="deletePunch('${item.id}')">Delete</button>` : ''}
       </div>` : ''}
     </div>`;
-  }).join('');
+  }).join('') : `<div class="module-empty">No punch items in ${escHtml(punchStatusFilter)} yet.</div>`);
+}
+
+function getPunchStatusCounts(items) {
+  return items.reduce((acc, item) => {
+    const status = String(item.status || 'Pending').trim() || 'Pending';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+}
+
+function getPunchStatuses(items) {
+  const preferred = ['Pending','Incomplete','Done'];
+  const seen = new Set(items.map(item => String(item.status || 'Pending').trim() || 'Pending'));
+  const ordered = preferred.filter(status => seen.has(status));
+  const extra = [...seen].filter(status => !preferred.includes(status)).sort();
+  const statuses = ['All', ...ordered, ...extra];
+  if (!statuses.includes(punchStatusFilter)) punchStatusFilter = 'All';
+  return statuses;
+}
+
+function filterPunchItemsByStatus(items) {
+  const statuses = getPunchStatuses(projectPunchItems);
+  if (!statuses.includes(punchStatusFilter)) punchStatusFilter = 'All';
+  if (punchStatusFilter === 'All') return items;
+  return items.filter(item => String(item.status || 'Pending').trim() === punchStatusFilter);
+}
+
+function renderPunchStatusButtons(items) {
+  const counts = getPunchStatusCounts(items);
+  return `<div class="tracking-status-bar">` + getPunchStatuses(items).map(status => {
+    const active = status === punchStatusFilter ? ' active' : '';
+    const count = status === 'All' ? items.length : (counts[status] || 0);
+    return `<button type="button" class="tracking-status-btn status-${trackingStatusClass(status)}${active}" onclick="setPunchStatusFilter('${escAttr(status)}')">${escHtml(status)} ${count}</button>`;
+  }).join('') + `</div>`;
+}
+
+function setPunchStatusFilter(status) {
+  punchStatusFilter = status || 'All';
+  renderPunchListOps();
+  refreshOpenPunchModal();
 }
 
 function getPunchGroupKey(item) {
@@ -2470,7 +2515,7 @@ function getPunchGroups() {
 
 function getPunchFloors() {
   const map = {};
-  projectPunchItems.forEach(item => {
+  filterPunchItemsByStatus(projectPunchItems).forEach(item => {
     const key = getPunchFloorKey(item);
     if (!map[key]) map[key] = { key, label: key, total: 0, pending: 0, done: 0, areaMap: {} };
     map[key].total++;
@@ -2490,7 +2535,7 @@ function getPunchFloors() {
 
 function getPunchAreasForFloor(floorKey) {
   const map = {};
-  projectPunchItems.filter(item => getPunchFloorKey(item) === floorKey).forEach(item => {
+  filterPunchItemsByStatus(projectPunchItems).filter(item => getPunchFloorKey(item) === floorKey).forEach(item => {
     const groupKey = getPunchGroupKey(item);
     const area = item.area || 'General';
     if (!map[groupKey]) map[groupKey] = { key: groupKey, label: area, total: 0, pending: 0, done: 0 };
@@ -2502,7 +2547,7 @@ function getPunchAreasForFloor(floorKey) {
 }
 
 function getPunchItemsForGroup(key) {
-  return projectPunchItems.filter(item => getPunchGroupKey(item) === key);
+  return filterPunchItemsByStatus(projectPunchItems).filter(item => getPunchGroupKey(item) === key);
 }
 
 function openPunchArea(area) {
@@ -2531,7 +2576,8 @@ function renderFullPunchGroups() {
   activePunchModalFloor = null;
   const floors = getPunchFloors();
   el.innerHTML = `<div class="punch-full-head"><div class="punch-full-title">All Floors</div></div>` +
-    floors.map(floor => `
+    renderPunchStatusButtons(projectPunchItems) +
+    (floors.length ? floors.map(floor => `
       <div class="ops-row punch-area-row" onclick="renderFullPunchFloor('${escAttr(floor.key)}')">
         <div>
           <div class="ops-row-title">${floor.label}</div>
@@ -2539,7 +2585,7 @@ function renderFullPunchGroups() {
         </div>
         <div class="punch-area-count">${floor.total}</div>
       </div>
-    `).join('');
+    `).join('') : `<div class="module-empty">No punch items in ${escHtml(punchStatusFilter)} yet.</div>`);
 }
 
 function renderFullPunchFloor(floorKey) {
@@ -2551,7 +2597,7 @@ function renderFullPunchFloor(floorKey) {
   el.innerHTML = `<div class="punch-full-head">
     <button class="punch-back" onclick="renderFullPunchGroups()">← Floors</button>
     <div class="punch-full-title">${floorKey}</div>
-  </div>` + areas.map(area => `
+  </div>` + renderPunchStatusButtons(projectPunchItems) + (areas.length ? areas.map(area => `
     <div class="ops-row punch-area-row" onclick="renderFullPunchArea('${escAttr(area.key)}')">
       <div>
         <div class="ops-row-title">${area.label}</div>
@@ -2559,7 +2605,7 @@ function renderFullPunchFloor(floorKey) {
       </div>
       <div class="punch-area-count">${area.total}</div>
     </div>
-  `).join('');
+  `).join('') : `<div class="module-empty">No punch items in ${escHtml(punchStatusFilter)} yet.</div>`);
 }
 
 function renderFullPunchArea(groupKey) {
@@ -2571,7 +2617,7 @@ function renderFullPunchArea(groupKey) {
   el.innerHTML = `<div class="punch-full-head">
     <button class="punch-back" onclick="renderFullPunchFloor('${escAttr(activePunchModalFloor)}')">← Areas</button>
     <div class="punch-full-title">${getPunchGroupLabelFromKey(groupKey)}</div>
-  </div>` + items.map(item => {
+  </div>` + renderPunchStatusButtons(projectPunchItems) + (items.length ? items.map(item => {
     const done = item.status === 'Done';
     const incomplete = item.status === 'Incomplete';
     const canWork = canCompletePunch() && !(isProjectCompleted(currentProject) && isLowProjectRole());
@@ -2585,7 +2631,7 @@ function renderFullPunchArea(groupKey) {
         ${['Owner','Manager'].includes(CURRENT_ROLE) ? `<button class="btn-sm" style="color:var(--red);border-color:rgba(224,85,85,0.4);" onclick="deletePunch('${item.id}')">Delete</button>` : ''}
       </div>` : ''}
     </div>`;
-  }).join('');
+  }).join('') : `<div class="module-empty">No punch items in ${escHtml(punchStatusFilter)} yet.</div>`);
 }
 
 function renderDailyLogOps() {
@@ -2807,9 +2853,11 @@ function renderTrackingList(kind, el) {
     el.innerHTML = `<div class="module-empty">No ${kind.toLowerCase()} tracking yet.</div>`;
     return;
   }
-  const visibleItems = kind === 'Material' ? filterMaterialTrackingItems(items) : items;
-  el.innerHTML = (kind === 'Material' ? renderMaterialTrackingStatusButtons(items) : '') +
-    (visibleItems.length ? visibleItems.slice(0, 3).map(renderTrackingRow).join('') : `<div class="module-empty">No material tracking in ${escHtml(materialTrackingStatusFilter)} yet.</div>`) +
+  const visibleItems = kind === 'Material' ? filterMaterialTrackingItems(items) : filterToolTrackingItems(items);
+  const statusButtons = kind === 'Material' ? renderMaterialTrackingStatusButtons(items) : renderToolTrackingStatusButtons(items);
+  const emptyFilter = kind === 'Material' ? materialTrackingStatusFilter : toolTrackingStatusFilter;
+  el.innerHTML = statusButtons +
+    (visibleItems.length ? visibleItems.slice(0, 3).map(renderTrackingRow).join('') : `<div class="module-empty">No ${kind.toLowerCase()} tracking in ${escHtml(emptyFilter)} yet.</div>`) +
     (visibleItems.length > 3 ? `<button class="feed-more" onclick="openFullTrackingModal('${kind}')">See Full</button>` : '');
 }
 
@@ -2854,6 +2902,43 @@ function setMaterialTrackingStatusFilter(status) {
   materialTrackingStatusFilter = status || 'All';
   renderTrackingList('Material', document.getElementById('materialTrackingOps'));
   refreshOpenTrackingModal('Material');
+}
+
+function getToolTrackingStatuses(items) {
+  const preferred = ['Pending Approval','Approved','On The Way','On Site','Side Job','Not Here','Broken','Lost','Completed','Needed'];
+  const seen = new Set(items.map(item => normalizeTrackingStatus(item.status)));
+  const ordered = preferred.filter(status => seen.has(status));
+  const extra = [...seen].filter(status => !preferred.includes(status)).sort();
+  const statuses = ['All', ...ordered, ...extra];
+  if (!statuses.includes(toolTrackingStatusFilter)) toolTrackingStatusFilter = 'All';
+  return statuses;
+}
+
+function filterToolTrackingItems(items) {
+  if (!items.length) return [];
+  const statuses = getToolTrackingStatuses(items);
+  if (!statuses.includes(toolTrackingStatusFilter)) toolTrackingStatusFilter = 'All';
+  if (toolTrackingStatusFilter === 'All') return items;
+  return items.filter(item => normalizeTrackingStatus(item.status) === toolTrackingStatusFilter);
+}
+
+function renderToolTrackingStatusButtons(items) {
+  const counts = items.reduce((acc, item) => {
+    const status = normalizeTrackingStatus(item.status);
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+  return `<div class="tracking-status-bar">` + getToolTrackingStatuses(items).map(status => {
+    const active = status === toolTrackingStatusFilter ? ' active' : '';
+    const count = status === 'All' ? items.length : (counts[status] || 0);
+    return `<button type="button" class="tracking-status-btn status-${trackingStatusClass(status)}${active}" onclick="setToolTrackingStatusFilter('${escAttr(status)}')">${escHtml(status)} ${count}</button>`;
+  }).join('') + `</div>`;
+}
+
+function setToolTrackingStatusFilter(status) {
+  toolTrackingStatusFilter = status || 'All';
+  renderTrackingList('Tool', document.getElementById('toolTrackingOps'));
+  refreshOpenTrackingModal('Tool');
 }
 
 function getCombinedTrackingItems(kind) {
@@ -2993,9 +3078,11 @@ function refreshOpenTrackingModal(kind) {
     content.innerHTML = `<div class="module-empty">No ${kind.toLowerCase()} tracking yet.</div>`;
     return;
   }
-  const visibleItems = kind === 'Material' ? filterMaterialTrackingItems(items) : items;
-  content.innerHTML = (kind === 'Material' ? renderMaterialTrackingStatusButtons(items) : '') +
-    (visibleItems.length ? visibleItems.map(renderTrackingRow).join('') : `<div class="module-empty">No material tracking in ${escHtml(materialTrackingStatusFilter)} yet.</div>`);
+  const visibleItems = kind === 'Material' ? filterMaterialTrackingItems(items) : filterToolTrackingItems(items);
+  const statusButtons = kind === 'Material' ? renderMaterialTrackingStatusButtons(items) : renderToolTrackingStatusButtons(items);
+  const emptyFilter = kind === 'Material' ? materialTrackingStatusFilter : toolTrackingStatusFilter;
+  content.innerHTML = statusButtons +
+    (visibleItems.length ? visibleItems.map(renderTrackingRow).join('') : `<div class="module-empty">No ${kind.toLowerCase()} tracking in ${escHtml(emptyFilter)} yet.</div>`);
 }
 
 function findCombinedTrackingItem(kind, source, id) {
