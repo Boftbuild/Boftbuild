@@ -42,6 +42,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .nav-username{font-size:0.75rem;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .nav-role-badge{font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:0.2rem 0.6rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);display:none;}
 .nav-sync{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.35rem 1rem;cursor:pointer;clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);white-space:nowrap;}
+.nav-notify{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--neon);background:var(--neon-dim);border:1px solid rgba(0,180,255,0.3);padding:0.28rem 0.65rem;cursor:pointer;}
+.nav-notify.hidden{display:none;}
 .nav-hub-btn{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--neon);background:none;border:1px solid rgba(0,180,255,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:all 0.2s;text-decoration:none;display:inline-flex;align-items:center;}
 .nav-hub-btn:hover{color:var(--gold-light);border-color:var(--border);}
 .nav-logout{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid rgba(122,117,112,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:color 0.2s;}
@@ -224,7 +226,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <img class="nav-avatar" id="navAvatar" src="" alt="">
       <span class="nav-username" id="navUsername"></span>
       <span class="nav-role-badge" id="navRoleBadge"></span>
-      <button class="nav-sync" onclick="loadActivityLog()">⟳ Sync</button>
+      <button class="nav-notify hidden" id="navNotifyBadge" onclick="markLiveNotificationsRead()">0 New</button>
       <a href="/hub" class="nav-hub-btn">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="margin-right:4px;"><polygon points="6,0.5 11,3 11,9 6,11.5 1,9 1,3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>Hub
       </a>
@@ -398,6 +400,8 @@ let ACCESS_TOKEN = null;
 let CURRENT_ROLE = null;
 let CURRENT_USER_EMAIL = null;
 let allLogs = [];
+let liveStateSnapshot = {};
+let livePollTimer = null;
 
 // ============================================================
 // AUTH — lee token y rol del Hub, no tiene login propio
@@ -451,6 +455,7 @@ function loginSuccess(user, role) {
   configureAccessForRole(role);
   loadActivityLog();
   loadTeam();
+  startLiveUpdates('activity');
 }
 
 function configureAccessForRole(role) {
@@ -479,7 +484,7 @@ function doLogout() {
 // ============================================================
 // API
 // ============================================================
-async function apiGet(action, params = {}) {
+async function apiGet(action, params = {}, options = {}) {
   const qs = new URLSearchParams({ action, ...params }).toString();
   const res = await fetch(API_URL + '?' + qs, { headers: { Authorization: 'Bearer ' + ACCESS_TOKEN } });
   const data = await res.json();
@@ -490,19 +495,65 @@ async function apiGet(action, params = {}) {
 // ============================================================
 // LOAD ACTIVITY LOG
 // ============================================================
-async function loadActivityLog() {
+async function loadActivityLog(options = {}) {
   try {
-    showToast('Loading activity log...');
+    if (!options.silent) showToast('Loading activity log...');
     const data = await apiGet('activityLog');
     allLogs = data.logs || [];
     populateUserFilter();
     renderStats();
     renderLog();
-    showToast('Activity log updated ✓');
+    if (!options.silent) showToast('Activity log updated ✓');
   } catch(e) {
     console.error(e);
-    showToast('Error loading activity log');
+    if (!options.silent) showToast('Error loading activity log');
   }
+}
+
+function hasOpenModalOrEditing() {
+  return !!document.querySelector('.modal-overlay.open');
+}
+
+async function pollLiveState(area) {
+  if (!ACCESS_TOKEN || document.hidden || hasOpenModalOrEditing()) return;
+  try {
+    const data = await apiGet('systemState', {}, { silent: true });
+    const state = data.state || {};
+    const previous = liveStateSnapshot || {};
+    liveStateSnapshot = state;
+    const firstRun = !Object.keys(previous).length;
+    const activityChanged = (state.activity?.version || 0) !== (previous.activity?.version || 0);
+    const notificationsChanged = (state.notifications?.version || 0) !== (previous.notifications?.version || 0);
+    if (!firstRun && activityChanged) await loadActivityLog({ silent: true });
+    if (!firstRun && notificationsChanged) await loadLiveNotifications();
+  } catch(e) {
+    console.warn('Live state skipped', e);
+  }
+}
+
+async function loadLiveNotifications() {
+  try {
+    const data = await apiGet('myNotifications', {}, { silent: true });
+    const badge = document.getElementById('navNotifyBadge');
+    if (!badge) return;
+    const unread = Number(data.unread || 0);
+    badge.textContent = unread + ' New';
+    badge.classList.toggle('hidden', unread <= 0);
+  } catch(e) {}
+}
+
+async function markLiveNotificationsRead() {
+  try {
+    await apiPost({ action: 'markNotificationsRead' });
+    await loadLiveNotifications();
+  } catch(e) {}
+}
+
+function startLiveUpdates(area) {
+  if (livePollTimer) clearInterval(livePollTimer);
+  pollLiveState(area);
+  loadLiveNotifications();
+  livePollTimer = setInterval(() => pollLiveState(area), 30000);
 }
 
 function populateUserFilter() {
