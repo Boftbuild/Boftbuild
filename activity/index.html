@@ -3,408 +3,547 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BOFT. — Hub</title>
+<title>BOFT — Activity Log</title>
 <script src="https://accounts.google.com/gsi/client"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
   --black:#0a0b0d;--black2:#0f1114;--black3:#141618;
-  --neon:#00b4ff;--gold:#c8922a;--gold-light:#e8b84b;
-  --gold-dim:rgba(200,146,42,0.12);--border:rgba(200,146,42,0.2);
-  --text:#e8e2d4;--muted:#7a7570;--green:#4caf7d;--red:#e05555;
+  --neon:#00b4ff;--neon-dim:rgba(0,180,255,0.1);
+  --gold:#c8922a;--gold-light:#e8b84b;--gold-dim:rgba(200,146,42,0.12);
+  --text:#e8e2d4;--muted:#7a7570;
+  --border:rgba(200,146,42,0.2);--border-neon:rgba(0,180,255,0.25);
+  --red:#e05555;--green:#4caf7d;--purple:#a78bfa;--purple-dim:rgba(167,139,250,0.12);
+  --nav-h:52px;
 }
-html,body{min-height:100vh;background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif;}
+html{scroll-behavior:smooth;}
+body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;}
 
-/* ── LOGIN ── */
-.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
-.login-bg{position:absolute;inset:0;pointer-events:none;}
-.login-box{position:relative;z-index:1;text-align:center;padding:3rem 2.5rem;background:var(--black2);border:1px solid var(--border);width:100%;max-width:400px;}
-.login-logo{font-family:'Cinzel',serif;font-size:3rem;font-weight:700;color:var(--gold-light);letter-spacing:0.05em;}
+/* LOGIN */
+.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--black);position:relative;overflow:hidden;}
+.login-box{background:var(--black2);border:1px solid var(--border);padding:2.5rem 2rem;width:100%;max-width:380px;position:relative;z-index:1;text-align:center;}
+.login-logo{font-family:'Cinzel',serif;font-size:2rem;font-weight:700;color:var(--gold-light);margin-bottom:0.25rem;}
 .login-logo span{color:var(--neon);}
-.login-tagline{font-size:0.7rem;font-weight:700;letter-spacing:0.4em;text-transform:uppercase;color:var(--muted);margin-bottom:2.5rem;margin-top:0.25rem;}
-.login-desc{font-size:0.85rem;color:var(--muted);margin-bottom:2rem;line-height:1.5;}
+.login-sub{font-size:0.72rem;font-weight:700;letter-spacing:0.3em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
+.login-desc{font-size:0.82rem;color:var(--muted);margin-bottom:2rem;line-height:1.5;}
 .login-desc strong{color:var(--text);}
-.g-signin-btn{display:flex;align-items:center;justify-content:center;gap:0.75rem;width:100%;padding:0.9rem 1.5rem;background:white;border:none;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.95rem;font-weight:700;letter-spacing:0.05em;color:#333;transition:background 0.2s,transform 0.15s;}
-.g-signin-btn:hover{background:#f5f5f5;transform:translateY(-1px);}
-.g-signin-btn:disabled{opacity:0.6;cursor:wait;}
-.login-error{font-size:0.8rem;color:var(--red);margin-top:1rem;display:none;padding:0.75rem;border:1px solid rgba(224,85,85,0.3);background:rgba(224,85,85,0.05);}
-.login-error.show{display:block;}
-
-/* ── HUB ── */
-.hub{display:none;min-height:100vh;flex-direction:column;}
 
 /* NAV */
-.hub-nav{display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:52px;border-bottom:1px solid var(--border);background:rgba(10,11,13,0.97);backdrop-filter:blur(10px);position:sticky;top:0;z-index:50;}
-.hub-logo{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold-light);}
-.hub-logo span{color:var(--neon);}
+.app{display:none;}
+.sticky-nav{position:sticky;top:0;z-index:50;background:rgba(10,11,13,0.97);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:var(--nav-h);gap:1rem;flex-wrap:wrap;row-gap:0.4rem;}
+.nav-logo-sm{font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:var(--gold-light);white-space:nowrap;}
+.nav-logo-sm span{color:var(--neon);}
+.nav-links-sm{display:flex;align-items:center;gap:0.25rem;}
+.nav-link{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;padding:0.4rem 0.75rem;transition:color 0.2s;white-space:nowrap;border-bottom:2px solid transparent;}
+.nav-link.active{color:var(--gold-light);border-bottom-color:var(--gold);}
 .nav-right{display:flex;align-items:center;gap:0.75rem;}
 .nav-avatar{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);display:none;}
-.nav-username{font-size:0.75rem;color:var(--muted);}
+.nav-username{font-size:0.75rem;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .nav-role-badge{font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:0.2rem 0.6rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);display:none;}
+.nav-sync{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.35rem 1rem;cursor:pointer;clip-path:polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%);white-space:nowrap;}
 .nav-notify{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--neon);background:var(--neon-dim);border:1px solid rgba(0,180,255,0.3);padding:0.28rem 0.65rem;cursor:pointer;}
 .nav-notify.hidden{display:none;}
-.btn-logout{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid rgba(122,117,112,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:color 0.2s;}
-.btn-logout:hover{color:var(--red);border-color:rgba(224,85,85,0.4);}
+.notification-panel{position:fixed;top:60px;right:1.25rem;z-index:220;width:min(360px,calc(100vw - 2rem));background:var(--black3);border:1px solid rgba(0,180,255,0.3);box-shadow:0 18px 60px rgba(0,0,0,0.42);padding:0.85rem;}
+.notification-panel.hidden{display:none;}
+.notification-panel-title{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:var(--neon);margin-bottom:0.65rem;}
+.notification-item{border-top:1px solid rgba(0,180,255,0.12);padding:0.62rem 0;}
+.notification-item:first-of-type{border-top:none;}
+.notification-title{font-size:0.86rem;font-weight:800;color:var(--text);}
+.notification-meta{font-size:0.72rem;color:var(--muted);margin-top:0.2rem;line-height:1.35;}
+.nav-hub-btn{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--neon);background:none;border:1px solid rgba(0,180,255,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:all 0.2s;text-decoration:none;display:inline-flex;align-items:center;}
+.nav-hub-btn:hover{color:var(--gold-light);border-color:var(--border);}
+.nav-logout{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid rgba(122,117,112,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:color 0.2s;}
+.nav-logout:hover{color:var(--red);border-color:rgba(224,85,85,0.4);}
 
-/* MAIN */
-.hub-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem 2rem;}
-.hub-greeting{font-size:0.75rem;font-weight:700;letter-spacing:0.35em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;text-align:center;}
-.hub-title{font-family:'Cinzel',serif;font-size:1.8rem;font-weight:700;color:var(--gold-light);text-align:center;margin-bottom:3rem;}
+/* PAGE */
+.page{max-width:1100px;margin:0 auto;padding:1.5rem 2rem 3rem;}
+.section-label{font-size:0.68rem;font-weight:700;letter-spacing:0.35em;text-transform:uppercase;color:var(--purple);margin-bottom:0.5rem;}
+.section-title{font-family:'Cinzel',serif;font-size:1.2rem;font-weight:700;color:var(--gold-light);margin-bottom:1.5rem;}
 
-/* CARDS */
-.hub-cards{display:grid;grid-template-columns:repeat(var(--hub-card-count,5),minmax(220px,252px));gap:2px;background:var(--border);width:auto;max-width:1260px;justify-content:center;}
-.hub-card{background:var(--black2);padding:2.5rem 1.5rem;display:flex;flex-direction:column;align-items:center;gap:1rem;cursor:pointer;text-decoration:none;position:relative;overflow:hidden;transition:background 0.2s;border:none;}
-.hub-card::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;transition:opacity 0.2s;}
-.hub-card.contable::before{background:linear-gradient(90deg,var(--green),rgba(76,175,125,0.3));}
-.hub-card.proyectos::before{background:linear-gradient(90deg,var(--neon),rgba(0,180,255,0.3));}
-.hub-card.finder::before{background:linear-gradient(90deg,var(--gold),rgba(200,146,42,0.3));}
-.hub-card.activity::before{background:linear-gradient(90deg,#a78bfa,rgba(167,139,250,0.3));}
-.hub-card.requests::before{background:linear-gradient(90deg,var(--gold-light),rgba(0,180,255,0.35));}
-.hub-card:hover{background:var(--black3);}
-.hub-card.disabled{opacity:0.35;cursor:not-allowed;pointer-events:none;}
-.hub-card.hidden{display:none;}
-.hub-card-icon{width:72px;height:72px;display:flex;align-items:center;justify-content:center;position:relative;}
-.hub-card-name{font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;color:var(--gold-light);}
-.hub-card-desc{font-size:0.78rem;color:var(--muted);text-align:center;line-height:1.5;max-width:180px;}
-.hub-card-tag{font-size:0.62rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;padding:0.18rem 0.6rem;border:1px solid;margin-top:0.25rem;}
-.hub-card.contable .hub-card-tag{color:var(--green);border-color:rgba(76,175,125,0.35);}
-.hub-card.proyectos .hub-card-tag{color:var(--neon);border-color:rgba(0,180,255,0.35);}
-.hub-card.finder .hub-card-tag{color:var(--gold-light);border-color:var(--border);}
-.hub-card.activity .hub-card-tag{color:#a78bfa;border-color:rgba(167,139,250,0.35);}
-.hub-card.requests .hub-card-tag{color:var(--neon);border-color:rgba(0,180,255,0.35);}
+/* TOAST */
+.success-toast{display:none;align-items:center;gap:0.75rem;background:var(--black3);border:1px solid rgba(76,175,125,0.4);border-left:3px solid var(--green);padding:0.75rem 1rem;margin-bottom:1rem;position:sticky;top:calc(var(--nav-h) + 8px);z-index:40;}
+.success-toast.show{display:flex;}
+.toast-text{font-size:0.85rem;color:var(--green);font-weight:600;}
+.build-tag{font-size:0.62rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-left:auto;}
 
-/* Footer */
-.hub-footer{text-align:center;padding:1.5rem;font-size:0.68rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;}
+/* DENIED STATE */
+.denied-screen{display:none;min-height:80vh;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;}
+.denied-icon{font-size:3rem;margin-bottom:1rem;opacity:0.4;}
+.denied-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold-light);margin-bottom:0.5rem;}
+.denied-text{font-size:0.9rem;color:var(--muted);max-width:360px;line-height:1.5;}
 
-@media(max-width:900px){
-  .hub-cards{grid-template-columns:repeat(2,minmax(220px,252px));}
-}
-@media(max-width:640px){
-  .hub-cards{grid-template-columns:1fr;}
-  .hub-title{font-size:1.3rem;}
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--border);margin-bottom:2px;}
+.stat-card{background:var(--black2);padding:1.25rem 1.2rem;}
+.stat-label{font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem;}
+.stat-num{font-family:'Cinzel',serif;font-size:1.4rem;font-weight:700;color:var(--purple);}
+
+/* FILTERS */
+.filters-bar{background:var(--black2);padding:1.25rem;margin-top:2px;display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;}
+.filter-select{background:var(--black);border:1px solid var(--border);color:var(--muted);padding:0.5rem 0.75rem;font-family:'Rajdhani',sans-serif;font-size:0.82rem;outline:none;}
+.filter-select option{background:var(--black2);}
+.filter-select.has-value{font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
+.filter-select.tag-action.has-value{color:var(--green);border-color:rgba(76,175,125,0.34);background:rgba(76,175,125,0.08);}
+.filter-select.tag-entity.has-value{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
+.filter-select.tag-project.has-value{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
+.btn-clear-filters{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid var(--border);padding:0.5rem 0.9rem;cursor:pointer;transition:color 0.2s;}
+.btn-clear-filters:hover{color:var(--gold-light);}
+
+/* LOG LIST */
+.log-section{background:var(--black2);padding:1.5rem;margin-top:2px;}
+.log-count{font-size:0.78rem;color:var(--muted);margin-bottom:1rem;}
+.log-row{display:flex;gap:1rem;align-items:flex-start;padding:0.85rem 0;border-bottom:1px solid rgba(200,146,42,0.08);}
+.log-row:last-child{border-bottom:none;}
+.log-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:0.45rem;}
+.log-dot.create{background:var(--green);}
+.log-dot.edit{background:var(--neon);}
+.log-dot.delete{background:var(--red);}
+.log-dot.upload{background:var(--purple);}
+.log-content{flex:1;min-width:0;}
+.log-desc{font-size:0.88rem;color:var(--text);font-weight:600;}
+.log-meta{font-size:0.75rem;color:var(--muted);margin-top:0.2rem;display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;}
+.log-role-tag{font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.1rem 0.5rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);}
+.log-action-tag{font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.1rem 0.5rem;border:1px solid;}
+.log-action-tag.create{color:var(--green);border-color:rgba(76,175,125,0.3);background:rgba(76,175,125,0.08);}
+.log-action-tag.edit{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
+.log-action-tag.delete{color:var(--red);border-color:rgba(224,85,85,0.3);background:rgba(224,85,85,0.08);}
+.log-action-tag.upload{color:var(--purple);border-color:rgba(167,139,250,0.3);background:var(--purple-dim);}
+.log-timestamp{font-size:0.72rem;color:var(--muted);flex-shrink:0;text-align:right;white-space:nowrap;}
+.log-details-btn{font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;margin-top:0.3rem;}
+.log-details-json{display:none;font-size:0.78rem;color:var(--muted);background:var(--black);padding:0.7rem 0.8rem;margin-top:0.5rem;border-left:2px solid var(--border);}
+.log-details-json.show{display:block;}
+.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0.45rem 0.9rem;}
+.detail-row{display:flex;gap:0.45rem;align-items:flex-start;min-width:0;}
+.detail-key{font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold-light);white-space:nowrap;}
+.detail-val{color:var(--text);word-break:break-word;}
+.detail-section{margin-top:0.65rem;padding-top:0.65rem;border-top:1px solid rgba(200,146,42,0.12);}
+.detail-section:first-child{margin-top:0;padding-top:0;border-top:none;}
+.detail-title{font-size:0.62rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--neon);margin-bottom:0.4rem;}
+.changes-table{width:100%;border-collapse:collapse;font-size:0.76rem;}
+.changes-table th{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-light);text-align:left;padding:0.35rem 0.45rem;border-bottom:1px solid rgba(200,146,42,0.16);}
+.changes-table td{vertical-align:top;padding:0.45rem;border-bottom:1px solid rgba(200,146,42,0.08);color:var(--text);word-break:break-word;}
+.changes-table tr:last-child td{border-bottom:none;}
+.change-before{color:var(--muted);}
+.change-after{color:var(--green);font-weight:600;}
+
+/* EMPTY STATE */
+.empty-log{text-align:center;padding:3rem 2rem;color:var(--muted);}
+.empty-log .icon{font-size:2rem;margin-bottom:0.75rem;opacity:0.3;}
+
+/* TABS */
+.tabs-row{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1.5rem;}
+.tab-btn{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:0.65rem 1.25rem;cursor:pointer;transition:all 0.2s;margin-bottom:-1px;}
+.tab-btn:hover{color:var(--gold-light);}
+.tab-btn.active{color:var(--gold-light);border-bottom-color:var(--gold);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* TEAM TABLE */
+.team-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.75rem;}
+.btn-action{font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;border:none;padding:0.55rem 1.4rem;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all 0.2s;}
+.btn-action.gold{color:var(--black);background:var(--gold);}
+.btn-action.gold:hover{background:var(--gold-light);}
+.team-section{background:var(--black2);padding:1.5rem;}
+.team-table{width:100%;border-collapse:collapse;font-size:0.85rem;}
+.team-table th{font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);padding:0.6rem 0.75rem;text-align:left;border-bottom:1px solid var(--border);}
+.team-table td{padding:0.75rem;border-bottom:1px solid rgba(200,146,42,0.08);color:var(--text);}
+.team-table tr:last-child td{border-bottom:none;}
+.team-table tr.inactive-row{opacity:0.45;}
+.role-select{background:var(--black);border:1px solid var(--border);color:var(--text);padding:0.4rem 0.6rem;font-family:'Rajdhani',sans-serif;font-size:0.78rem;outline:none;cursor:pointer;}
+.role-select option{background:var(--black2);}
+.active-toggle{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.2rem 0.6rem;border:1px solid;cursor:pointer;transition:all 0.2s;}
+.active-toggle.active{color:var(--green);border-color:rgba(76,175,125,0.3);background:rgba(76,175,125,0.08);}
+.active-toggle.inactive{color:var(--red);border-color:rgba(224,85,85,0.3);background:rgba(224,85,85,0.08);}
+.btn-save-row{font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-light);border:1px solid var(--border);background:var(--gold-dim);padding:0.25rem 0.7rem;cursor:pointer;display:none;}
+.btn-save-row.show{display:inline-block;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(5,6,8,0.96);z-index:100;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--black2);border:1px solid var(--border);width:100%;max-width:460px;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);}
+.modal-title{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold-light);}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;line-height:1;padding:0.2rem;}
+.modal-body{padding:1.5rem;}
+.field-group{margin-bottom:1rem;}
+.field-label{font-size:0.68rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:0.4rem;}
+.field-label span{color:var(--red);margin-left:2px;}
+.field-input{width:100%;background:var(--black);border:1px solid var(--border);color:var(--text);padding:0.65rem 0.9rem;font-family:'Rajdhani',sans-serif;font-size:0.92rem;outline:none;transition:border-color 0.2s;}
+.field-input:focus{border-color:rgba(0,180,255,0.5);}
+.field-input option{background:var(--black2);}
+.modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:flex-end;gap:0.75rem;}
+.btn-submit{font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.65rem 1.8rem;cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
+.btn-cancel{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;}
+
+@media(max-width:700px){
+  .page{padding:1rem 1rem 2.5rem;}
+  .sticky-nav{padding:0 0.85rem;}
+  .nav-username{display:none;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .filters-bar{flex-direction:column;align-items:stretch;}
+  .filter-select{width:100%;}
+  .log-row{flex-direction:column;gap:0.4rem;}
+  .log-timestamp{text-align:left;}
+
+  .team-header{flex-direction:column;align-items:stretch;}
+  .team-header .btn-action{width:100%;text-align:center;}
+  .team-table thead{display:none;}
+  .team-table tr{display:flex;flex-direction:column;padding:0.85rem 0.25rem;border-bottom:1px solid rgba(200,146,42,0.12);gap:0.4rem;}
+  .team-table td{display:flex;justify-content:space-between;align-items:center;padding:0.15rem 0;border-bottom:none;}
+  .team-table td:not(:last-child)::before{
+    content:attr(data-label);
+    font-size:0.62rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);
+    margin-right:0.75rem;flex-shrink:0;
+  }
+  .modal-overlay{padding:0.75rem 0.5rem;align-items:flex-start;}
+  .modal{max-width:100%;}
+  .modal-footer{flex-direction:column-reverse;gap:0.6rem;}
+  .modal-footer > *{width:100%;text-align:center;}
 }
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div class="login-screen" id="loginScreen">
-  <!-- SVG Background -->
-  <svg class="login-bg" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-    <defs>
-      <pattern id="hexPat" x="0" y="0" width="80" height="92" patternUnits="userSpaceOnUse">
-        <polygon points="40,2 74,21 74,71 40,90 6,71 6,21" fill="none" stroke="#c8922a" stroke-width="0.6" opacity="0.15"/>
-      </pattern>
-    </defs>
-    <rect width="800" height="600" fill="url(#hexPat)"/>
-    <line x1="100" y1="500" x2="400" y2="100" stroke="#00b4ff" stroke-width="0.5" opacity="0.12"/>
-    <line x1="400" y1="100" x2="700" y2="500" stroke="#00b4ff" stroke-width="0.5" opacity="0.12"/>
-    <line x1="100" y1="500" x2="700" y2="500" stroke="#c8922a" stroke-width="0.5" opacity="0.12"/>
-    <circle cx="400" cy="100" r="4" fill="#c8922a" opacity="0.3"/>
-    <circle cx="100" cy="500" r="4" fill="#00b4ff" opacity="0.3"/>
-    <circle cx="700" cy="500" r="4" fill="#00b4ff" opacity="0.3"/>
-  </svg>
-
+<!-- LOGIN (no debería verse — Activity redirige al Hub si no hay sesión) -->
+<div class="login-screen" id="loginScreen" style="display:none;">
   <div class="login-box">
     <div class="login-logo">BOFT<span>.</span></div>
-    <div class="login-tagline">Build Operations Field Tools</div>
-    <div class="login-desc">Acceso restringido a cuentas <strong>@boftbuild.com</strong></div>
-    <button class="g-signin-btn" id="googleSignInBtn" onclick="signInWithGoogle()">
-      <svg width="20" height="20" viewBox="0 0 48 48">
-        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-      </svg>
-      Sign in with Google
-    </button>
-    <div class="login-error" id="loginError">Acceso denegado. Solo cuentas @boftbuild.com.</div>
+    <div class="login-sub">Activity Log</div>
+    <div class="login-desc">Redirecting to Hub...</div>
   </div>
 </div>
 
-<!-- HUB -->
-<div class="hub" id="hub">
-  <nav class="hub-nav">
-    <div class="hub-logo">BOFT<span>.</span></div>
+<!-- ACCESS DENIED -->
+<div class="denied-screen" id="deniedScreen">
+  <div class="denied-icon">🔒</div>
+  <div class="denied-title">Access Restricted</div>
+  <div class="denied-text">Activity and Team settings are only available to Owner and Manager roles. If you believe this is a mistake, contact your administrator.</div>
+  <a href="/hub" style="margin-top:1.5rem;font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--neon);text-decoration:none;border:1px solid rgba(0,180,255,0.3);padding:0.6rem 1.5rem;">← Back to Hub</a>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <nav class="sticky-nav">
+    <div class="nav-logo-sm">BOFT<span>.</span></div>
+    <div class="nav-links-sm">
+      <span class="nav-link active">Activity Log</span>
+    </div>
     <div class="nav-right">
       <img class="nav-avatar" id="navAvatar" src="" alt="">
       <span class="nav-username" id="navUsername"></span>
       <span class="nav-role-badge" id="navRoleBadge"></span>
-      <button class="nav-notify hidden" id="navNotifyBadge" onclick="markLiveNotificationsRead()">0 New</button>
-      <button class="btn-logout" onclick="doLogout()">Logout</button>
+      <button class="nav-notify hidden" id="navNotifyBadge" onclick="toggleLiveNotifications(event)">0 New</button>
+      <a href="/hub" class="nav-hub-btn">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="margin-right:4px;"><polygon points="6,0.5 11,3 11,9 6,11.5 1,9 1,3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>Hub
+      </a>
+      <button class="nav-logout" onclick="doLogout()">Logout</button>
     </div>
   </nav>
+  <div id="notificationPanel" class="notification-panel hidden"></div>
 
-  <main class="hub-main">
-    <div class="hub-greeting" id="hubGreeting">Welcome back</div>
-    <div class="hub-title">What are you working on?</div>
+  <div class="page">
+    <div id="toast" class="success-toast">
+      <span style="font-size:18px;color:var(--green);">✓</span>
+      <span class="toast-text" id="toastText">Done.</span>
+      <span class="build-tag" id="buildTag">ACTIVITY AUDIT V3</span>
+    </div>
 
-    <div class="hub-cards">
+    <div class="section-label">Audit Trail</div>
+    <div class="section-title">Activity Log — Last 90 Days</div>
+    <div class="build-tag" style="margin-bottom:0.9rem;">ACTIVITY AUDIT V3</div>
 
-      <!-- CONTABLE -->
-      <a class="hub-card contable" href="/contable" id="cardContable">
-        <div class="hub-card-icon">
-          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-            <rect x="8" y="12" width="40" height="48" rx="2" stroke="#4caf7d" stroke-width="1.5" fill="none" opacity="0.3"/>
-            <rect x="16" y="8" width="40" height="48" rx="2" stroke="#4caf7d" stroke-width="1.5" fill="none" opacity="0.6"/>
-            <line x1="24" y1="24" x2="48" y2="24" stroke="#4caf7d" stroke-width="1.5"/>
-            <line x1="24" y1="32" x2="48" y2="32" stroke="#4caf7d" stroke-width="1" opacity="0.6"/>
-            <line x1="24" y1="40" x2="40" y2="40" stroke="#4caf7d" stroke-width="1" opacity="0.6"/>
-            <text x="36" y="52" font-family="serif" font-size="14" fill="#4caf7d" text-anchor="middle" font-weight="700">$</text>
-          </svg>
-        </div>
-        <div class="hub-card-name">Contable</div>
-        <div class="hub-card-desc">Income, expenses, payments, reports and workers</div>
-        <span class="hub-card-tag">Accounting</span>
-      </a>
+    <!-- TABS -->
+    <div class="tabs-row">
+      <button class="tab-btn active" id="tabBtnLog" onclick="switchTab('log', this)">Activity Log</button>
+      <button class="tab-btn" id="tabBtnTeam" onclick="switchTab('team', this)">Team</button>
+    </div>
 
-      <!-- PROJECTS -->
-      <a class="hub-card proyectos" href="/proyectos" id="cardProyectos">
-        <div class="hub-card-icon">
-          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-            <polygon points="36,8 64,24 64,56 36,64 8,56 8,24" stroke="#00b4ff" stroke-width="1.5" fill="none" opacity="0.3"/>
-            <line x1="8" y1="24" x2="64" y2="24" stroke="#00b4ff" stroke-width="1" opacity="0.5"/>
-            <line x1="36" y1="8" x2="36" y2="64" stroke="#00b4ff" stroke-width="1" stroke-dasharray="4 3" opacity="0.4"/>
-            <line x1="8" y1="24" x2="36" y2="8" stroke="#c8922a" stroke-width="1.5" opacity="0.8"/>
-            <line x1="64" y1="24" x2="36" y2="8" stroke="#c8922a" stroke-width="1.5" opacity="0.8"/>
-            <rect x="26" y="38" width="20" height="26" fill="none" stroke="#00b4ff" stroke-width="1.2" opacity="0.6"/>
-            <circle cx="36" cy="24" r="3" fill="#c8922a" opacity="0.9"/>
-          </svg>
-        </div>
-        <div class="hub-card-name">Projects</div>
-        <div class="hub-card-desc">Track progress, photos, documents and activity</div>
-        <span class="hub-card-tag">Field Ops</span>
-      </a>
+    <!-- TAB: ACTIVITY LOG -->
+    <div class="tab-panel active" id="tab-log">
 
-      <!-- REQUESTS -->
-      <a class="hub-card requests hidden" href="/requests" id="cardRequests">
-        <div class="hub-card-icon">
-          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-            <polygon points="36,7 62,22 62,50 36,65 10,50 10,22" stroke="#e8b84b" stroke-width="1.5" fill="none" opacity="0.35"/>
-            <path d="M23 28h26" stroke="#00b4ff" stroke-width="1.5" stroke-linecap="round" opacity="0.8"/>
-            <path d="M23 36h18" stroke="#00b4ff" stroke-width="1.2" stroke-linecap="round" opacity="0.55"/>
-            <path d="M23 44h22" stroke="#00b4ff" stroke-width="1.2" stroke-linecap="round" opacity="0.55"/>
-            <path d="M19 27l2 2 4-5" stroke="#c8922a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M19 43l2 2 4-5" stroke="#c8922a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.8"/>
-            <circle cx="50" cy="48" r="5" stroke="#e8b84b" stroke-width="1.4" fill="rgba(200,146,42,0.08)"/>
-          </svg>
-        </div>
-        <div class="hub-card-name">Requests</div>
-        <div class="hub-card-desc">Material, office and field supply requests</div>
-        <span class="hub-card-tag">Materials</span>
-      </a>
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Total Actions</div><div class="stat-num" id="statTotal">—</div></div>
+      <div class="stat-card"><div class="stat-label">Team Members</div><div class="stat-num" id="statUsers">—</div></div>
+      <div class="stat-card"><div class="stat-label">Most Active</div><div class="stat-num" id="statMostActive" style="font-size:0.95rem;">—</div></div>
+      <div class="stat-card"><div class="stat-label">Last Action</div><div class="stat-num" id="statLastAction" style="font-size:0.85rem;">—</div></div>
+    </div>
 
-      <!-- FINDER -->
-      <a class="hub-card finder" href="/finder" id="cardFinder">
-        <div class="hub-card-icon">
-          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-            <circle cx="30" cy="30" r="18" stroke="#c8922a" stroke-width="1.5" fill="none" opacity="0.5"/>
-            <circle cx="30" cy="30" r="10" stroke="#c8922a" stroke-width="1" fill="none" opacity="0.3"/>
-            <line x1="43" y1="43" x2="60" y2="60" stroke="#c8922a" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
-            <line x1="30" y1="22" x2="30" y2="38" stroke="#e8b84b" stroke-width="1" opacity="0.5"/>
-            <line x1="22" y1="30" x2="38" y2="30" stroke="#e8b84b" stroke-width="1" opacity="0.5"/>
-          </svg>
-        </div>
-        <div class="hub-card-name">Finder</div>
-        <div class="hub-card-desc">Search and access any file in Drive instantly</div>
-        <span class="hub-card-tag">Documents</span>
-      </a>
+    <!-- FILTERS -->
+    <div class="filters-bar">
+      <select class="filter-select tag-entity" id="filterUser" onchange="renderLog()">
+        <option value="">All Team Members</option>
+      </select>
+      <select class="filter-select tag-action" id="filterAction" onchange="onActivityActionFilterChange()">
+        <option value="">All Actions</option>
+        <option value="addExpense">Add Expense</option>
+        <option value="addIncome">Add Income</option>
+        <option value="addPayment">Add Payment</option>
+        <option value="editTransaction">Edit Transaction</option>
+        <option value="deleteTransaction">Delete Transaction</option>
+        <option value="createProject">Create Project</option>
+        <option value="editProject">Edit Project</option>
+        <option value="reopenProject">Re-Open Project</option>
+        <option value="deleteProject">Delete Project</option>
+        <option value="uploadProjectPhoto">Upload Photo</option>
+        <option value="addWorker">Add Worker</option>
+        <option value="editWorker">Edit Worker</option>
+        <option value="deleteWorker">Delete Worker</option>
+        <option value="createMaterialRequest">Create Request</option>
+        <option value="updateMaterialRequestStatus">Update Request</option>
+        <option value="editMaterialRequest">Edit Request</option>
+        <option value="deleteMaterialRequest">Delete Request</option>
+        <option value="reopenMaterialRequest">Re-Open Request</option>
+        <option value="createPunchItem">Create Punch</option>
+        <option value="editPunchItem">Edit Punch</option>
+        <option value="completePunchItem">Complete Punch</option>
+        <option value="incompletePunchItem">Incomplete Punch</option>
+        <option value="reopenPunchItem">Re-Open Punch</option>
+        <option value="deletePunchItem">Delete Punch</option>
+        <option value="createDailyLog">Create Daily Log</option>
+        <option value="createProjectTrackingItem">Create Tracking</option>
+        <option value="updateProjectTrackingItem">Update Tracking</option>
+        <option value="addUserManually">Add User</option>
+        <option value="updateUserRole">Update User</option>
+      </select>
+      <select class="filter-select tag-entity" id="filterEntityType" onchange="onActivityEntityFilterChange()">
+        <option value="">All Entity Types</option>
+        <option value="Transaction">Transactions</option>
+        <option value="Project">Projects</option>
+        <option value="Worker">Workers</option>
+        <option value="Material Request">Material Requests</option>
+        <option value="User">Users</option>
+        <option value="Punch List">Punch List</option>
+        <option value="Daily Log">Daily Logs</option>
+        <option value="Material">Material</option>
+        <option value="Tool">Tools</option>
+      </select>
+      <select class="filter-select tag-project" id="filterProject" onchange="renderLog()" style="display:none;">
+        <option value="">All Projects</option>
+      </select>
+      <button class="btn-clear-filters" onclick="clearLogFilters()">Clear Filters</button>
+    </div>
 
-      <!-- ACTIVITY LOG — solo visible para Owner -->
-      <a class="hub-card activity hidden" href="/activity" id="cardActivity">
-        <div class="hub-card-icon">
-          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-            <circle cx="36" cy="36" r="26" stroke="#a78bfa" stroke-width="1.5" fill="none" opacity="0.4"/>
-            <path d="M36 22 V36 L46 44" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.9"/>
-            <circle cx="36" cy="36" r="3" fill="#a78bfa" opacity="0.9"/>
-            <circle cx="36" cy="14" r="2.5" fill="#e8b84b" opacity="0.8"/>
-            <circle cx="58" cy="36" r="2.5" fill="#e8b84b" opacity="0.5"/>
-            <circle cx="14" cy="36" r="2.5" fill="#e8b84b" opacity="0.5"/>
-          </svg>
-        </div>
-        <div class="hub-card-name">Activity Log</div>
-        <div class="hub-card-desc">Audit trail of all team actions across the system</div>
-        <span class="hub-card-tag">Owner Only</span>
-      </a>
+    <!-- LOG LIST -->
+    <div class="log-section">
+      <div class="log-count" id="logCount"></div>
+      <div id="logList"><div style="padding:1rem;color:var(--muted);font-size:0.82rem;">Loading...</div></div>
+    </div>
 
     </div>
-  </main>
 
-  <footer class="hub-footer">BOFT Build · Utah County · Internal Use Only</footer>
+    <!-- TAB: TEAM -->
+    <div class="tab-panel" id="tab-team">
+      <div class="team-header">
+        <div style="font-size:0.82rem;color:var(--muted);" id="teamCount">—</div>
+        <button class="btn-action gold" onclick="openAddUserModal()">+ Add User</button>
+      </div>
+      <div class="team-section">
+        <table class="team-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Added</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="teamList">
+            <tr><td colspan="6" style="color:var(--muted);font-size:0.82rem;">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL ADD USER -->
+<div id="modal-add-user" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Add Team Member</span>
+      <button class="modal-close" onclick="closeAddUserModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label class="field-label">Email <span>*</span></label>
+        <input type="email" class="field-input" id="au-email" placeholder="name@boftbuild.com">
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;">Must be a @boftbuild.com address</div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Name</label>
+        <input type="text" class="field-input" id="au-name" placeholder="John Smith (optional)">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Role <span>*</span></label>
+        <select class="field-input" id="au-role">
+          <option value="Viewer">Viewer — read only</option>
+          <option value="Helper">Helper — assigned plans/location only</option>
+          <option value="Worker">Worker — punch completion only</option>
+          <option value="Field Lead">Field Lead — Projects scope/notes/photos</option>
+          <option value="Planner">Planner — material requests</option>
+          <option value="Manager">Manager — full access, no delete</option>
+          <option value="Owner">Owner — full access</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeAddUserModal()">Cancel</button>
+      <button class="btn-submit" onclick="submitAddUser()">Add User</button>
+    </div>
+  </div>
 </div>
 
 <script>
-const CLIENT_ID      = '139648063899-tq9arpo1817e20a1qtmm5dm0jl35u4sm.apps.googleusercontent.com';
-const ALLOWED_DOMAIN = 'boftbuild.com';
-const API_URL        = '/api/proxy';
-
-let gsiClient = null;
+// ============================================================
+// CONFIG
+// ============================================================
+const API_URL = '/api/proxy';
+const ACTIVITY_BUILD = 'ACTIVITY_AUDIT_V3_2026_07_03';
+let ACCESS_TOKEN = null;
+let CURRENT_ROLE = null;
+let CURRENT_USER_EMAIL = null;
+let allLogs = [];
+let liveStateSnapshot = {};
 let livePollTimer = null;
+let liveNotifications = [];
 
-// ── INIT ──
-function initGoogleClient() {
-  if (typeof google === 'undefined' || !google.accounts) {
-    setTimeout(initGoogleClient, 200);
-    return;
-  }
-  gsiClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive',
-    callback: handleTokenResponse,
-  });
-}
-
-function handleTokenResponse(response) {
-  if (!response.access_token) {
-    setSignInLoading(false);
-    return;
-  }
-  fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-    headers: { Authorization: 'Bearer ' + response.access_token }
-  })
-  .then(r => r.json())
-  .then(async user => {
-    if (user.email && user.email.split('@')[1] === ALLOWED_DOMAIN) {
-      const expiresAt = Date.now() + 3500 * 1000;
-      sessionStorage.setItem('boft_token',     response.access_token);
-      sessionStorage.setItem('boft_token_exp', expiresAt);
-      sessionStorage.setItem('boft_user',      JSON.stringify(user));
-
-      // Resolver rol del usuario (lo crea automáticamente en USERS si no existe)
-      const roleInfo = await fetchUserRole(response.access_token, user);
-      sessionStorage.setItem('boft_role', roleInfo.role || 'Viewer');
-      sessionStorage.setItem('boft_role_name', roleInfo.name || user.name || '');
-
-      setSignInLoading(false);
-      showHub(user, roleInfo.role || 'Viewer');
-    } else {
-      setSignInLoading(false);
-      document.getElementById('loginError').classList.add('show');
-    }
-  })
-  .catch(() => setSignInLoading(false));
-}
-
-// Llama al endpoint getUserRole del backend — crea el registro en USERS
-// automáticamente la primera vez que este usuario entra (Owner si es el
-// primer usuario del sistema, Viewer por default después de eso)
-async function fetchUserRole(accessToken, user) {
-  try {
-    const params = new URLSearchParams({
-      action: 'getUserRole',
-      token:  accessToken,
-      name:   user.name || '',
-    });
-    const res  = await fetch(API_URL + '?' + params, {
-      headers: { Authorization: 'Bearer ' + accessToken }
-    });
-    const data = await res.json();
-    if (data.error) {
-      console.error('getUserRole error:', data.error);
-      return { role: 'Viewer', name: user.name || '' };
-    }
-    return data;
-  } catch(e) {
-    console.error('fetchUserRole failed:', e);
-    return { role: 'Viewer', name: user.name || '' };
-  }
-}
-
-function setSignInLoading(loading) {
-  const btn = document.getElementById('googleSignInBtn');
-  if (!btn) return;
-  btn.disabled = loading;
-}
-
-function signInWithGoogle() {
-  if (!gsiClient) {
-    initGoogleClient();
-    setTimeout(() => gsiClient && gsiClient.requestAccessToken(), 800);
-    return;
-  }
-  document.getElementById('loginError').classList.remove('show');
-  setSignInLoading(true);
-  gsiClient.requestAccessToken();
-}
-
-// ── SESSION ──
-async function tryRestoreSession() {
+// ============================================================
+// AUTH — lee token y rol del Hub, no tiene login propio
+// ============================================================
+function tryRestoreSession() {
   const token   = sessionStorage.getItem('boft_token');
   const exp     = parseInt(sessionStorage.getItem('boft_token_exp') || '0');
   const userStr = sessionStorage.getItem('boft_user');
   const role    = sessionStorage.getItem('boft_role') || 'Viewer';
+
   if (token && exp > Date.now() && userStr) {
+    ACCESS_TOKEN = token;
+    CURRENT_ROLE = role;
     const user = JSON.parse(userStr);
-    try {
-      const roleInfo = await fetchUserRole(token, user);
-      const freshRole = roleInfo.role || role || 'Viewer';
-      sessionStorage.setItem('boft_role', freshRole);
-      sessionStorage.setItem('boft_role_name', roleInfo.name || user.name || '');
-      showHub(user, freshRole);
-    } catch(e) {
-      showHub(user, role);
+
+    if (!['Owner', 'Manager'].includes(role)) {
+      showAccessDenied();
+      return false;
     }
+
+    CURRENT_USER_EMAIL = (user.email || '').toLowerCase();
+    loginSuccess(user, role);
     return true;
   }
-  sessionStorage.removeItem('boft_token');
-  sessionStorage.removeItem('boft_token_exp');
-  sessionStorage.removeItem('boft_user');
-  sessionStorage.removeItem('boft_role');
-  sessionStorage.removeItem('boft_role_name');
+  sessionStorage.clear();
+  window.location.href = '/hub';
   return false;
 }
 
-// ── UI ──
-function showHub(user, role) {
+function showAccessDenied() {
   document.getElementById('loginScreen').style.display = 'none';
-  const hub = document.getElementById('hub');
-  hub.style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('deniedScreen').style.display = 'flex';
+}
 
-  // Saludo dinámico
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  const name = user.given_name || user.name || '';
-  document.getElementById('hubGreeting').textContent = greeting + (name ? ', ' + name : '');
-
+function loginSuccess(user, role) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('deniedScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
   document.getElementById('navUsername').textContent = user.name || user.email;
   if (user.picture) {
-    const av = document.getElementById('navAvatar');
-    av.src = user.picture;
-    av.style.display = 'block';
+    const a = document.getElementById('navAvatar');
+    a.src = user.picture;
+    a.style.display = 'block';
   }
-
-  // Badge de rol
   const roleBadge = document.getElementById('navRoleBadge');
-  if (role) {
+  if (roleBadge) {
     roleBadge.textContent = role;
     roleBadge.style.display = 'inline-block';
   }
-
-  applyRolePermissions(role);
-  startLiveUpdates();
+  configureAccessForRole(role);
+  loadActivityLog();
+  loadTeam();
+  startLiveUpdates('activity');
 }
 
-async function hubApiGet(action, params = {}) {
-  const token = sessionStorage.getItem('boft_token') || '';
-  const qs = new URLSearchParams({ action, token, ...params });
-  const res = await fetch(API_URL + '?' + qs, { headers: { Authorization: 'Bearer ' + token } });
-  return res.json();
+function configureAccessForRole(role) {
+  const logBtn = document.getElementById('tabBtnLog');
+  const teamBtn = document.getElementById('tabBtnTeam');
+  if (logBtn) logBtn.style.display = '';
+  if (teamBtn) teamBtn.style.display = '';
 }
 
-async function hubApiPost(payload) {
-  const token = sessionStorage.getItem('boft_token') || '';
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-    body: JSON.stringify({ token, ...payload })
-  });
-  return res.json();
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+function doLogout() {
+  ACCESS_TOKEN = null;
+  sessionStorage.clear();
+  window.location.href = '/hub';
+}
+
+// ============================================================
+// API
+// ============================================================
+async function apiGet(action, params = {}, options = {}) {
+  const qs = new URLSearchParams({ action, ...params }).toString();
+  const res = await fetch(API_URL + '?' + qs, { headers: { Authorization: 'Bearer ' + ACCESS_TOKEN } });
+  const data = await res.json();
+  if (data.error === 'Unauthorized' || data.code === 403) { doLogout(); return {}; }
+  return data;
+}
+
+// ============================================================
+// LOAD ACTIVITY LOG
+// ============================================================
+async function loadActivityLog(options = {}) {
+  try {
+    if (!options.silent) showToast('Loading activity log...');
+    const data = await apiGet('activityLog');
+    allLogs = data.logs || [];
+    populateUserFilter();
+    renderStats();
+    renderLog();
+    if (!options.silent) showToast('Activity log updated ✓');
+  } catch(e) {
+    console.error(e);
+    if (!options.silent) showToast('Error loading activity log');
+  }
+}
+
+function hasOpenModalOrEditing() {
+  return !!document.querySelector('.modal-overlay.open');
+}
+
+async function pollLiveState(area) {
+  if (!ACCESS_TOKEN || document.hidden || hasOpenModalOrEditing()) return;
+  try {
+    const data = await apiGet('systemState', {}, { silent: true });
+    const state = data.state || {};
+    const previous = liveStateSnapshot || {};
+    liveStateSnapshot = state;
+    const firstRun = !Object.keys(previous).length;
+    const activityChanged = (state.activity?.version || 0) !== (previous.activity?.version || 0);
+    const notificationsChanged = (state.notifications?.version || 0) !== (previous.notifications?.version || 0);
+    if (!firstRun && activityChanged) await loadActivityLog({ silent: true });
+    if (!firstRun && notificationsChanged) await loadLiveNotifications();
+  } catch(e) {
+    console.warn('Live state skipped', e);
+  }
 }
 
 async function loadLiveNotifications() {
   try {
-    const data = await hubApiGet('myNotifications');
+    const data = await apiGet('myNotifications', {}, { silent: true });
+    liveNotifications = data.notifications || [];
     const badge = document.getElementById('navNotifyBadge');
     if (!badge) return;
     const unread = Number(data.unread || 0);
@@ -413,68 +552,556 @@ async function loadLiveNotifications() {
   } catch(e) {}
 }
 
+function renderLiveNotificationPanel() {
+  const panel = document.getElementById('notificationPanel');
+  if (!panel) return;
+  const items = (liveNotifications || []).filter(n => n.read !== 'Yes').slice(0, 8);
+  const visibleItems = items.length ? items : (liveNotifications || []).slice(0, 5);
+  panel.innerHTML = `<div class="notification-panel-title">Latest Updates</div>` +
+    (visibleItems.length ? visibleItems.map(n => `<div class="notification-item">
+      <div class="notification-title">${escHtml(n.title || 'BOFT update')}</div>
+      <div class="notification-meta">${escHtml(n.timestamp || '')}${n.projectName ? ' · ' + escHtml(n.projectName) : ''}</div>
+      <div class="notification-meta">${escHtml(n.message || '')}</div>
+    </div>`).join('') : '<div class="notification-meta">No new updates.</div>');
+}
+
+async function toggleLiveNotifications(event) {
+  if (event) event.stopPropagation();
+  const panel = document.getElementById('notificationPanel');
+  if (!panel) return;
+  const shouldOpen = panel.classList.contains('hidden');
+  if (!shouldOpen) {
+    panel.classList.add('hidden');
+    return;
+  }
+  renderLiveNotificationPanel();
+  panel.classList.remove('hidden');
+  await markLiveNotificationsRead();
+}
+
 async function markLiveNotificationsRead() {
   try {
-    await hubApiPost({ action: 'markNotificationsRead' });
-    await loadLiveNotifications();
+    await apiPost({ action: 'markNotificationsRead' });
+    const badge = document.getElementById('navNotifyBadge');
+    if (badge) badge.classList.add('hidden');
+    liveNotifications = liveNotifications.map(n => ({ ...n, read: 'Yes' }));
   } catch(e) {}
 }
 
-function startLiveUpdates() {
+function startLiveUpdates(area) {
   if (livePollTimer) clearInterval(livePollTimer);
+  pollLiveState(area);
   loadLiveNotifications();
-  livePollTimer = setInterval(() => {
-    if (!document.hidden) loadLiveNotifications();
-  }, 30000);
+  livePollTimer = setInterval(() => pollLiveState(area), 30000);
 }
 
-// Muestra solo las cards permitidas por rol.
-function applyRolePermissions(role) {
-  const cards = {
-    Contable: document.getElementById('cardContable'),
-    Projects: document.getElementById('cardProyectos'),
-    Requests: document.getElementById('cardRequests'),
-    Finder: document.getElementById('cardFinder'),
-    Activity: document.getElementById('cardActivity')
-  };
-  const roleCards = {
-    Owner: ['Contable','Projects','Requests','Finder','Activity'],
-    Manager: ['Contable','Projects','Requests','Finder'],
-    Planner: ['Requests'],
-    'Field Lead': ['Projects'],
-    Worker: ['Projects'],
-    Helper: ['Projects'],
-    Viewer: ['Projects']
-  };
-  const allowed = roleCards[role] || [];
-  let visibleCount = 0;
+function populateUserFilter() {
+  const sel = document.getElementById('filterUser');
+  const currentVal = sel.value;
+  const uniqueUsers = [...new Map(allLogs.map(l => [l.email, l.name || l.email])).entries()];
+  sel.innerHTML = '<option value="">All Team Members</option>' +
+    uniqueUsers.map(([email, name]) => `<option value="${email}">${name}</option>`).join('');
+  sel.value = currentVal;
+}
 
-  Object.keys(cards).forEach(name => {
-    const card = cards[name];
-    if (!card) return;
-    const show = allowed.includes(name);
-    card.classList.toggle('hidden', !show);
-    card.classList.remove('disabled');
-    card.removeAttribute('aria-disabled');
-    if (show) visibleCount++;
+function renderStats() {
+  document.getElementById('statTotal').textContent = allLogs.length;
+
+  const uniqueEmails = new Set(allLogs.map(l => l.email));
+  document.getElementById('statUsers').textContent = uniqueEmails.size;
+
+  const countByUser = {};
+  allLogs.forEach(l => { countByUser[l.name || l.email] = (countByUser[l.name || l.email] || 0) + 1; });
+  const mostActive = Object.entries(countByUser).sort((a,b) => b[1]-a[1])[0];
+  document.getElementById('statMostActive').textContent = mostActive ? mostActive[0] : '—';
+
+  if (allLogs.length) {
+    const sorted = [...allLogs].sort((a,b) => b.timestamp.localeCompare(a.timestamp));
+    const lastDate = sorted[0].timestamp.split(' ')[0];
+    document.getElementById('statLastAction').textContent = lastDate;
+  } else {
+    document.getElementById('statLastAction').textContent = '—';
+  }
+}
+
+function clearLogFilters() {
+  document.getElementById('filterUser').value = '';
+  document.getElementById('filterAction').value = '';
+  document.getElementById('filterEntityType').value = '';
+  document.getElementById('filterProject').value = '';
+  document.getElementById('filterProject').style.display = 'none';
+  onActivityActionFilterChange();
+}
+
+function updateActivityFilterStyles() {
+  ['filterUser','filterAction','filterEntityType','filterProject'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('has-value', !!el.value);
   });
-
-  const grid = document.querySelector('.hub-cards');
-  if (grid) grid.style.setProperty('--hub-card-count', Math.max(visibleCount, 1));
 }
 
-function doLogout() {
-  sessionStorage.clear();
-  if (typeof google !== 'undefined') google.accounts.id.disableAutoSelect();
-  document.getElementById('hub').style.display = 'none';
-  document.getElementById('loginScreen').style.display = 'flex';
+function getLogDetailsObj(log) {
+  try {
+    return log && log.details ? JSON.parse(log.details) : {};
+  } catch(e) {
+    return {};
+  }
 }
 
-// ── BOOT ──
-window.addEventListener('load', () => {
-  initGoogleClient();
-  tryRestoreSession();
+function getLogProjectName(log) {
+  const details = getLogDetailsObj(log);
+  return String(details.projectName || details.project || '').trim();
+}
+
+function getLogDisplayDescription(log) {
+  if (log && log.entityType === 'Punch List') {
+    const details = getLogDetailsObj(log);
+    if (details.deleted && details.deleted.description) {
+      return 'Deleted punch item: ' + details.deleted.description;
+    }
+    if (details.description) {
+      if (log.action === 'completePunchItem') return 'Completed punch item: ' + details.description;
+      if (log.action === 'incompletePunchItem') return 'Marked punch item incomplete: ' + details.description;
+      if (log.action === 'reopenPunchItem') return 'Re-opened punch item: ' + details.description;
+      if (log.action === 'deletePunchItem') return 'Deleted punch item: ' + details.description;
+      return 'Punch item: ' + details.description;
+    }
+  }
+  return log.description || '';
+}
+
+function getFilteredLogsBase() {
+  const fUser = document.getElementById('filterUser').value;
+  const fAction = document.getElementById('filterAction').value;
+  let filtered = allLogs;
+  if (fUser) filtered = filtered.filter(l => l.email === fUser);
+  if (fAction) filtered = filtered.filter(l => l.action === fAction);
+  return filtered;
+}
+
+function onActivityActionFilterChange() {
+  const entitySel = document.getElementById('filterEntityType');
+  const currentEntity = entitySel.value;
+  const logs = getFilteredLogsBase();
+  const entityTypes = [...new Set(logs.map(l => l.entityType).filter(Boolean))].sort();
+  entitySel.innerHTML = '<option value="">All Entity Types</option>' +
+    entityTypes.map(type => `<option value="${escHtml(type)}">${escHtml(type)}</option>`).join('');
+  if (entityTypes.includes(currentEntity)) entitySel.value = currentEntity;
+  else entitySel.value = '';
+  onActivityEntityFilterChange();
+}
+
+function onActivityEntityFilterChange() {
+  const projectSel = document.getElementById('filterProject');
+  const fEntity = document.getElementById('filterEntityType').value;
+  let logs = getFilteredLogsBase();
+  if (fEntity) logs = logs.filter(l => l.entityType === fEntity);
+  const projectNames = [...new Set(logs.map(getLogProjectName).filter(Boolean))].sort();
+  if (fEntity === 'Project' || projectNames.length) {
+    const currentProject = projectSel.value;
+    projectSel.innerHTML = '<option value="">All Projects</option>' +
+      projectNames.map(name => `<option value="${escHtml(name)}">${escHtml(name)}</option>`).join('');
+    projectSel.value = projectNames.includes(currentProject) ? currentProject : '';
+    projectSel.style.display = 'inline-block';
+  } else {
+    projectSel.value = '';
+    projectSel.style.display = 'none';
+  }
+  updateActivityFilterStyles();
+  renderLog();
+}
+
+function renderLog() {
+  const fUser   = document.getElementById('filterUser').value;
+  const fAction = document.getElementById('filterAction').value;
+  const fEntity = document.getElementById('filterEntityType').value;
+  const fProject = document.getElementById('filterProject').value;
+
+  let filtered = allLogs;
+  if (fUser)   filtered = filtered.filter(l => l.email === fUser);
+  if (fAction) filtered = filtered.filter(l => l.action === fAction);
+  if (fEntity) filtered = filtered.filter(l => l.entityType === fEntity);
+  if (fProject) filtered = filtered.filter(l => getLogProjectName(l) === fProject);
+  updateActivityFilterStyles();
+
+  filtered.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+  document.getElementById('logCount').textContent =
+    filtered.length + ' action' + (filtered.length !== 1 ? 's' : '') + ' recorded';
+
+  const list = document.getElementById('logList');
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-log"><div class="icon">📋</div><p>No activity recorded yet for this filter.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map((log, i) => {
+    const actionClass = getActionClass(log.action);
+    const actionLabel = getActionLabel(log.action);
+    const hasDetails = log.details && log.details.trim().length > 2;
+    return `<div class="log-row">
+      <div class="log-dot ${actionClass}"></div>
+      <div class="log-content">
+        <div class="log-desc">${escHtml(getLogDisplayDescription(log))}</div>
+        <div class="log-meta">
+          <span>${escHtml(log.name || log.email)}</span>
+          <span class="log-role-tag">${escHtml(log.role)}</span>
+          <span class="log-action-tag ${actionClass}">${actionLabel}</span>
+        </div>
+        ${hasDetails ? `<button class="log-details-btn" onclick="toggleDetails(${i})">View details</button>
+        <div class="log-details-json" id="details-${i}">${formatDetailsHtml(log.details)}</div>` : ''}
+      </div>
+      <div class="log-timestamp">${log.timestamp}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleDetails(idx) {
+  const el = document.getElementById('details-' + idx);
+  if (el) el.classList.toggle('show');
+}
+
+function formatDetailsHtml(jsonStr) {
+  try {
+    const obj = JSON.parse(jsonStr);
+    return renderDetailObject(obj);
+  } catch(e) {
+    return '<div class="detail-section"><div class="detail-title">Raw Details</div><div class="detail-val">' + escHtml(jsonStr) + '</div></div>';
+  }
+}
+
+function renderDetailObject(obj) {
+  if (!obj || typeof obj !== 'object') return '<div class="detail-val">' + escHtml(obj) + '</div>';
+
+  const normalizedChanges = normalizeChanges(obj.changes);
+  if (normalizedChanges.length) {
+    obj = { ...obj, changes: normalizedChanges };
+    return renderChangesDetails(obj);
+  }
+
+  if (obj.deleted && typeof obj.deleted === 'object') {
+    return `<div class="detail-section">
+      <div class="detail-title">Deleted Record</div>${renderKeyValues(obj.deleted)}
+    </div>${renderExtraDetails(obj, ['deleted'])}`;
+  }
+
+  if (obj.before || obj.after) {
+    return `<div class="detail-section">
+      <div class="detail-title">Before</div>${renderKeyValues(obj.before || {})}
+    </div>
+    <div class="detail-section">
+      <div class="detail-title">After</div>${renderKeyValues(obj.after || {})}
+    </div>${renderExtraDetails(obj, ['before','after'])}`;
+  }
+
+  return '<div class="detail-section">' + renderKeyValues(obj) + '</div>';
+}
+
+function normalizeChanges(changes) {
+  if (!changes) return [];
+  if (Array.isArray(changes)) return changes.filter(c => c && typeof c === 'object');
+  if (typeof changes === 'object') return [changes];
+  if (typeof changes === 'string') {
+    try {
+      const parsed = JSON.parse(changes);
+      if (Array.isArray(parsed)) return parsed.filter(c => c && typeof c === 'object');
+      if (parsed && typeof parsed === 'object') return [parsed];
+    } catch(e) {}
+  }
+  return [];
+}
+
+function renderChangesDetails(obj) {
+  const rows = (obj.changes || []).map(change => `
+    <tr>
+      <td>${escHtml(change.label || toLabel(change.field))}</td>
+      <td class="change-before">${escHtml(change.before)}</td>
+      <td class="change-after">${escHtml(change.after)}</td>
+    </tr>`).join('');
+
+  const table = rows
+    ? `<table class="changes-table"><thead><tr><th>Field</th><th>Before</th><th>After</th></tr></thead><tbody>${rows}</tbody></table>`
+    : '<div class="detail-val">No value changes recorded.</div>';
+
+  return `<div class="detail-section">
+    <div class="detail-title">Changes</div>${table}
+  </div>${renderExtraDetails(obj, ['changes','fieldsChanged'])}`;
+}
+
+function renderExtraDetails(obj, skipKeys) {
+  const rest = {};
+  Object.keys(obj || {}).forEach(k => { if (!skipKeys.includes(k)) rest[k] = obj[k]; });
+  if (!Object.keys(rest).length) return '';
+  return '<div class="detail-section"><div class="detail-title">Info</div>' + renderKeyValues(rest) + '</div>';
+}
+
+function renderKeyValues(obj) {
+  const entries = Object.entries(obj || {});
+  if (!entries.length) return '<div class="detail-val">—</div>';
+  const safeRows = entries.filter(([key, val]) => !isComplexDetailValue(val)).map(([key, val]) =>
+    `<div class="detail-row"><span class="detail-key">${escHtml(toLabel(key))}</span><span class="detail-val">${escHtml(formatDetailValue(val))}</span></div>`
+  ).join('');
+  const complexRows = entries.filter(([key, val]) => isComplexDetailValue(val)).map(([key]) =>
+    `<div class="detail-row"><span class="detail-key">${escHtml(toLabel(key))}</span><span class="detail-val">Stored as object data. Update to ${ACTIVITY_BUILD} to render this field.</span></div>`
+  ).join('');
+  return '<div class="detail-grid">' + safeRows + complexRows + '</div>';
+}
+
+function isComplexDetailValue(val) {
+  return (Array.isArray(val) && val.some(item => item && typeof item === 'object')) ||
+    (val && typeof val === 'object');
+}
+
+function formatDetailValue(val) {
+  if (val === null || val === undefined || val === '') return '—';
+  if (Array.isArray(val)) return val.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(', ');
+  if (typeof val === 'object') return JSON.stringify(val);
+  return String(val);
+}
+
+function toLabel(key) {
+  return String(key || '').replace(/_/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2');
+}
+
+function getActionClass(action) {
+  if (action.startsWith('add') || action.startsWith('create')) return 'create';
+  if (action.startsWith('edit')) return 'edit';
+  if (action.startsWith('delete')) return 'delete';
+  if (action.startsWith('upload')) return 'upload';
+  return 'edit';
+}
+
+function getActionLabel(action) {
+  const labels = {
+    addExpense: 'Add Expense', addIncome: 'Add Income', addPayment: 'Add Payment',
+    editTransaction: 'Edit Transaction', deleteTransaction: 'Delete Transaction',
+    createProject: 'Create Project', editProject: 'Edit Project', deleteProject: 'Delete Project',
+    reopenProject: 'Re-Open Project',
+    uploadProjectPhoto: 'Upload Photo', addWorker: 'Add Worker', editWorker: 'Edit Worker', deleteWorker: 'Delete Worker',
+    createMaterialRequest: 'Create Request', updateMaterialRequestStatus: 'Update Request',
+    editMaterialRequest: 'Edit Request', deleteMaterialRequest: 'Delete Request', reopenMaterialRequest: 'Re-Open Request',
+    createPunchItem: 'Create Punch', editPunchItem: 'Edit Punch', completePunchItem: 'Complete Punch',
+    incompletePunchItem: 'Incomplete Punch',
+    reopenPunchItem: 'Re-Open Punch', deletePunchItem: 'Delete Punch',
+    createDailyLog: 'Daily Log', createProjectTrackingItem: 'Create Tracking', updateProjectTrackingItem: 'Update Tracking',
+    addUserManually: 'Add User', updateUserRole: 'Update User',
+  };
+  return labels[action] || action;
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function showToast(msg) {
+  document.getElementById('toastText').textContent = msg;
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ============================================================
+// TEAM — gestión de usuarios (rol, activo/inactivo, agregar)
+// ============================================================
+let allUsers = [];
+
+async function loadTeam() {
+  try {
+    const data = await apiGet('getAllUsers');
+    allUsers = data.users || [];
+    renderTeam();
+  } catch(e) { console.error('Team load error:', e); }
+}
+
+function renderTeam() {
+  const list  = document.getElementById('teamList');
+  const count = document.getElementById('teamCount');
+
+  if (!allUsers.length) {
+    list.innerHTML = '<tr><td colspan="6" style="color:var(--muted);font-size:0.82rem;">No users found.</td></tr>';
+    count.textContent = '0 users';
+    return;
+  }
+
+  count.textContent = allUsers.length + ' user' + (allUsers.length !== 1 ? 's' : '');
+
+  const roleOptions = getRoleOptionsForCurrentUser();
+
+  list.innerHTML = allUsers.map((u, i) => {
+    const isActive = u.active !== 'No';
+    const canEdit = canEditTeamUser(u);
+    const disabledAttr = canEdit ? '' : 'disabled';
+    return `<tr class="${!isActive ? 'inactive-row' : ''}" data-email="${escHtml(u.email)}">
+      <td data-label="Name">${escHtml(u.name || '—')}</td>
+      <td data-label="Email" style="color:var(--muted);font-size:0.8rem;">${escHtml(u.email)}</td>
+      <td data-label="Role">
+        <select class="role-select" id="role-${i}" onchange="onRoleOrStatusChange(${i})" ${disabledAttr}>
+          ${roleOptions.map(r => `<option value="${r}" ${r === u.role ? 'selected' : ''}>${r}</option>`).join('')}
+          ${!roleOptions.includes(u.role) ? `<option value="${escHtml(u.role)}" selected>${escHtml(u.role)}</option>` : ''}
+        </select>
+      </td>
+      <td data-label="Status">
+        <span class="active-toggle ${isActive ? 'active' : 'inactive'}" id="status-${i}" ${canEdit ? `onclick="toggleUserActive(${i})"` : 'style="cursor:not-allowed;opacity:0.55;"'}>${isActive ? 'Active' : 'Inactive'}</span>
+      </td>
+      <td data-label="Added" style="color:var(--muted);font-size:0.78rem;">${u.dateAdded || '—'}</td>
+      <td style="text-align:right;">
+        <button class="btn-save-row" id="save-${i}" onclick="saveUserRow(${i})">Save</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function getRoleOptionsForCurrentUser() {
+  if (CURRENT_ROLE === 'Owner') return ['Owner','Manager','Planner','Field Lead','Worker','Helper','Viewer'];
+  if (CURRENT_ROLE === 'Manager') return ['Manager','Planner','Field Lead','Worker','Helper','Viewer'];
+  return [];
+}
+
+function roleRank(role) {
+  return { 'Viewer':1, 'Helper':2, 'Worker':3, 'Field Lead':4, 'Planner':5, 'Manager':6, 'Owner':7 }[role] || 0;
+}
+
+function canEditTeamUser(user) {
+  if (!user) return false;
+  const email = String(user.email || '').toLowerCase();
+  if (CURRENT_ROLE === 'Owner') {
+    return !(email === CURRENT_USER_EMAIL && user.role === 'Owner');
+  }
+  if (CURRENT_ROLE === 'Manager') {
+    return roleRank(user.role) <= roleRank('Manager');
+  }
+  return false;
+}
+
+function onRoleOrStatusChange(idx) {
+  const saveBtn = document.getElementById('save-' + idx);
+  if (saveBtn) saveBtn.classList.add('show');
+}
+
+function toggleUserActive(idx) {
+  const user = allUsers[idx];
+  if (!canEditTeamUser(user)) return;
+  const statusEl = document.getElementById('status-' + idx);
+  const isCurrentlyActive = statusEl.classList.contains('active');
+  statusEl.classList.toggle('active', !isCurrentlyActive);
+  statusEl.classList.toggle('inactive', isCurrentlyActive);
+  statusEl.textContent = isCurrentlyActive ? 'Inactive' : 'Active';
+  onRoleOrStatusChange(idx);
+}
+
+async function saveUserRow(idx) {
+  const user = allUsers[idx];
+  if (!user) return;
+  if (!canEditTeamUser(user)) { showToast('Permission denied'); return; }
+
+  const roleSelect = document.getElementById('role-' + idx);
+  const statusEl   = document.getElementById('status-' + idx);
+  const newRole    = roleSelect.value;
+  const newActive  = statusEl.classList.contains('active') ? 'Yes' : 'No';
+
+  if (user.active !== 'No' && newActive === 'No') {
+    const ok = confirm('Deactivate ' + user.email + '? This user will not be able to access BOFT.');
+    if (!ok) {
+      renderTeam();
+      return;
+    }
+  }
+
+  showToast('Updating ' + user.email + '...');
+  try {
+    const result = await apiPost({
+      action: 'updateUserRole',
+      email:  user.email,
+      role:   newRole,
+      active: newActive,
+    });
+    if (result.success) {
+      showToast('✓ User updated');
+      const saveBtn = document.getElementById('save-' + idx);
+      if (saveBtn) saveBtn.classList.remove('show');
+      await loadTeam();
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
+}
+
+function openAddUserModal() {
+  document.getElementById('au-email').value = '';
+  document.getElementById('au-name').value  = '';
+  document.getElementById('au-role').value  = 'Viewer';
+  renderAddUserRoleOptions();
+  document.getElementById('modal-add-user').classList.add('open');
+}
+
+function renderAddUserRoleOptions() {
+  const roleSelect = document.getElementById('au-role');
+  const labels = {
+    Viewer: 'Viewer — read only',
+    Helper: 'Helper — assigned plans/location only',
+    Worker: 'Worker — punch completion only',
+    'Field Lead': 'Field Lead — Projects scope/notes/photos',
+    Planner: 'Planner — material requests',
+    Manager: 'Manager — full access, no delete',
+    Owner: 'Owner — full access',
+  };
+  roleSelect.innerHTML = getRoleOptionsForCurrentUser()
+    .map(r => `<option value="${r}">${labels[r] || r}</option>`)
+    .join('');
+  roleSelect.value = 'Viewer';
+}
+
+function closeAddUserModal() {
+  document.getElementById('modal-add-user').classList.remove('open');
+}
+
+async function submitAddUser() {
+  const email = document.getElementById('au-email').value.trim().toLowerCase();
+  const name  = document.getElementById('au-name').value.trim();
+  const role  = document.getElementById('au-role').value;
+
+  if (!email) { showToast('⚠ Email is required'); return; }
+  if (!email.endsWith('@boftbuild.com')) { showToast('⚠ Email must be @boftbuild.com'); return; }
+
+  closeAddUserModal();
+  showToast('Adding user...');
+  try {
+    const result = await apiPost({
+      action: 'addUserManually',
+      email, name, role,
+    });
+    if (result.success) {
+      showToast('✓ ' + email + ' added as ' + role);
+      await loadTeam();
+    } else {
+      showToast('Error: ' + result.message);
+    }
+  } catch(e) { showToast('Connection error'); }
+}
+
+// ============================================================
+// API POST (faltaba — Activity Log original solo tenía apiGet)
+// ============================================================
+async function apiPost(payload) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ACCESS_TOKEN },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (data.error === 'Unauthorized' || data.code === 403) { doLogout(); return {}; }
+  return data;
+}
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
+
+window.addEventListener('load', () => { tryRestoreSession(); });
+console.info('BOFT Activity build:', ACTIVITY_BUILD);
 </script>
 </body>
 </html>
