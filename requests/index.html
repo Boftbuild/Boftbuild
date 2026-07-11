@@ -35,9 +35,14 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .page{max-width:1180px;margin:0 auto;padding:1.5rem 2rem 3rem;}
 .section-label{font-size:0.68rem;font-weight:700;letter-spacing:0.35em;text-transform:uppercase;color:var(--neon);margin-bottom:0.5rem;}
 .section-title{font-family:'Cinzel',serif;font-size:1.2rem;font-weight:700;color:var(--gold-light);margin-bottom:1.5rem;}
-.success-toast{display:none;align-items:center;gap:0.75rem;background:var(--black3);border:1px solid rgba(76,175,125,0.4);border-left:3px solid var(--green);padding:0.75rem 1rem;margin-bottom:1rem;position:sticky;top:calc(var(--nav-h) + 8px);z-index:40;}
+.success-toast{display:none;align-items:center;gap:0.75rem;background:var(--black2);border:1px solid var(--border-neon);border-left:3px solid var(--neon);padding:0.75rem 1rem;margin-bottom:1rem;position:sticky;top:calc(var(--nav-h) + 8px);z-index:40;}
 .success-toast.show{display:flex;}
-.toast-text{font-size:0.85rem;color:var(--green);font-weight:600;}
+.toast-text{font-size:0.85rem;color:var(--text);font-weight:600;}
+.modal-loading-overlay{display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:rgba(5,6,8,0.72);backdrop-filter:blur(3px);pointer-events:auto;}
+.modal-loading-overlay.show{display:flex;}
+.modal-loading-box{border:1px solid var(--border-neon);background:var(--black2);padding:1.1rem 1.4rem;min-width:260px;text-align:center;box-shadow:0 0 30px rgba(0,180,255,0.08);}
+.modal-loading-title{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--neon);margin-bottom:0.45rem;}
+.modal-loading-text{font-size:0.9rem;color:var(--text);}
 .denied-screen{display:none;min-height:80vh;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;}
 .denied-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold-light);margin-bottom:0.5rem;}
 .denied-text{font-size:0.9rem;color:var(--muted);max-width:380px;line-height:1.5;}
@@ -75,6 +80,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .tag.rejected{color:var(--red);border-color:rgba(224,85,85,0.35);background:rgba(224,85,85,0.08);}
 .tag.ordered{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
 .tag.completed{color:var(--muted);border-color:rgba(122,117,112,0.35);background:rgba(122,117,112,0.08);}
+.request-id-inline{font-weight:800;color:var(--text);}
 .request-actions{display:flex;gap:0.45rem;align-items:flex-start;justify-content:flex-end;flex-wrap:wrap;}
 .btn-sm{font-family:'Rajdhani',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:0.28rem 0.7rem;cursor:pointer;border:1px solid;background:transparent;}
 .btn-sm.good{color:var(--green);border-color:rgba(76,175,125,0.4);}
@@ -141,6 +147,12 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 
   <div class="page">
     <div id="toast" class="success-toast"><span style="font-size:18px;color:var(--green);">✓</span><span class="toast-text" id="toastText">Done.</span></div>
+    <div id="modalLoadingOverlay" class="modal-loading-overlay">
+      <div class="modal-loading-box">
+        <div class="modal-loading-title">BOFT</div>
+        <div class="modal-loading-text" id="modalLoadingText">Working...</div>
+      </div>
+    </div>
     <div class="section-label">Materials</div>
     <div class="section-title">Requests Board</div>
 
@@ -238,6 +250,31 @@ let allProjects = [];
 let createRequestItems = [];
 let createRequestEditIndex = -1;
 let activeSplitRequestId = null;
+const pendingPostKeys = new Set();
+
+function actionLabel(action) {
+  const labels = {
+    allMaterialRequests: 'Loading Requests...',
+    projects: 'Loading Projects...',
+    createMaterialRequest: 'Creating Request...',
+    updateMaterialRequestStatus: 'Updating Request...',
+    updateMaterialRequestDetails: 'Saving Request...',
+    deleteMaterialRequest: 'Deleting Request...',
+    reopenMaterialRequest: 'Re-opening Request...',
+    splitMaterialRequestItems: 'Reviewing Request Items...',
+  };
+  return labels[action] || 'Working...';
+}
+
+function setModalLoading(show, message) {
+  const overlay = document.getElementById('modalLoadingOverlay');
+  const text = document.getElementById('modalLoadingText');
+  if (text && message) text.textContent = message;
+  if (overlay) overlay.classList.toggle('show', !!show);
+  document.querySelectorAll('.btn-submit,.btn-action,.btn-sm,.request-icon-btn,.nav-sync').forEach(btn => {
+    btn.disabled = !!show;
+  });
+}
 
 function tryRestoreSession() {
   const token = sessionStorage.getItem('boft_token');
@@ -267,22 +304,34 @@ function loginSuccess(user, role) {
 async function apiGet(action, params = {}) {
   params.action = action;
   const qs = new URLSearchParams(params);
-  const res = await fetch(API_URL + '?' + qs, { headers: { Authorization: 'Bearer ' + ACCESS_TOKEN } });
-  return res.json();
+  setModalLoading(true, actionLabel(action));
+  try {
+    const res = await fetch(API_URL + '?' + qs, { headers: { Authorization: 'Bearer ' + ACCESS_TOKEN } });
+    return res.json();
+  } finally {
+    setModalLoading(false);
+  }
 }
 async function apiPost(payload) {
-  const res = await fetch(API_URL, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + ACCESS_TOKEN }, body:JSON.stringify(payload) });
-  return res.json();
+  const key = [payload && payload.action || 'post', payload && (payload.id || payload.projectId || '')].join(':');
+  if (pendingPostKeys.has(key)) return { success:false, message:'Already processing' };
+  pendingPostKeys.add(key);
+  setModalLoading(true, actionLabel(payload && payload.action));
+  try {
+    const res = await fetch(API_URL, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + ACCESS_TOKEN }, body:JSON.stringify(payload) });
+    return res.json();
+  } finally {
+    pendingPostKeys.delete(key);
+    setModalLoading(false);
+  }
 }
 
 async function loadRequests() {
   try {
-    showToast('Loading requests...');
     const data = await apiGet('allMaterialRequests');
     allRequests = data.requests || [];
     populateProjectFilter();
     renderRequests();
-    showToast('Requests loaded');
   } catch(e) { showToast('Error loading requests'); }
 }
 
@@ -363,7 +412,7 @@ function renderRequestRow(r) {
       ${renderRequestDescription(r.description)}
       <div class="request-sub">${typeLine} · ${esc(r.quantity || 'No qty')} · Requested by ${esc(r.requestedByName || r.requestedByEmail)}${cost}</div>
       ${r.notes ? `<div class="request-sub">Notes: ${esc(r.notes)}</div>` : ''}
-      <div class="request-meta"><span class="tag ${statusClass}">${esc(r.status)}</span><span class="tag ${priorityClass}">${esc(r.priority)}</span><span class="tag">${esc(r.type)}</span>${r.subtype ? `<span class="tag">${esc(r.subtype)}</span>` : ''}<span class="tag">${esc(r.id)}</span><span class="tag">${esc(r.timestamp)}</span></div>
+      <div class="request-meta"><span class="tag ${statusClass}">${esc(r.status)}</span><span class="tag ${priorityClass}">${esc(r.priority)}</span><span class="tag">${esc(r.type)}</span>${r.subtype ? `<span class="tag">${esc(r.subtype)}</span>` : ''}<span class="tag">${renderRequestId(r.id)}</span><span class="tag">${esc(r.timestamp)}</span></div>
     </div>
     <div class="request-actions" onclick="event.stopPropagation();">${renderActions(r)}</div>
   </div>`;
@@ -629,7 +678,7 @@ function openSplitModal(id) {
   const items = parseRequestItems(req);
   if (items.length <= 1) { quickStatus(id, 'Approved'); return; }
   activeSplitRequestId = id;
-  document.getElementById('splitModalTitle').textContent = 'Review Request ' + id;
+  document.getElementById('splitModalTitle').innerHTML = 'Review Request ' + renderRequestId(id);
   document.getElementById('split-notes').value = '';
   document.getElementById('splitItemsList').innerHTML = items.map(item => `
     <label class="split-item">
@@ -688,6 +737,10 @@ async function submitStatusUpdate() {
 
 function esc(s) { return String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function escAttr(s) { return esc(s).replace(/'/g, '&#39;'); }
+function renderRequestId(id) {
+  const safe = esc(id || '');
+  return String(id || '').trim().match(/^MR/i) ? `<strong class="request-id-inline">${safe}</strong>` : safe;
+}
 function showToast(msg) { document.getElementById('toastText').textContent = msg; const t = document.getElementById('toast'); t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
 function doLogout() { sessionStorage.clear(); window.location.href = '/hub'; }
 
