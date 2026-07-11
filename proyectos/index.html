@@ -55,6 +55,13 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .nav-logout:hover{color:var(--red);border-color:rgba(224,85,85,0.4);}
 .nav-notify{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--neon);background:var(--neon-dim);border:1px solid var(--border-neon);padding:0.28rem 0.65rem;cursor:pointer;}
 .nav-notify.hidden{display:none;}
+.notification-panel{position:fixed;top:60px;right:1.25rem;z-index:220;width:min(360px,calc(100vw - 2rem));background:var(--black2);border:1px solid var(--border-neon);box-shadow:0 18px 60px rgba(0,0,0,0.42);padding:0.85rem;}
+.notification-panel.hidden{display:none;}
+.notification-panel-title{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:var(--neon);margin-bottom:0.65rem;}
+.notification-item{border-top:1px solid rgba(0,180,255,0.12);padding:0.62rem 0;}
+.notification-item:first-of-type{border-top:none;}
+.notification-title{font-size:0.86rem;font-weight:800;color:var(--text);}
+.notification-meta{font-size:0.72rem;color:var(--muted);margin-top:0.2rem;line-height:1.35;}
 
 /* PAGE */
 .page{max-width:1100px;margin:0 auto;padding:1.5rem 2rem 3rem;}
@@ -547,13 +554,14 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <img class="nav-avatar" id="navAvatar" src="" alt="">
       <span class="nav-username" id="navUsername"></span>
       <span id="navRoleBadge" style="display:none;font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:0.2rem 0.6rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);"></span>
-      <button class="nav-notify hidden" id="navNotifyBadge" onclick="markLiveNotificationsRead()">0 New</button>
+      <button class="nav-notify hidden" id="navNotifyBadge" onclick="toggleLiveNotifications(event)">0 New</button>
       <a href="/hub" class="nav-hub-btn">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="margin-right:4px;"><polygon points="6,0.5 11,3 11,9 6,11.5 1,9 1,3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>Hub
       </a>
       <button class="nav-logout" onclick="doLogout()">Logout</button>
     </div>
   </nav>
+  <div id="notificationPanel" class="notification-panel hidden"></div>
 
   <div class="page">
     <div id="toast" class="success-toast">
@@ -1311,6 +1319,7 @@ let CURRENT_ROLE = 'Viewer';
 let CURRENT_USER_EMAIL = '';
 let liveStateSnapshot = {};
 let livePollTimer = null;
+let liveNotifications = [];
 let newProjectTools = [];
 let newProjectToolEditIndex = -1;
 let activeTrackingItem = null;
@@ -1623,6 +1632,7 @@ async function pollLiveState(area) {
 async function loadLiveNotifications() {
   try {
     const data = await apiGet('myNotifications');
+    liveNotifications = data.notifications || [];
     const badge = document.getElementById('navNotifyBadge');
     if (!badge) return;
     const unread = Number(data.unread || 0);
@@ -1631,10 +1641,39 @@ async function loadLiveNotifications() {
   } catch(e) {}
 }
 
+function renderLiveNotificationPanel() {
+  const panel = document.getElementById('notificationPanel');
+  if (!panel) return;
+  const items = (liveNotifications || []).filter(n => n.read !== 'Yes').slice(0, 8);
+  const visibleItems = items.length ? items : (liveNotifications || []).slice(0, 5);
+  panel.innerHTML = `<div class="notification-panel-title">Latest Updates</div>` +
+    (visibleItems.length ? visibleItems.map(n => `<div class="notification-item">
+      <div class="notification-title">${escHtml(n.title || 'BOFT update')}</div>
+      <div class="notification-meta">${escHtml(n.timestamp || '')}${n.projectName ? ' · ' + escHtml(n.projectName) : ''}</div>
+      <div class="notification-meta">${escHtml(n.message || '')}</div>
+    </div>`).join('') : '<div class="notification-meta">No new updates.</div>');
+}
+
+async function toggleLiveNotifications(event) {
+  if (event) event.stopPropagation();
+  const panel = document.getElementById('notificationPanel');
+  if (!panel) return;
+  const shouldOpen = panel.classList.contains('hidden');
+  if (!shouldOpen) {
+    panel.classList.add('hidden');
+    return;
+  }
+  renderLiveNotificationPanel();
+  panel.classList.remove('hidden');
+  await markLiveNotificationsRead();
+}
+
 async function markLiveNotificationsRead() {
   try {
     await apiPost({ action: 'markNotificationsRead' });
-    await loadLiveNotifications();
+    const badge = document.getElementById('navNotifyBadge');
+    if (badge) badge.classList.add('hidden');
+    liveNotifications = liveNotifications.map(n => ({ ...n, read: 'Yes' }));
   } catch(e) {}
 }
 
@@ -3089,6 +3128,47 @@ function findCombinedTrackingItem(kind, source, id) {
   return getCombinedTrackingItems(kind).find(item => item.source === source && item.id === id);
 }
 
+function getRequestBaseId(id) {
+  return String(id || '').trim().replace(/-\d+$/, '');
+}
+
+function getTrackingRequestFamily(requestId) {
+  const baseId = getRequestBaseId(requestId);
+  if (!baseId) return [];
+  return projectMaterialRequests.filter(req => {
+    const id = String(req.id || '').trim();
+    return id === baseId || id.indexOf(baseId + '-') === 0;
+  }).sort((a, b) => {
+    const order = req => {
+      const id = String(req.id || '');
+      const match = id.match(/-(\d+)$/);
+      return id === baseId ? 1 : Number(match && match[1] || 999);
+    };
+    return order(a) - order(b);
+  });
+}
+
+function getTrackingFamilyRequestItems(kind) {
+  if (!activeTrackingItem || !activeTrackingItem.request) return [];
+  const family = getTrackingRequestFamily(activeTrackingItem.requestId || activeTrackingItem.request.id || activeTrackingItem.id);
+  const requests = family.length ? family : [activeTrackingItem.request];
+  const rows = [];
+  requests.forEach(req => {
+    if (!isRequestApprovedForTracking({ source: 'request', status: req.status })) return;
+    parseProjectRequestItems(req).forEach(item => {
+      const matchesKind = kind === 'Material' ? isMaterialCategory(item.category) : isToolCategory(item.category);
+      if (!matchesKind) return;
+      rows.push({
+        ...item,
+        requestId: req.id,
+        value: req.id + '::' + item.index,
+        label: (req.id !== (activeTrackingItem.requestId || activeTrackingItem.request.id) ? req.id + ' - ' : '') + (item.description || item.category || (kind === 'Material' ? 'Item' : 'Tool')),
+      });
+    });
+  });
+  return rows;
+}
+
 async function openTrackingDetail(kind, source, id) {
   activeTrackingItem = findCombinedTrackingItem(kind, source, id);
   if (!activeTrackingItem) return;
@@ -3109,9 +3189,9 @@ async function openTrackingDetail(kind, source, id) {
     footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Close</button>`;
   } else if (kind === 'Material' && item.source === 'request') {
     materialDeliveryDraft = [];
-    const matItems = parseProjectRequestItems(item.request).filter(reqItem => isMaterialCategory(reqItem.category));
-    const materialOptions = (matItems.length ? matItems : [{ index: item.requestItemIndex || 1, description: item.item, quantity: item.requiredQty, category: item.location }])
-      .map(reqItem => `<option value="${reqItem.index}">${escHtml(reqItem.description || reqItem.category || 'Item')} (${escHtml(reqItem.quantity || '-')})</option>`).join('');
+    const matItems = getTrackingFamilyRequestItems('Material');
+    const materialOptions = (matItems.length ? matItems : [{ index: item.requestItemIndex || 1, value: (item.requestId || item.id) + '::' + (item.requestItemIndex || 1), requestId: item.requestId || item.id, description: item.item, quantity: item.requiredQty, category: item.location }])
+      .map(reqItem => `<option value="${escAttr(reqItem.value || (reqItem.requestId + '::' + reqItem.index))}">${escHtml(reqItem.label || reqItem.description || reqItem.category || 'Item')} (${escHtml(reqItem.quantity || '-')})</option>`).join('');
     html += `<div class="field-group">
       <label class="field-label">Delivery Result</label>
       <select class="field-input" id="mt-result" onchange="renderMaterialDeliveryFields()">
@@ -3132,9 +3212,9 @@ async function openTrackingDetail(kind, source, id) {
     footer.innerHTML = `<button class="btn-cancel" onclick="closeModal('tracking-detail')">Cancel</button><button class="btn-submit" onclick="saveMaterialDelivery()">Save</button>`;
   } else if (kind === 'Tool' && item.source === 'request') {
     toolRequestUpdateDraft = [];
-    const toolItems = parseProjectRequestItems(item.request).filter(reqItem => isToolCategory(reqItem.category));
-    const toolOptions = (toolItems.length ? toolItems : [{ index: item.requestItemIndex || 1, description: item.item, category: item.location }])
-      .map(reqItem => `<option value="${reqItem.index}">${escHtml(reqItem.description || reqItem.category || 'Tool')}</option>`).join('');
+    const toolItems = getTrackingFamilyRequestItems('Tool');
+    const toolOptions = (toolItems.length ? toolItems : [{ index: item.requestItemIndex || 1, value: (item.requestId || item.id) + '::' + (item.requestItemIndex || 1), requestId: item.requestId || item.id, description: item.item, category: item.location }])
+      .map(reqItem => `<option value="${escAttr(reqItem.value || (reqItem.requestId + '::' + reqItem.index))}">${escHtml(reqItem.label || reqItem.description || reqItem.category || 'Tool')}</option>`).join('');
     html += `<div class="field-group">
       <label class="field-label">Tool Status</label>
       <select class="field-input" id="tq-status" onchange="renderToolRequestPickedUpByField()">
@@ -3181,17 +3261,16 @@ async function openTrackingDetail(kind, source, id) {
 }
 
 function getActiveTrackingRequestItems(kind) {
+  const familyItems = getTrackingFamilyRequestItems(kind);
+  if (familyItems.length) return familyItems;
   if (!activeTrackingItem || !activeTrackingItem.request) return [];
-  const items = parseProjectRequestItems(activeTrackingItem.request);
-  const filtered = kind === 'Material'
-    ? items.filter(reqItem => isMaterialCategory(reqItem.category))
-    : items.filter(reqItem => isToolCategory(reqItem.category));
-  return filtered.length ? filtered : [{ index: activeTrackingItem.requestItemIndex || 1, description: activeTrackingItem.item, quantity: activeTrackingItem.requiredQty, category: activeTrackingItem.location }];
+  return [{ index: activeTrackingItem.requestItemIndex || 1, requestId: activeTrackingItem.requestId || activeTrackingItem.id, value: (activeTrackingItem.requestId || activeTrackingItem.id) + '::' + (activeTrackingItem.requestItemIndex || 1), description: activeTrackingItem.item, quantity: activeTrackingItem.requiredQty, category: activeTrackingItem.location }];
 }
 
 function findActiveTrackingRequestItem(kind, indexValue) {
+  const key = String(indexValue || '');
   const index = Number(indexValue);
-  return getActiveTrackingRequestItems(kind).find(item => Number(item.index) === index) || null;
+  return getActiveTrackingRequestItems(kind).find(item => String(item.value || (item.requestId + '::' + item.index)) === key || Number(item.index) === index) || null;
 }
 
 function renderMaterialDeliveryFields() {
@@ -3210,9 +3289,12 @@ function addMaterialDeliveryDraft() {
   const receivedQty = String(document.getElementById('mt-received')?.value || '').trim();
   if (!selected) { showToast('Select an item'); return; }
   if (!receivedQty) { showToast('Enter received quantity'); return; }
-  materialDeliveryDraft = materialDeliveryDraft.filter(item => Number(item.index) !== Number(selected.index));
+  const key = selected.value || (selected.requestId + '::' + selected.index);
+  materialDeliveryDraft = materialDeliveryDraft.filter(item => item.key !== key);
   materialDeliveryDraft.push({
+    key,
     index: selected.index,
+    requestId: selected.requestId || activeTrackingItem.requestId || activeTrackingItem.id,
     category: selected.category || '',
     description: selected.description || activeTrackingItem.item || '',
     requestedQty: selected.quantity || activeTrackingItem.requiredQty || '',
@@ -3223,8 +3305,8 @@ function addMaterialDeliveryDraft() {
   renderMaterialDeliveryDraft();
 }
 
-function removeMaterialDeliveryDraft(index) {
-  materialDeliveryDraft = materialDeliveryDraft.filter(item => Number(item.index) !== Number(index));
+function removeMaterialDeliveryDraft(key) {
+  materialDeliveryDraft = materialDeliveryDraft.filter(item => item.key !== key);
   renderMaterialDeliveryDraft();
 }
 
@@ -3236,8 +3318,8 @@ function renderMaterialDeliveryDraft() {
     return;
   }
   list.innerHTML = materialDeliveryDraft.map(item => `<div class="request-item-row">
-    <div><strong>${escHtml(item.description)}</strong><small>Requested: ${escHtml(item.requestedQty || '-')} · Received: ${escHtml(item.receivedQty || '-')}</small></div>
-    <button type="button" class="btn-icon danger" onclick="removeMaterialDeliveryDraft(${Number(item.index)})">×</button>
+    <div><strong>${escHtml(item.description)}</strong><small>${renderRequestId(item.requestId)} · Requested: ${escHtml(item.requestedQty || '-')} · Received: ${escHtml(item.receivedQty || '-')}</small></div>
+    <button type="button" class="btn-icon danger" onclick="removeMaterialDeliveryDraft('${escAttr(item.key)}')">×</button>
   </div>`).join('');
 }
 
@@ -3269,9 +3351,12 @@ function addToolRequestUpdateDraft() {
   const pickedUpBySelect = document.getElementById('tq-picked-up-by');
   const pickedUpBy = pickedUpBySelect?.value || '';
   const pickedUpByLabel = pickedUpBySelect && pickedUpBySelect.selectedIndex >= 0 ? pickedUpBySelect.options[pickedUpBySelect.selectedIndex].text : '';
-  toolRequestUpdateDraft = toolRequestUpdateDraft.filter(item => Number(item.index) !== Number(selected.index));
+  const key = selected.value || (selected.requestId + '::' + selected.index);
+  toolRequestUpdateDraft = toolRequestUpdateDraft.filter(item => item.key !== key);
   toolRequestUpdateDraft.push({
+    key,
     index: selected.index,
+    requestId: selected.requestId || activeTrackingItem.requestId || activeTrackingItem.id,
     category: selected.category || '',
     description: selected.description || activeTrackingItem.item || '',
     requestedQty: selected.quantity || activeTrackingItem.requiredQty || '',
@@ -3282,8 +3367,8 @@ function addToolRequestUpdateDraft() {
   renderToolRequestUpdateDraft();
 }
 
-function removeToolRequestUpdateDraft(index) {
-  toolRequestUpdateDraft = toolRequestUpdateDraft.filter(item => Number(item.index) !== Number(index));
+function removeToolRequestUpdateDraft(key) {
+  toolRequestUpdateDraft = toolRequestUpdateDraft.filter(item => item.key !== key);
   renderToolRequestUpdateDraft();
 }
 
@@ -3295,8 +3380,8 @@ function renderToolRequestUpdateDraft() {
     return;
   }
   list.innerHTML = toolRequestUpdateDraft.map(item => `<div class="request-item-row">
-    <div><strong>${escHtml(item.description)}</strong><small>Status: ${escHtml(item.status)}${item.pickedUpByLabel ? ' · ' + escHtml(item.pickedUpByLabel) : ''}</small></div>
-    <button type="button" class="btn-icon danger" onclick="removeToolRequestUpdateDraft(${Number(item.index)})">×</button>
+    <div><strong>${escHtml(item.description)}</strong><small>${renderRequestId(item.requestId)} · Status: ${escHtml(item.status)}${item.pickedUpByLabel ? ' · ' + escHtml(item.pickedUpByLabel) : ''}</small></div>
+    <button type="button" class="btn-icon danger" onclick="removeToolRequestUpdateDraft('${escAttr(item.key)}')">×</button>
   </div>`).join('');
 }
 
