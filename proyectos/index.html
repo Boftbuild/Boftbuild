@@ -53,6 +53,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .nav-hub-btn:hover{color:var(--gold-light);border-color:var(--border);}
 .nav-logout{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid rgba(122,117,112,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:color 0.2s;}
 .nav-logout:hover{color:var(--red);border-color:rgba(224,85,85,0.4);}
+.nav-notify{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--neon);background:var(--neon-dim);border:1px solid var(--border-neon);padding:0.28rem 0.65rem;cursor:pointer;}
+.nav-notify.hidden{display:none;}
 
 /* PAGE */
 .page{max-width:1100px;margin:0 auto;padding:1.5rem 2rem 3rem;}
@@ -545,7 +547,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <img class="nav-avatar" id="navAvatar" src="" alt="">
       <span class="nav-username" id="navUsername"></span>
       <span id="navRoleBadge" style="display:none;font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:0.2rem 0.6rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);"></span>
-      <button class="nav-sync" onclick="loadProjects()">⟳ Sync</button>
+      <button class="nav-notify hidden" id="navNotifyBadge" onclick="markLiveNotificationsRead()">0 New</button>
       <a href="/hub" class="nav-hub-btn">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="margin-right:4px;"><polygon points="6,0.5 11,3 11,9 6,11.5 1,9 1,3" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>Hub
       </a>
@@ -1293,6 +1295,7 @@ function loginSuccess(user) {
   applyRolePermissions(role);
 
   loadProjects();
+  startLiveUpdates('projects');
 }
 
 // ============================================================
@@ -1306,6 +1309,8 @@ function loginSuccess(user) {
 // ============================================================
 let CURRENT_ROLE = 'Viewer';
 let CURRENT_USER_EMAIL = '';
+let liveStateSnapshot = {};
+let livePollTimer = null;
 let newProjectTools = [];
 let newProjectToolEditIndex = -1;
 let activeTrackingItem = null;
@@ -1574,9 +1579,10 @@ function removeAssignedCrew(prefix, email) {
 // ============================================================
 // LOAD PROJECTS
 // ============================================================
-async function loadProjects() {
+async function loadProjects(options = {}) {
+  const silent = !!options.silent;
   try {
-    setModalLoading(true, 'Loading Projects...');
+    if (!silent) setModalLoading(true, 'Loading Projects...');
     const data = await apiGet('projects');
     allProjects = data.projects || [];
     renderProjects();
@@ -1584,8 +1590,59 @@ async function loadProjects() {
     if (projectFromUrl && allProjects.some(p => p.id === projectFromUrl)) {
       openProject(projectFromUrl);
     }
-  } catch(e) { console.error(e); showToast('Error loading projects'); }
-  finally { setModalLoading(false); }
+  } catch(e) { console.error(e); if (!silent) showToast('Error loading projects'); }
+  finally { if (!silent) setModalLoading(false); }
+}
+
+function hasOpenModalOrEditing() {
+  return !!document.querySelector('.modal-overlay.open,.confirm-overlay.open');
+}
+
+async function pollLiveState(area) {
+  if (!ACCESS_TOKEN || document.hidden || hasOpenModalOrEditing()) return;
+  try {
+    const data = await apiGet('systemState');
+    const state = data.state || {};
+    const previous = liveStateSnapshot || {};
+    liveStateSnapshot = state;
+    const firstRun = !Object.keys(previous).length;
+    const projectOpsChanged = (state.projectOps?.version || 0) !== (previous.projectOps?.version || 0);
+    const projectsChanged = (state.projects?.version || 0) !== (previous.projects?.version || 0);
+    const requestsChanged = (state.requests?.version || 0) !== (previous.requests?.version || 0);
+    const notificationsChanged = (state.notifications?.version || 0) !== (previous.notifications?.version || 0);
+    if (!firstRun && (projectsChanged || requestsChanged || projectOpsChanged)) {
+      await loadProjects({ silent: true });
+      if (currentProject && (requestsChanged || projectOpsChanged)) await loadTimelineData();
+    }
+    if (!firstRun && notificationsChanged) await loadLiveNotifications();
+  } catch(e) {
+    console.warn('Live state skipped', e);
+  }
+}
+
+async function loadLiveNotifications() {
+  try {
+    const data = await apiGet('myNotifications');
+    const badge = document.getElementById('navNotifyBadge');
+    if (!badge) return;
+    const unread = Number(data.unread || 0);
+    badge.textContent = unread + ' New';
+    badge.classList.toggle('hidden', unread <= 0);
+  } catch(e) {}
+}
+
+async function markLiveNotificationsRead() {
+  try {
+    await apiPost({ action: 'markNotificationsRead' });
+    await loadLiveNotifications();
+  } catch(e) {}
+}
+
+function startLiveUpdates(area) {
+  if (livePollTimer) clearInterval(livePollTimer);
+  pollLiveState(area);
+  loadLiveNotifications();
+  livePollTimer = setInterval(() => pollLiveState(area), 30000);
 }
 
 function renderProjects() {
