@@ -49,6 +49,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .notification-panel-title{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:var(--neon);margin-bottom:0.65rem;}
 .notification-item{border-top:1px solid rgba(0,180,255,0.12);padding:0.62rem 0;}
 .notification-item:first-of-type{border-top:none;}
+.notification-panel-head{display:flex;align-items:center;justify-content:space-between;gap:0.75rem;margin-bottom:0.35rem;}
+.notification-clear-all,.notification-clear{font-family:'Rajdhani',sans-serif;font-size:0.62rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--neon);background:transparent;border:1px solid rgba(0,180,255,0.3);padding:0.18rem 0.45rem;cursor:pointer;}
+.notification-clear{font-size:0.85rem;line-height:1;padding:0.12rem 0.38rem;color:var(--gray);border-color:var(--border);}
+.notification-item-top{display:flex;align-items:flex-start;justify-content:space-between;gap:0.75rem;}
 .notification-title{font-size:0.86rem;font-weight:800;color:var(--text);}
 .notification-meta{font-size:0.72rem;color:var(--muted);margin-top:0.2rem;line-height:1.35;}
 .nav-hub-btn{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--neon);background:none;border:1px solid rgba(0,180,255,0.3);padding:0.35rem 0.9rem;cursor:pointer;transition:all 0.2s;text-decoration:none;display:inline-flex;align-items:center;}
@@ -557,9 +561,12 @@ function renderLiveNotificationPanel() {
   if (!panel) return;
   const items = (liveNotifications || []).filter(n => n.read !== 'Yes').slice(0, 8);
   const visibleItems = items.length ? items : (liveNotifications || []).slice(0, 5);
-  panel.innerHTML = `<div class="notification-panel-title">Latest Updates</div>` +
+  panel.innerHTML = `<div class="notification-panel-head"><div class="notification-panel-title">Latest Updates</div>${items.length ? '<button class="notification-clear-all" onclick="event.stopPropagation();markLiveNotificationsRead()">Clear all</button>' : ''}</div>` +
     (visibleItems.length ? visibleItems.map(n => `<div class="notification-item">
-      <div class="notification-title">${escHtml(n.title || 'BOFT update')}</div>
+      <div class="notification-item-top">
+        <div class="notification-title">${escHtml(n.title || 'BOFT update')}</div>
+        ${n.read !== 'Yes' ? `<button class="notification-clear" onclick="event.stopPropagation();markLiveNotificationRead('${escAttr(n.id || '')}')">×</button>` : ''}
+      </div>
       <div class="notification-meta">${escHtml(n.timestamp || '')}${n.projectName ? ' · ' + escHtml(n.projectName) : ''}</div>
       <div class="notification-meta">${escHtml(n.message || '')}</div>
     </div>`).join('') : '<div class="notification-meta">No new updates.</div>');
@@ -576,15 +583,26 @@ async function toggleLiveNotifications(event) {
   }
   renderLiveNotificationPanel();
   panel.classList.remove('hidden');
-  await markLiveNotificationsRead();
+}
+
+async function markLiveNotificationRead(id) {
+  try {
+    if (!id) return;
+    await apiPost({ action: 'markNotificationsRead', ids: [id] });
+    liveNotifications = liveNotifications.map(n => String(n.id || '') === String(id) ? { ...n, read: 'Yes' } : n);
+    renderLiveNotificationPanel();
+    await loadLiveNotifications();
+  } catch(e) {}
 }
 
 async function markLiveNotificationsRead() {
   try {
-    await apiPost({ action: 'markNotificationsRead' });
+    const ids = (liveNotifications || []).filter(n => n.read !== 'Yes').map(n => n.id).filter(Boolean);
+    await apiPost({ action: 'markNotificationsRead', ids });
     const badge = document.getElementById('navNotifyBadge');
     if (badge) badge.classList.add('hidden');
     liveNotifications = liveNotifications.map(n => ({ ...n, read: 'Yes' }));
+    renderLiveNotificationPanel();
   } catch(e) {}
 }
 
@@ -592,6 +610,16 @@ function startLiveUpdates(area) {
   if (livePollTimer) clearInterval(livePollTimer);
   pollLiveState(area);
   loadLiveNotifications();
+  if (!window.__boftNotificationClickAway) {
+    window.__boftNotificationClickAway = true;
+    document.addEventListener('click', event => {
+      const panel = document.getElementById('notificationPanel');
+      const badge = document.getElementById('navNotifyBadge');
+      if (!panel || panel.classList.contains('hidden')) return;
+      if (panel.contains(event.target) || badge === event.target) return;
+      panel.classList.add('hidden');
+    });
+  }
   livePollTimer = setInterval(() => pollLiveState(area), 30000);
 }
 
@@ -891,6 +919,10 @@ function getActionLabel(action) {
 
 function escHtml(str) {
   return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function escAttr(str) {
+  return escHtml(str);
 }
 
 // ============================================================
