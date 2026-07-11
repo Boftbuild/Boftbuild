@@ -43,6 +43,8 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .modal-loading-box{border:1px solid var(--border-neon);background:var(--black2);padding:1.1rem 1.4rem;min-width:260px;text-align:center;box-shadow:0 0 30px rgba(0,180,255,0.08);}
 .modal-loading-title{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--neon);margin-bottom:0.45rem;}
 .modal-loading-text{font-size:0.9rem;color:var(--text);}
+.nav-notify{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--neon);background:var(--neon-dim);border:1px solid var(--border-neon);padding:0.28rem 0.65rem;cursor:pointer;}
+.nav-notify.hidden{display:none;}
 .denied-screen{display:none;min-height:80vh;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;}
 .denied-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold-light);margin-bottom:0.5rem;}
 .denied-text{font-size:0.9rem;color:var(--muted);max-width:380px;line-height:1.5;}
@@ -139,7 +141,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <img class="nav-avatar" id="navAvatar" src="" alt="">
       <span class="nav-username" id="navUsername"></span>
       <span class="nav-role-badge" id="navRoleBadge"></span>
-      <button class="nav-sync" onclick="loadRequests()">⟳ Sync</button>
+      <button class="nav-notify hidden" id="navNotifyBadge" onclick="markLiveNotificationsRead()">0 New</button>
       <a href="/hub" class="nav-hub-btn">Hub</a>
       <button class="nav-logout" onclick="doLogout()">Logout</button>
     </div>
@@ -250,6 +252,8 @@ let allProjects = [];
 let createRequestItems = [];
 let createRequestEditIndex = -1;
 let activeSplitRequestId = null;
+let liveStateSnapshot = {};
+let livePollTimer = null;
 const pendingPostKeys = new Set();
 
 function actionLabel(action) {
@@ -299,17 +303,18 @@ function loginSuccess(user, role) {
   const badge = document.getElementById('navRoleBadge'); badge.textContent = role; badge.style.display = 'inline-block';
   loadProjectsForDropdown();
   loadRequests();
+  startLiveUpdates('requests');
 }
 
-async function apiGet(action, params = {}) {
+async function apiGet(action, params = {}, options = {}) {
   params.action = action;
   const qs = new URLSearchParams(params);
-  setModalLoading(true, actionLabel(action));
+  if (!options.silent) setModalLoading(true, actionLabel(action));
   try {
     const res = await fetch(API_URL + '?' + qs, { headers: { Authorization: 'Bearer ' + ACCESS_TOKEN } });
     return res.json();
   } finally {
-    setModalLoading(false);
+    if (!options.silent) setModalLoading(false);
   }
 }
 async function apiPost(payload) {
@@ -326,18 +331,66 @@ async function apiPost(payload) {
   }
 }
 
-async function loadRequests() {
+async function loadRequests(options = {}) {
   try {
-    const data = await apiGet('allMaterialRequests');
+    const data = await apiGet('allMaterialRequests', {}, { silent: !!options.silent });
     allRequests = data.requests || [];
     populateProjectFilter();
     renderRequests();
-  } catch(e) { showToast('Error loading requests'); }
+  } catch(e) { if (!options.silent) showToast('Error loading requests'); }
 }
 
-async function loadProjectsForDropdown() {
+function hasOpenModalOrEditing() {
+  return !!document.querySelector('.modal-overlay.open');
+}
+
+async function pollLiveState(area) {
+  if (!ACCESS_TOKEN || document.hidden || hasOpenModalOrEditing()) return;
   try {
-    const data = await apiGet('projects');
+    const data = await apiGet('systemState', {}, { silent: true });
+    const state = data.state || {};
+    const previous = liveStateSnapshot || {};
+    liveStateSnapshot = state;
+    const firstRun = !Object.keys(previous).length;
+    const requestsChanged = (state.requests?.version || 0) !== (previous.requests?.version || 0);
+    const projectsChanged = (state.projects?.version || 0) !== (previous.projects?.version || 0);
+    const notificationsChanged = (state.notifications?.version || 0) !== (previous.notifications?.version || 0);
+    if (!firstRun && requestsChanged) await loadRequests({ silent: true });
+    if (!firstRun && projectsChanged) await loadProjectsForDropdown({ silent: true });
+    if (!firstRun && notificationsChanged) await loadLiveNotifications();
+  } catch(e) {
+    console.warn('Live state skipped', e);
+  }
+}
+
+async function loadLiveNotifications() {
+  try {
+    const data = await apiGet('myNotifications', {}, { silent: true });
+    const badge = document.getElementById('navNotifyBadge');
+    if (!badge) return;
+    const unread = Number(data.unread || 0);
+    badge.textContent = unread + ' New';
+    badge.classList.toggle('hidden', unread <= 0);
+  } catch(e) {}
+}
+
+async function markLiveNotificationsRead() {
+  try {
+    await apiPost({ action: 'markNotificationsRead' });
+    await loadLiveNotifications();
+  } catch(e) {}
+}
+
+function startLiveUpdates(area) {
+  if (livePollTimer) clearInterval(livePollTimer);
+  pollLiveState(area);
+  loadLiveNotifications();
+  livePollTimer = setInterval(() => pollLiveState(area), 30000);
+}
+
+async function loadProjectsForDropdown(options = {}) {
+  try {
+    const data = await apiGet('projects', {}, { silent: !!options.silent });
     allProjects = data.projects || [];
     populateProjectDropdown();
     populateProjectFilter();
