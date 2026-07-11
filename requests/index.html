@@ -45,6 +45,13 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .modal-loading-text{font-size:0.9rem;color:var(--text);}
 .nav-notify{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--neon);background:var(--neon-dim);border:1px solid var(--border-neon);padding:0.28rem 0.65rem;cursor:pointer;}
 .nav-notify.hidden{display:none;}
+.notification-panel{position:fixed;top:60px;right:1.25rem;z-index:220;width:min(360px,calc(100vw - 2rem));background:var(--black2);border:1px solid var(--border-neon);box-shadow:0 18px 60px rgba(0,0,0,0.42);padding:0.85rem;}
+.notification-panel.hidden{display:none;}
+.notification-panel-title{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:var(--neon);margin-bottom:0.65rem;}
+.notification-item{border-top:1px solid rgba(0,180,255,0.12);padding:0.62rem 0;}
+.notification-item:first-of-type{border-top:none;}
+.notification-title{font-size:0.86rem;font-weight:800;color:var(--text);}
+.notification-meta{font-size:0.72rem;color:var(--muted);margin-top:0.2rem;line-height:1.35;}
 .denied-screen{display:none;min-height:80vh;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;}
 .denied-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold-light);margin-bottom:0.5rem;}
 .denied-text{font-size:0.9rem;color:var(--muted);max-width:380px;line-height:1.5;}
@@ -141,11 +148,12 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       <img class="nav-avatar" id="navAvatar" src="" alt="">
       <span class="nav-username" id="navUsername"></span>
       <span class="nav-role-badge" id="navRoleBadge"></span>
-      <button class="nav-notify hidden" id="navNotifyBadge" onclick="markLiveNotificationsRead()">0 New</button>
+      <button class="nav-notify hidden" id="navNotifyBadge" onclick="toggleLiveNotifications(event)">0 New</button>
       <a href="/hub" class="nav-hub-btn">Hub</a>
       <button class="nav-logout" onclick="doLogout()">Logout</button>
     </div>
   </nav>
+  <div id="notificationPanel" class="notification-panel hidden"></div>
 
   <div class="page">
     <div id="toast" class="success-toast"><span style="font-size:18px;color:var(--green);">✓</span><span class="toast-text" id="toastText">Done.</span></div>
@@ -254,6 +262,7 @@ let createRequestEditIndex = -1;
 let activeSplitRequestId = null;
 let liveStateSnapshot = {};
 let livePollTimer = null;
+let liveNotifications = [];
 const pendingPostKeys = new Set();
 
 function actionLabel(action) {
@@ -366,6 +375,7 @@ async function pollLiveState(area) {
 async function loadLiveNotifications() {
   try {
     const data = await apiGet('myNotifications', {}, { silent: true });
+    liveNotifications = data.notifications || [];
     const badge = document.getElementById('navNotifyBadge');
     if (!badge) return;
     const unread = Number(data.unread || 0);
@@ -374,10 +384,39 @@ async function loadLiveNotifications() {
   } catch(e) {}
 }
 
+function renderLiveNotificationPanel() {
+  const panel = document.getElementById('notificationPanel');
+  if (!panel) return;
+  const items = (liveNotifications || []).filter(n => n.read !== 'Yes').slice(0, 8);
+  const visibleItems = items.length ? items : (liveNotifications || []).slice(0, 5);
+  panel.innerHTML = `<div class="notification-panel-title">Latest Updates</div>` +
+    (visibleItems.length ? visibleItems.map(n => `<div class="notification-item">
+      <div class="notification-title">${esc(n.title || 'BOFT update')}</div>
+      <div class="notification-meta">${esc(n.timestamp || '')}${n.projectName ? ' · ' + esc(n.projectName) : ''}</div>
+      <div class="notification-meta">${esc(n.message || '')}</div>
+    </div>`).join('') : '<div class="notification-meta">No new updates.</div>');
+}
+
+async function toggleLiveNotifications(event) {
+  if (event) event.stopPropagation();
+  const panel = document.getElementById('notificationPanel');
+  if (!panel) return;
+  const shouldOpen = panel.classList.contains('hidden');
+  if (!shouldOpen) {
+    panel.classList.add('hidden');
+    return;
+  }
+  renderLiveNotificationPanel();
+  panel.classList.remove('hidden');
+  await markLiveNotificationsRead();
+}
+
 async function markLiveNotificationsRead() {
   try {
     await apiPost({ action: 'markNotificationsRead' });
-    await loadLiveNotifications();
+    const badge = document.getElementById('navNotifyBadge');
+    if (badge) badge.classList.add('hidden');
+    liveNotifications = liveNotifications.map(n => ({ ...n, read: 'Yes' }));
   } catch(e) {}
 }
 
