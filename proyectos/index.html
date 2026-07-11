@@ -69,6 +69,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .modal-loading-box{border:1px solid var(--border-neon);background:var(--black2);padding:1.1rem 1.4rem;min-width:260px;text-align:center;box-shadow:0 0 30px rgba(0,180,255,0.08);}
 .modal-loading-title{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--neon);margin-bottom:0.45rem;}
 .modal-loading-text{font-size:0.9rem;color:var(--text);}
+.request-id-inline{font-weight:800;color:var(--text);}
 
 /* PROJECTS LIST */
 .projects-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:0.75rem;}
@@ -1493,7 +1494,7 @@ async function apiPost(payload) {
 }
 
 async function loadTeamUsersForAssignment() {
-  if (teamUsers.length || !['Owner','Manager','Field Lead','Planner'].includes(CURRENT_ROLE)) return;
+  if (teamUsers.length || !['Owner','Manager'].includes(CURRENT_ROLE)) return;
   try {
     const data = await apiGet('getAllUsers');
     teamUsers = (data.users || []).filter(u => String(u.active || 'Yes') !== 'No');
@@ -1630,7 +1631,7 @@ function renderSidebarSummary() {
     </div>`;
   }
   const openPunch = projectPunchItems.filter(item => item.status !== 'Done').length;
-  const pendingRequests = projectMaterialRequests.filter(r => ['Pending','Ordered'].includes(r.status || 'Pending')).length;
+  const pendingRequests = projectMaterialRequests.filter(r => ['Pending','Pending Approval','Ordered'].includes(r.status || 'Pending')).length;
   const restrictedOps = isWorkerOrBelow();
   return `<div class="sidebar-summary">
     <div class="sidebar-summary-label">Current Project</div>
@@ -1675,6 +1676,13 @@ function escHtml(value) {
     '"': '&quot;',
     "'": '&#39;',
   })[ch]);
+}
+
+function renderRequestId(id) {
+  const safe = escHtml(id || '');
+  return String(id || '').trim().match(/^MR/i)
+    ? `<strong class="request-id-inline">${safe}</strong>`
+    : safe;
 }
 
 function getProjectCrewList(project) {
@@ -2201,7 +2209,7 @@ function buildActivityFeedItems() {
       sortDate: requestSortDate || getLocalDateString() + ' 00:00:00',
       type: 'request-' + statusClass,
       title: 'Request ' + statusText + ': ' + (r.description || r.id),
-      sub: [r.id, r.subtype || r.type, r.quantity || '', r.requestedByName ? 'by ' + r.requestedByName : ''].filter(Boolean).join(' · '),
+      sub: [renderRequestId(r.id), escHtml(r.subtype || r.type), escHtml(r.quantity || ''), r.requestedByName ? 'by ' + escHtml(r.requestedByName) : ''].filter(Boolean).join(' · '),
       request: r,
       amount: null,
       seq: seq++
@@ -2287,7 +2295,7 @@ function renderFeedItems_(items) {
       <div class="feed-dot ${item.type}"></div>
       <div class="feed-content">
         <div class="feed-title">${item.title}</div>
-        <div class="feed-sub">${item.date} · ${item.sub}</div>
+        <div class="feed-sub">${escHtml(item.date)} · ${item.sub}</div>
         ${renderRequestFeedActions(item)}
       </div>
       ${amtStr}
@@ -2309,7 +2317,7 @@ function renderProjectLiveSummary() {
   if (!el || !currentProject) return;
   const pendingPunch = projectPunchItems.filter(item => item.status !== 'Done').length;
   const donePunch = projectPunchItems.filter(item => item.status === 'Done').length;
-  const pendingRequests = projectMaterialRequests.filter(r => ['Pending','Ordered'].includes(r.status || 'Pending')).length;
+  const pendingRequests = projectMaterialRequests.filter(r => ['Pending','Pending Approval','Ordered'].includes(r.status || 'Pending')).length;
   const approvedRequests = projectMaterialRequests.filter(r => r.status === 'Approved').length;
   const latestLog = projectDailyLogs[0] ? (projectDailyLogs[0].logDate || (projectDailyLogs[0].createdAt || '').slice(0, 10)) : 'No daily log';
   const restrictedOps = isWorkerOrBelow();
@@ -2886,7 +2894,7 @@ function renderTrackingRow(item) {
   const canOpenTracking = !locked && isRequestApprovedForTracking(item);
   return `<div class="ops-row ${linked ? 'request-linked' : ''} ${locked ? 'locked' : ''}" ${canOpenTracking ? `onclick="openTrackingDetail('${item.kind}','${item.source}','${item.id}')"` : ''}>
     <div class="ops-row-title">${item.item}</div>
-    <div class="ops-row-meta"><span class="ops-chip ${statusClass}">${item.status || 'Needed'}</span>${linked ? ' Request ' + (item.requestId || item.id) + ' · ' : ' '}Required: ${item.requiredQty || '-'} · Ordered/Available: ${item.orderedQty || '-'} · Received: ${item.receivedQty || '-'} · Missing: ${item.missingQty || '-'}</div>
+    <div class="ops-row-meta"><span class="ops-chip ${statusClass}">${item.status || 'Needed'}</span>${linked ? ' Request ' + renderRequestId(item.requestId || item.id) + ' · ' : ' '}Required: ${item.requiredQty || '-'} · Ordered/Available: ${item.orderedQty || '-'} · Received: ${item.receivedQty || '-'} · Missing: ${item.missingQty || '-'}</div>
     ${(item.ownerCarrier || item.location) ? `<div class="ops-row-meta">${[item.ownerCarrier ? (linked ? 'Requested by: ' : 'Who: ') + item.ownerCarrier : '', item.location ? 'Category: ' + item.location : ''].filter(Boolean).join(' · ')}</div>` : ''}
     ${item.notes ? `<div class="ops-row-meta">${item.notes}</div>` : ''}
     ${locked ? `<div class="ops-row-meta">${item.status === 'Rejected' ? 'Rejected - closed until re-opened by Owner/Manager.' : item.kind === 'Tool' ? 'Final status - no further actions.' : 'Closed - no further changes.'}</div>` : ''}
@@ -2948,7 +2956,7 @@ async function openTrackingDetail(kind, source, id) {
   const statusClass = trackingStatusClass(item.status);
   let html = `<div class="module-card">
     <div class="module-card-title">${item.item}</div>
-    <div class="ops-row-meta"><span class="ops-chip ${statusClass}">${item.status || 'Needed'}</span>${item.source === 'request' ? ' Request ' + item.id : ' Tracking ' + item.id}</div>
+    <div class="ops-row-meta"><span class="ops-chip ${statusClass}">${item.status || 'Needed'}</span>${item.source === 'request' ? ' Request ' + renderRequestId(item.id) : ' Tracking ' + escHtml(item.id)}</div>
     <div class="ops-row-meta">Required: ${item.requiredQty || '-'} · Received: ${item.receivedQty || '-'}</div>
     ${item.notes ? `<div class="ops-row-meta">${item.notes}</div>` : ''}
   </div>`;
@@ -3910,7 +3918,7 @@ function openEditProjectRequestModal(requestId) {
   }));
   projectRequestEditIndex = -1;
   resetProjectRequestItemForm();
-  document.getElementById('projectRequestModalTitle').textContent = 'Edit Request ' + r.id;
+  document.getElementById('projectRequestModalTitle').innerHTML = 'Edit Request ' + renderRequestId(r.id);
   document.getElementById('projectRequestSubmitBtn').textContent = 'Save';
   document.getElementById('pr-notes').value = r.notes || '';
   renderProjectRequestItems();
@@ -3972,7 +3980,7 @@ async function saveProjectRequestEdit() {
 async function deleteProjectRequest(requestId) {
   const r = projectMaterialRequests.find(req => req.id === requestId);
   if (!r) return;
-  if (r.status !== 'Pending') { showToast('Only Pending requests can be deleted'); return; }
+  if (!['Pending','Pending Approval'].includes(r.status)) { showToast('Only requests waiting approval can be deleted'); return; }
   if (!confirm('Delete request ' + requestId + '?')) return;
 
   try {
