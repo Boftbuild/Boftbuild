@@ -115,6 +115,13 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .field-label span{color:var(--red);margin-left:2px;}
 .field-input{width:100%;background:var(--black);border:1px solid var(--border);color:var(--text);padding:0.65rem 0.9rem;font-family:'Rajdhani',sans-serif;font-size:0.92rem;outline:none;}
 .field-input option{background:var(--black2);}
+.suggest-wrap{position:relative;}
+.suggest-panel{display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:140;background:var(--black2);border:1px solid var(--border-neon);box-shadow:0 14px 40px rgba(0,0,0,0.45);max-height:220px;overflow:auto;}
+.suggest-panel.open{display:block;}
+.suggest-item{width:100%;background:transparent;border:none;border-bottom:1px solid rgba(0,180,255,0.1);color:var(--text);padding:0.62rem 0.75rem;text-align:left;cursor:pointer;font-family:'Rajdhani',sans-serif;}
+.suggest-item:hover{background:var(--neon-dim);}
+.suggest-item strong{display:block;font-size:0.86rem;color:var(--text);}
+.suggest-item small{display:block;margin-top:0.16rem;font-size:0.68rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;}
 .request-builder{border-top:1px solid rgba(0,180,255,0.15);border-bottom:1px solid rgba(0,180,255,0.15);padding:1rem 0;margin:0.5rem 0 1rem;}
 .request-items-list{border:1px solid var(--border);background:var(--black);min-height:84px;}
 .request-empty{padding:1rem;color:var(--muted);font-size:0.82rem;font-style:italic;}
@@ -215,7 +222,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div><label class="field-label">Priority <span>*</span></label><select class="field-input" id="cr-priority"><option value="Normal">Normal</option><option value="Urgent">Urgent</option></select></div>
       </div>
       <div class="field-row">
-        <div><label class="field-label">Description <span>*</span></label><input class="field-input" id="cr-description" placeholder="16d nails, Simpson hangers..."></div>
+        <div class="suggest-wrap"><label class="field-label">Description <span>*</span></label><input class="field-input" id="cr-description" placeholder="16d nails, Simpson hangers..." autocomplete="off" oninput="handleRequestDescriptionInput()" onfocus="handleRequestDescriptionInput()" onblur="hideRequestSuggestionsSoon()"><div class="suggest-panel" id="cr-desc-suggestions"></div></div>
         <div><label class="field-label">Quantity <span>*</span></label><input type="number" min="1" step="1" inputmode="numeric" class="field-input" id="cr-quantity" placeholder="3"></div>
       </div>
       <div class="field-row">
@@ -257,10 +264,29 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 
 <script>
 const API_URL = '/api/proxy';
+const BASE_REQUEST_SUGGESTIONS = [
+  { term:'2x4', category:'Lumber', fullDescription:'2x4', timesUsed:0, source:'Base' },
+  { term:'2x6', category:'Lumber', fullDescription:'2x6', timesUsed:0, source:'Base' },
+  { term:'2x10', category:'Lumber', fullDescription:'2x10', timesUsed:0, source:'Base' },
+  { term:'LVL', category:'Lumber', fullDescription:'LVL', timesUsed:0, source:'Base' },
+  { term:'PSL', category:'Lumber', fullDescription:'PSL', timesUsed:0, source:'Base' },
+  { term:'Plywood', category:'Lumber', fullDescription:'Plywood', timesUsed:0, source:'Base' },
+  { term:'Hanger', category:'Hardware', fullDescription:'Hanger', timesUsed:0, source:'Base' },
+  { term:'HUS26', category:'Hardware', fullDescription:'Hanger HUS26', timesUsed:0, source:'Base' },
+  { term:'Washer', category:'Hardware', fullDescription:'Washer', timesUsed:0, source:'Base' },
+  { term:'Nuts', category:'Hardware', fullDescription:'Nuts', timesUsed:0, source:'Base' },
+  { term:'Nails', category:'Material', fullDescription:'Nails', timesUsed:0, source:'Base' },
+  { term:'Screws', category:'Material', fullDescription:'Screws', timesUsed:0, source:'Base' },
+  { term:'Hilti', category:'Tool Needed', fullDescription:'Hilti', timesUsed:0, source:'Base' },
+  { term:'Paslode', category:'Tool Needed', fullDescription:'Paslode', timesUsed:0, source:'Base' },
+  { term:'Laser', category:'Tool Needed', fullDescription:'Laser Level', timesUsed:0, source:'Base' },
+  { term:'Compressor', category:'Tool Needed', fullDescription:'Compressor', timesUsed:0, source:'Base' },
+];
 let ACCESS_TOKEN = null;
 let CURRENT_ROLE = 'Viewer';
 let allRequests = [];
 let allProjects = [];
+let requestSuggestions = [];
 let createRequestItems = [];
 let createRequestEditIndex = -1;
 let activeSplitRequestId = null;
@@ -273,6 +299,7 @@ function actionLabel(action) {
   const labels = {
     allMaterialRequests: 'Loading Requests...',
     projects: 'Loading Projects...',
+    requestSuggestions: 'Loading Suggestions...',
     createMaterialRequest: 'Creating Request...',
     updateMaterialRequestStatus: 'Updating Request...',
     updateMaterialRequestDetails: 'Saving Request...',
@@ -315,6 +342,7 @@ function loginSuccess(user, role) {
   if (user.picture) { const a = document.getElementById('navAvatar'); a.src = user.picture; a.style.display = 'block'; }
   const badge = document.getElementById('navRoleBadge'); badge.textContent = role; badge.style.display = 'inline-block';
   loadProjectsForDropdown();
+  loadRequestSuggestions();
   loadRequests();
   startLiveUpdates('requests');
 }
@@ -351,6 +379,15 @@ async function loadRequests(options = {}) {
     populateProjectFilter();
     renderRequests();
   } catch(e) { if (!options.silent) showToast('Error loading requests'); }
+}
+
+async function loadRequestSuggestions() {
+  try {
+    const data = await apiGet('requestSuggestions', {}, { silent: true });
+    requestSuggestions = [...(data.suggestions || []), ...BASE_REQUEST_SUGGESTIONS];
+  } catch(e) {
+    requestSuggestions = [...BASE_REQUEST_SUGGESTIONS];
+  }
 }
 
 function hasOpenModalOrEditing() {
@@ -635,6 +672,103 @@ function subtypeOptionsForType(type) {
   if (type === 'Tool') return ['New Tool','Maintenance','Repair','Replacement','Other'];
   return ['Other'];
 }
+
+function normalizeSuggestText(value) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function detectSmartRequestCategory(text) {
+  const value = normalizeSuggestText(text);
+  const historyMatch = requestSuggestions.find(s => {
+    const term = normalizeSuggestText(s.term);
+    const full = normalizeSuggestText(s.fullDescription);
+    return term && (value === term || value.includes(term) || full === value);
+  });
+  if (historyMatch && historyMatch.category) return historyMatch.category;
+  if (/\b(2x\d+|4x\d+|lvl|psl|studs?|plywood|osb|rim|plate|joist|beam|header)\b/.test(value)) return 'Lumber';
+  if (/\b(hus\d+|hanger|simpson|strap|hold\s?down|holdown|bolt|washer|nut|anchor|clip|tie|h\d+(?:\.\d+)?)\b/.test(value)) return 'Hardware';
+  if (/\b(nails?|screws?|glue|caulk|adhesive|foam|chalk|blade|bits?)\b/.test(value)) return 'Material';
+  if (/\b(hilti|paslode|laser|compressor|saw|generator|drill|gun|cord|ladder)\b/.test(value)) return document.getElementById('cr-type')?.value === 'Project' ? 'Tool Needed' : 'New Tool';
+  return '';
+}
+
+function applySmartRequestCategory(text) {
+  const detected = detectSmartRequestCategory(text);
+  if (!detected) return;
+  const subtype = document.getElementById('cr-subtype');
+  if (!subtype) return;
+  const options = [...subtype.options].map(opt => opt.value);
+  if (options.includes(detected)) subtype.value = detected;
+}
+
+function buildRequestSuggestionMatches(query) {
+  const q = normalizeSuggestText(query);
+  if (!q) return [];
+  const seen = new Set();
+  const matches = [];
+  requestSuggestions.forEach(s => {
+    const term = String(s.term || '').trim();
+    const full = String(s.fullDescription || '').trim();
+    const category = String(s.category || '').trim();
+    const termNorm = normalizeSuggestText(term);
+    const fullNorm = normalizeSuggestText(full);
+    if (!term && !full) return;
+    if (termNorm && (termNorm.startsWith(q) || termNorm.includes(q))) {
+      const key = 'term|' + termNorm;
+      if (!seen.has(key)) {
+        seen.add(key);
+        matches.push({ kind: 'term', label: term, detail: category || 'Suggestion', category, value: term, weight: Number(s.timesUsed) || 0 });
+      }
+    }
+    if (fullNorm && (fullNorm.startsWith(q) || fullNorm.includes(q))) {
+      const key = 'full|' + fullNorm;
+      if (!seen.has(key)) {
+        seen.add(key);
+        matches.push({ kind: 'full', label: full, detail: [category, s.timesUsed ? s.timesUsed + ' uses' : 'History'].filter(Boolean).join(' · '), category, value: full, weight: Number(s.timesUsed) || 0 });
+      }
+    }
+  });
+  return matches.sort((a, b) => b.weight - a.weight || a.label.localeCompare(b.label)).slice(0, 8);
+}
+
+function handleRequestDescriptionInput() {
+  const input = document.getElementById('cr-description');
+  const panel = document.getElementById('cr-desc-suggestions');
+  if (!input || !panel) return;
+  applySmartRequestCategory(input.value);
+  const matches = buildRequestSuggestionMatches(input.value);
+  if (!matches.length) {
+    panel.classList.remove('open');
+    panel.innerHTML = '';
+    return;
+  }
+  panel.innerHTML = matches.map((item, index) => `<button type="button" class="suggest-item" onmousedown="event.preventDefault();applyRequestSuggestion(${index})">
+    <strong>${esc(item.label)}</strong>
+    <small>${esc(item.kind === 'term' ? 'Continue with ' + item.detail : item.detail)}</small>
+  </button>`).join('');
+  panel._matches = matches;
+  panel.classList.add('open');
+}
+
+function applyRequestSuggestion(index) {
+  const panel = document.getElementById('cr-desc-suggestions');
+  const input = document.getElementById('cr-description');
+  if (!panel || !input || !panel._matches) return;
+  const item = panel._matches[index];
+  if (!item) return;
+  input.value = item.kind === 'term' ? item.value + ' ' : item.value;
+  if (item.category) applySmartRequestCategory(item.value);
+  panel.classList.remove('open');
+  input.focus();
+}
+
+function hideRequestSuggestionsSoon() {
+  setTimeout(() => {
+    const panel = document.getElementById('cr-desc-suggestions');
+    if (panel) panel.classList.remove('open');
+  }, 160);
+}
+
 function updateCreateRequestFields() {
   const type = document.getElementById('cr-type').value;
   document.getElementById('projectFields').style.display = type === 'Project' ? 'grid' : 'none';
@@ -674,6 +808,7 @@ function resetCreateRequestItemForm() {
 }
 
 function addOrUpdateCreateRequestItem() {
+  applySmartRequestCategory(document.getElementById('cr-description').value);
   const item = {
     category: document.getElementById('cr-subtype').value,
     priority: document.getElementById('cr-priority').value,
@@ -759,7 +894,7 @@ async function submitCreateRequest() {
   }
   if (payload.type === 'Project' && !payload.projectId) { showToast('Select a project'); return; }
   const result = await apiPost(payload);
-  if (result.success) { closeModal('create'); clearCreateForm(); showToast('Request created' + materialRequestEmailToast_(result.emailStatus)); loadRequests(); }
+  if (result.success) { closeModal('create'); clearCreateForm(); showToast('Request created' + materialRequestEmailToast_(result.emailStatus)); loadRequests(); loadRequestSuggestions(); }
   else showToast('Error: ' + result.message);
 }
 
