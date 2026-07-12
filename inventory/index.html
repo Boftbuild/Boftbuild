@@ -352,7 +352,7 @@ function renderToolRow(item) {
     item.currentProjectName ? 'Project ' + item.currentProjectName : '',
     item.currentLocation ? 'Location ' + item.currentLocation : ''
   ].filter(Boolean);
-  const click = isContainer ? ` onclick="openContainer('${escAttr(item.id)}')"` : (canEditInventory() ? ` onclick="openEditToolModal('${escAttr(item.id)}')"` : '');
+  const click = ` onclick="openToolDetail('${escAttr(item.id)}')"`;
   return `<div class="tool-row ${click ? 'clickable' : ''}"${click}>
     <div>
       <div class="tool-title"><strong>${esc(item.id)}</strong>${esc(item.name || 'Unnamed')}</div>
@@ -368,20 +368,49 @@ function renderToolRow(item) {
   </div>`;
 }
 
-function openContainer(id) {
-  const container = tools.find(t => t.id === id);
-  if (!container) return;
-  const inside = tools.filter(t => toolIsInsideContainer(t, id));
-  document.getElementById('containerTitle').textContent = container.id + ' · ' + container.name;
+function openToolDetail(id) {
+  const item = tools.find(t => t.id === id);
+  if (!item) return;
+  const isContainer = item.assetType === 'Conex' || item.assetType === 'Trailer';
+  const inside = isContainer ? tools.filter(t => toolIsInsideContainer(t, id)) : [];
+  document.getElementById('containerTitle').innerHTML = `${esc(item.id)} · ${esc(item.name || 'Inventory Item')}`;
+  const details = [
+    ['Asset Type', item.assetType],
+    ['Status', item.status],
+    ['Condition', item.condition],
+    ['Category', item.category],
+    ['Brand', item.brand],
+    ['Model', item.model],
+    ['Serial', item.serialNumber],
+    ['Location', item.currentLocation],
+    ['Container', item.containerId],
+    ['Project', item.currentProjectName],
+    ['Request ID', item.assignedRequestId],
+    ['Transaction ID', item.transactionId],
+    ['Purchase Cost', item.purchaseCost === '' ? '' : '$' + Number(item.purchaseCost || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })],
+    ['Last Move', item.lastMovementDate],
+    ['Notes', item.notes],
+  ].filter(row => row[1] !== undefined && row[1] !== null && String(row[1]).trim() !== '');
   document.getElementById('containerBody').innerHTML = `
-    <div class="tool-meta" style="margin-bottom:1rem;">${esc(container.assetType)} · ${esc(container.status || '')} · ${esc(container.currentLocation || 'No location')}${container.currentProjectName ? ' · Project ' + esc(container.currentProjectName) : ''}</div>
-    <div class="request-items-list">
-      ${inside.length ? inside.map(tool => `<div class="tool-row ${canEditInventory() ? 'clickable' : ''}" ${canEditInventory() ? `onclick="closeModal('container');openEditToolModal('${escAttr(tool.id)}')"` : ''}><div><div class="tool-title"><strong>${esc(tool.id)}</strong>${esc(tool.name)}</div><div class="tool-meta">${esc([tool.brand,tool.model,tool.serialNumber ? 'Serial ' + tool.serialNumber : '', tool.condition].filter(Boolean).join(' · '))}</div><div class="tags"><span class="tag ${statusClass(tool.status)}">${esc(tool.status || 'Available')}</span></div></div></div>`).join('') : '<div class="empty">No tools registered inside this unit yet.</div>'}
-    </div>`;
+    <div class="tags" style="margin-bottom:1rem;">
+      <span class="tag ${statusClass(item.status)}">${esc(item.status || 'Available')}</span>
+      <span class="tag ${conditionClass(item.condition)}">${esc(item.condition || 'Good')}</span>
+      ${item.category ? `<span class="tag">${esc(item.category)}</span>` : ''}
+    </div>
+    <div class="request-items-list" style="margin-bottom:${isContainer ? '1rem' : '0'};">
+      ${details.map(row => `<div class="tool-row"><div><div class="tool-meta" style="text-transform:uppercase;letter-spacing:0.12em;font-size:0.64rem;">${esc(row[0])}</div><div class="tool-title" style="font-size:0.9rem;">${esc(row[1])}</div></div></div>`).join('')}
+    </div>
+    ${isContainer ? `<div class="field-label">Tools Inside</div><div class="request-items-list">
+      ${inside.length ? inside.map(tool => `<div class="tool-row clickable" onclick="openToolDetail('${escAttr(tool.id)}')"><div><div class="tool-title"><strong>${esc(tool.id)}</strong>${esc(tool.name)}</div><div class="tool-meta">${esc([tool.brand,tool.model,tool.serialNumber ? 'Serial ' + tool.serialNumber : '', tool.condition].filter(Boolean).join(' · '))}</div><div class="tags"><span class="tag ${statusClass(tool.status)}">${esc(tool.status || 'Available')}</span></div></div></div>`).join('') : '<div class="empty">No tools registered inside this unit yet.</div>'}
+    </div>` : ''}`;
   document.getElementById('containerFooter').innerHTML = canEditInventory()
-    ? `<button class="btn-cancel" onclick="closeModal('container')">Close</button><button class="btn-submit" onclick="closeModal('container');openEditToolModal('${escAttr(container.id)}')">Edit</button>`
+    ? `<button class="btn-cancel" onclick="closeModal('container')">Close</button><button class="btn-submit" onclick="closeModal('container');openEditToolModal('${escAttr(item.id)}')">Edit</button>`
     : `<button class="btn-cancel" onclick="closeModal('container')">Close</button>`;
   document.getElementById('modal-container').classList.add('open');
+}
+
+function openContainer(id) {
+  openToolDetail(id);
 }
 
 function toolIsInsideContainer(tool, containerId) {
