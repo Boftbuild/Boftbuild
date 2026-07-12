@@ -73,6 +73,9 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .tag.lost{color:var(--red);border-color:rgba(224,85,85,0.4);background:rgba(224,85,85,0.08);}
 .row-count{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold-light);align-self:center;}
 .empty{padding:2rem;text-align:center;color:var(--muted);font-size:0.9rem;}
+.see-all-btn{width:100%;margin-top:0.65rem;background:transparent;border:1px solid var(--border-neon);color:var(--neon);font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;padding:0.5rem;cursor:pointer;}
+.mini-x{width:26px;height:26px;border:1px solid rgba(224,85,85,0.4);background:rgba(224,85,85,0.06);color:var(--red);font-weight:800;cursor:pointer;}
+.inline-actions{display:flex;align-items:center;gap:0.5rem;}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(5,6,8,0.94);z-index:100;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--black2);border:1px solid var(--border);width:100%;max-width:680px;}
@@ -201,6 +204,19 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   </div>
 </div>
 
+<div id="modal-container-tools" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="containerToolsTitle">Edit Tools</span><button class="modal-close" onclick="closeModal('container-tools')">x</button></div>
+    <div class="modal-body">
+      <div class="field-group"><label class="field-label">Add Available Tool</label><input class="field-input" id="containerToolSearch" placeholder="Search available shop tools..." oninput="renderContainerToolEditor()"></div>
+      <div class="request-items-list" id="availableToolsList" style="margin-bottom:1rem;"></div>
+      <div class="field-label">Tools In This Unit</div>
+      <div class="request-items-list" id="containerCurrentToolsList"></div>
+    </div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('container-tools')">Close</button></div>
+  </div>
+</div>
+
 <script>
 const API_URL = '/api/proxy';
 let ACCESS_TOKEN = null;
@@ -209,6 +225,8 @@ let tools = [];
 let stats = {};
 let activeTab = 'Global';
 let editingToolId = '';
+let activeContainerEditId = '';
+let containerToolsViewOnly = false;
 let liveNotifications = [];
 let livePollTimer = null;
 const pendingPostKeys = new Set();
@@ -267,7 +285,7 @@ async function apiGet(action, params = {}, silent = false) {
 }
 
 async function apiPost(payload) {
-  const key = [payload && payload.action || 'post', payload && (payload.id || payload.name || '')].join(':');
+  const key = [payload && payload.action || 'post', payload && (payload.id || payload.toolId || payload.name || '')].join(':');
   if (pendingPostKeys.has(key)) return { success:false, message:'Already processing' };
   pendingPostKeys.add(key);
   setLoading(true, 'Saving...');
@@ -372,7 +390,8 @@ function openToolDetail(id) {
   const item = tools.find(t => t.id === id);
   if (!item) return;
   const isContainer = item.assetType === 'Conex' || item.assetType === 'Trailer';
-  const inside = isContainer ? tools.filter(t => toolIsInsideContainer(t, id)) : [];
+  const inside = isContainer ? getToolsInsideContainer(id) : [];
+  const insidePreview = inside.slice(0, 3);
   document.getElementById('containerTitle').innerHTML = `${esc(item.id)} · ${esc(item.name || 'Inventory Item')}`;
   const details = [
     ['Asset Type', item.assetType],
@@ -401,10 +420,10 @@ function openToolDetail(id) {
       ${details.map(row => `<div class="tool-row"><div><div class="tool-meta" style="text-transform:uppercase;letter-spacing:0.12em;font-size:0.64rem;">${esc(row[0])}</div><div class="tool-title" style="font-size:0.9rem;">${esc(row[1])}</div></div></div>`).join('')}
     </div>
     ${isContainer ? `<div class="field-label">Tools Inside</div><div class="request-items-list">
-      ${inside.length ? inside.map(tool => `<div class="tool-row clickable" onclick="openToolDetail('${escAttr(tool.id)}')"><div><div class="tool-title"><strong>${esc(tool.id)}</strong>${esc(tool.name)}</div><div class="tool-meta">${esc([tool.brand,tool.model,tool.serialNumber ? 'Serial ' + tool.serialNumber : '', tool.condition].filter(Boolean).join(' · '))}</div><div class="tags"><span class="tag ${statusClass(tool.status)}">${esc(tool.status || 'Available')}</span></div></div></div>`).join('') : '<div class="empty">No tools registered inside this unit yet.</div>'}
-    </div>` : ''}`;
+      ${insidePreview.length ? insidePreview.map(tool => renderContainerInsideTool(tool)).join('') : '<div class="empty">No tools registered inside this unit yet.</div>'}
+    </div>${inside.length > 3 ? `<button class="see-all-btn" onclick="openContainerToolsList('${escAttr(id)}', true)">See All</button>` : ''}` : ''}`;
   document.getElementById('containerFooter').innerHTML = canEditInventory()
-    ? `<button class="btn-cancel" onclick="closeModal('container')">Close</button><button class="btn-submit" onclick="closeModal('container');openEditToolModal('${escAttr(item.id)}')">Edit</button>`
+    ? `<button class="btn-cancel" onclick="closeModal('container')">Close</button><div class="inline-actions">${isContainer ? `<button class="btn-action outline" onclick="openContainerToolsList('${escAttr(item.id)}', false)">Edit Tools</button>` : ''}<button class="btn-submit" onclick="closeModal('container');openEditToolModal('${escAttr(item.id)}')">Edit</button></div>`
     : `<button class="btn-cancel" onclick="closeModal('container')">Close</button>`;
   document.getElementById('modal-container').classList.add('open');
 }
@@ -416,6 +435,100 @@ function openContainer(id) {
 function toolIsInsideContainer(tool, containerId) {
   const id = String(containerId || '').trim();
   return tool && tool.assetType === 'Tool' && (String(tool.containerId || '').trim() === id || String(tool.currentLocation || '').trim() === id);
+}
+
+function getToolsInsideContainer(containerId) {
+  return tools
+    .filter(t => toolIsInsideContainer(t, containerId))
+    .sort((a, b) => String(b.lastMovementDate || b.updatedAt || b.createdAt || '').localeCompare(String(a.lastMovementDate || a.updatedAt || a.createdAt || '')));
+}
+
+function renderContainerInsideTool(tool, removable = false) {
+  return `<div class="tool-row">
+    <div>
+      <div class="tool-title"><strong>${esc(tool.id)}</strong>${esc(tool.name)}</div>
+      <div class="tool-meta">${esc([tool.brand, tool.model, tool.serialNumber ? 'Serial ' + tool.serialNumber : '', tool.condition].filter(Boolean).join(' · '))}</div>
+      <div class="tags"><span class="tag ${statusClass(tool.status)}">${esc(tool.status || 'Available')}</span></div>
+    </div>
+    ${removable ? `<button class="mini-x" title="Remove from container" onclick="removeToolFromContainer('${escAttr(tool.id)}')">x</button>` : ''}
+  </div>`;
+}
+
+function openContainerToolsList(containerId, viewOnly) {
+  const container = tools.find(t => t.id === containerId);
+  if (!container) return;
+  activeContainerEditId = containerId;
+  containerToolsViewOnly = !!viewOnly || !canEditInventory();
+  document.getElementById('containerToolsTitle').textContent = `${container.id} · ${containerToolsViewOnly ? 'Tools Inside' : 'Edit Tools'}`;
+  const search = document.getElementById('containerToolSearch');
+  if (search) {
+    search.value = '';
+    search.closest('.field-group').style.display = containerToolsViewOnly ? 'none' : 'block';
+  }
+  renderContainerToolEditor();
+  document.getElementById('modal-container-tools').classList.add('open');
+}
+
+function availableShopToolsForContainer() {
+  const q = escNorm(document.getElementById('containerToolSearch') && document.getElementById('containerToolSearch').value);
+  return tools.filter(tool => {
+    const location = escNorm(tool.currentLocation || '');
+    const inShop = !location || location.includes('shop');
+    const searchable = escNorm([tool.id, tool.name, tool.category, tool.brand, tool.model, tool.serialNumber].join(' '));
+    return tool.assetType === 'Tool'
+      && String(tool.status || 'Available') === 'Available'
+      && !String(tool.currentProjectId || '').trim()
+      && !String(tool.containerId || '').trim()
+      && inShop
+      && (!q || searchable.includes(q));
+  }).slice(0, 10);
+}
+
+function renderContainerToolEditor() {
+  const container = tools.find(t => t.id === activeContainerEditId);
+  const availableEl = document.getElementById('availableToolsList');
+  const currentEl = document.getElementById('containerCurrentToolsList');
+  if (!container || !availableEl || !currentEl) return;
+
+  const currentTools = getToolsInsideContainer(container.id);
+  if (containerToolsViewOnly) {
+    availableEl.style.display = 'none';
+  } else {
+    const available = availableShopToolsForContainer();
+    availableEl.style.display = 'block';
+    availableEl.innerHTML = available.length
+      ? available.map(tool => `<div class="tool-row">
+          <div>
+            <div class="tool-title"><strong>${esc(tool.id)}</strong>${esc(tool.name)}</div>
+            <div class="tool-meta">${esc([tool.category, tool.brand, tool.model, tool.serialNumber ? 'Serial ' + tool.serialNumber : ''].filter(Boolean).join(' · '))}</div>
+          </div>
+          <button class="btn-action outline" onclick="addToolToContainer('${escAttr(tool.id)}')">Add</button>
+        </div>`).join('')
+      : '<div class="empty">No available shop tools found.</div>';
+  }
+
+  currentEl.innerHTML = currentTools.length
+    ? currentTools.map(tool => renderContainerInsideTool(tool, !containerToolsViewOnly)).join('')
+    : '<div class="empty">No tools registered inside this unit yet.</div>';
+}
+
+async function addToolToContainer(toolId) {
+  if (!activeContainerEditId || !toolId) return;
+  const result = await apiPost({ action:'setGlobalToolContainer', toolId, containerId:activeContainerEditId });
+  if (!result.success) { showToast(result.message || 'Could not add tool'); return; }
+  showToast('Tool added to unit');
+  await loadInventory(true);
+  renderContainerToolEditor();
+}
+
+async function removeToolFromContainer(toolId) {
+  if (!toolId) return;
+  if (!confirm('Are you sure you want to remove this tool from this unit?')) return;
+  const result = await apiPost({ action:'removeGlobalToolFromContainer', toolId });
+  if (!result.success) { showToast(result.message || 'Could not remove tool'); return; }
+  showToast('Tool moved back to Shop');
+  await loadInventory(true);
+  renderContainerToolEditor();
 }
 
 function openNewToolModal() {
