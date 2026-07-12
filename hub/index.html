@@ -72,6 +72,7 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
 .hub-card.finder::before{background:linear-gradient(90deg,var(--gold),rgba(200,146,42,0.3));}
 .hub-card.activity::before{background:linear-gradient(90deg,#a78bfa,rgba(167,139,250,0.3));}
 .hub-card.requests::before{background:linear-gradient(90deg,var(--gold-light),rgba(0,180,255,0.35));}
+.hub-card.inventory::before{background:linear-gradient(90deg,var(--green),rgba(0,180,255,0.35));}
 .hub-card:hover{background:var(--black3);}
 .hub-card.disabled{opacity:0.35;cursor:not-allowed;pointer-events:none;}
 .hub-card.hidden{display:none;}
@@ -84,6 +85,7 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
 .hub-card.finder .hub-card-tag{color:var(--gold-light);border-color:var(--border);}
 .hub-card.activity .hub-card-tag{color:#a78bfa;border-color:rgba(167,139,250,0.35);}
 .hub-card.requests .hub-card-tag{color:var(--neon);border-color:rgba(0,180,255,0.35);}
+.hub-card.inventory .hub-card-tag{color:var(--green);border-color:rgba(76,175,125,0.35);}
 
 /* Footer */
 .hub-footer{text-align:center;padding:1.5rem;font-size:0.68rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;}
@@ -221,6 +223,22 @@ html,body{min-height:100vh;background:var(--black);color:var(--text);font-family
         <div class="hub-card-name">Finder</div>
         <div class="hub-card-desc">Search and access any file in Drive instantly</div>
         <span class="hub-card-tag">Documents</span>
+      </a>
+
+      <!-- INVENTORY -->
+      <a class="hub-card inventory hidden" href="/inventory" id="cardInventory">
+        <div class="hub-card-icon">
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+            <rect x="13" y="18" width="46" height="38" rx="2" stroke="#4caf7d" stroke-width="1.5" fill="none" opacity="0.45"/>
+            <path d="M21 30h30M21 39h22M21 48h26" stroke="#00b4ff" stroke-width="1.3" stroke-linecap="round" opacity="0.65"/>
+            <path d="M24 18v-5h24v5" stroke="#c8922a" stroke-width="1.5" stroke-linecap="round" opacity="0.85"/>
+            <circle cx="53" cy="52" r="6" stroke="#c8922a" stroke-width="1.4" fill="rgba(200,146,42,0.08)"/>
+            <path d="M50 52h6M53 49v6" stroke="#c8922a" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="hub-card-name">Inventory</div>
+        <div class="hub-card-desc">Global tools, conex, trailers and shop inventory</div>
+        <span class="hub-card-tag">Global Tools</span>
       </a>
 
       <!-- ACTIVITY LOG — solo visible para Owner -->
@@ -512,12 +530,13 @@ function applyRolePermissions(role) {
     Projects: document.getElementById('cardProyectos'),
     Requests: document.getElementById('cardRequests'),
     Finder: document.getElementById('cardFinder'),
+    Inventory: document.getElementById('cardInventory'),
     Activity: document.getElementById('cardActivity')
   };
   const roleCards = {
-    Owner: ['Contable','Projects','Requests','Finder','Activity'],
-    Manager: ['Contable','Projects','Requests','Finder'],
-    Planner: ['Requests'],
+    Owner: ['Contable','Projects','Requests','Finder','Inventory','Activity'],
+    Manager: ['Contable','Projects','Requests','Finder','Inventory'],
+    Planner: ['Requests','Inventory'],
     'Field Lead': ['Projects'],
     Worker: ['Projects'],
     Helper: ['Projects'],
