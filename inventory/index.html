@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOFT — Inventory</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--black:#0a0b0d;--black2:#0f1114;--black3:#141618;--neon:#00b4ff;--neon-dim:rgba(0,180,255,0.1);--gold:#c8922a;--gold-light:#e8b84b;--gold-dim:rgba(200,146,42,0.12);--text:#e8e2d4;--muted:#7a7570;--border:rgba(200,146,42,0.2);--border-neon:rgba(0,180,255,0.25);--red:#e05555;--green:#4caf7d;--nav-h:52px;}
+body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;}
+.app{display:none;}
+.sticky-nav{position:sticky;top:0;z-index:50;background:rgba(10,11,13,0.97);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:var(--nav-h);gap:1rem;}
+.nav-logo-sm{font-family:'Cinzel',serif;font-size:0.9rem;font-weight:700;color:var(--gold-light);}
+.nav-logo-sm span{color:var(--neon);}
+.nav-link{font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold-light);border-bottom:2px solid var(--gold);padding:0.4rem 0.75rem;}
+.nav-right{display:flex;align-items:center;gap:0.75rem;}
+.nav-avatar{width:28px;height:28px;border-radius:50%;border:1px solid var(--border);display:none;}
+.nav-username{font-size:0.75rem;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.nav-role-badge{font-size:0.6rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:0.2rem 0.6rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);display:none;}
+.nav-notify{font-family:'Rajdhani',sans-serif;font-size:0.68rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--neon);background:var(--neon-dim);border:1px solid var(--border-neon);padding:0.28rem 0.65rem;cursor:pointer;}
+.nav-notify.hidden{display:none;}
+.nav-hub-btn,.nav-logout{font-family:'Rajdhani',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;background:none;padding:0.35rem 0.9rem;cursor:pointer;text-decoration:none;}
+.nav-hub-btn{color:var(--neon);border:1px solid rgba(0,180,255,0.3);}
+.nav-logout{color:var(--muted);border:1px solid rgba(122,117,112,0.3);}
+.notification-panel{position:fixed;top:60px;right:1.25rem;z-index:220;width:min(360px,calc(100vw - 2rem));background:var(--black2);border:1px solid var(--border-neon);box-shadow:0 18px 60px rgba(0,0,0,0.42);padding:0.85rem;}
+.notification-panel.hidden{display:none;}
+.notification-panel-head{display:flex;align-items:center;justify-content:space-between;gap:0.75rem;margin-bottom:0.35rem;}
+.notification-panel-title{font-size:0.68rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:var(--neon);}
+.notification-clear-all,.notification-clear{font-family:'Rajdhani',sans-serif;font-size:0.62rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--neon);background:transparent;border:1px solid var(--border-neon);padding:0.18rem 0.45rem;cursor:pointer;}
+.notification-clear{font-size:0.85rem;line-height:1;padding:0.12rem 0.38rem;color:var(--muted);border-color:var(--border);}
+.notification-item{border-top:1px solid rgba(0,180,255,0.12);padding:0.62rem 0;}
+.notification-item-top{display:flex;align-items:flex-start;justify-content:space-between;gap:0.75rem;}
+.notification-title{font-size:0.86rem;font-weight:800;color:var(--text);}
+.notification-meta{font-size:0.72rem;color:var(--muted);margin-top:0.2rem;line-height:1.35;}
+.page{max-width:1280px;margin:0 auto;padding:1.5rem 2rem 3rem;}
+.page-top{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:1.3rem;}
+.section-label{font-size:0.68rem;font-weight:800;letter-spacing:0.35em;text-transform:uppercase;color:var(--neon);margin-bottom:0.45rem;}
+.section-title{font-family:'Cinzel',serif;font-size:1.35rem;font-weight:700;color:var(--gold-light);}
+.top-actions{display:flex;gap:0.65rem;align-items:center;flex-wrap:wrap;}
+.search-input,.field-input{background:var(--black);border:1px solid var(--border);color:var(--text);padding:0.65rem 0.9rem;font-family:'Rajdhani',sans-serif;font-size:0.9rem;outline:none;}
+.search-input{min-width:320px;}
+.btn-action{font-family:'Rajdhani',sans-serif;font-size:0.75rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;border:none;padding:0.62rem 1.35rem;cursor:pointer;}
+.btn-action.gold{color:var(--black);background:var(--gold);clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);}
+.btn-action.outline{color:var(--neon);background:transparent;border:1px solid var(--border-neon);}
+.stats-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;background:var(--border);margin-bottom:1rem;}
+.stat-card{background:var(--black2);padding:1rem;border-top:2px solid var(--gold);}
+.stat-card:nth-child(2){border-top-color:var(--neon);}
+.stat-card:nth-child(3){border-top-color:var(--green);}
+.stat-card:nth-child(4){border-top-color:var(--gold-light);}
+.stat-card:nth-child(5){border-top-color:var(--red);}
+.stat-card:nth-child(6){border-top-color:#a78bfa;}
+.stat-label{font-size:0.62rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:0.35rem;}
+.stat-num{font-family:'Cinzel',serif;font-size:1.35rem;font-weight:700;color:var(--text);}
+.stat-sub{font-size:0.72rem;color:var(--muted);margin-top:0.15rem;}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border-neon);margin:1rem 0 1rem;flex-wrap:wrap;}
+.tab-btn{font-family:'Rajdhani',sans-serif;font-size:0.72rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);background:var(--black2);border:1px solid var(--border);border-bottom:none;padding:0.62rem 1.1rem;cursor:pointer;}
+.tab-btn.active{color:var(--black);background:var(--gold);border-color:var(--gold);}
+.panel{background:var(--black2);border:1px solid rgba(200,146,42,0.08);padding:1rem;}
+.list-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;color:var(--muted);font-size:0.78rem;}
+.tool-row{display:grid;grid-template-columns:1fr auto;gap:1rem;padding:0.95rem 0;border-bottom:1px solid rgba(200,146,42,0.08);}
+.tool-row:last-child{border-bottom:none;}
+.tool-row.clickable{cursor:pointer;}
+.tool-row.clickable:hover{background:rgba(0,180,255,0.035);}
+.tool-title{font-size:0.98rem;font-weight:800;color:var(--text);}
+.tool-title strong{font-family:'Rajdhani',sans-serif;color:var(--gold-light);margin-right:0.55rem;}
+.tool-meta{font-size:0.76rem;color:var(--muted);margin-top:0.22rem;line-height:1.45;}
+.tags{display:flex;gap:0.35rem;flex-wrap:wrap;margin-top:0.5rem;}
+.tag{font-size:0.6rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;padding:0.12rem 0.55rem;border:1px solid var(--border);color:var(--gold-light);background:var(--gold-dim);}
+.tag.available,.tag.good,.tag.new{color:var(--green);border-color:rgba(76,175,125,0.35);background:rgba(76,175,125,0.08);}
+.tag.field,.tag.transit{color:var(--neon);border-color:var(--border-neon);background:var(--neon-dim);}
+.tag.repair,.tag.broken{color:var(--gold-light);border-color:var(--border);background:var(--gold-dim);}
+.tag.lost{color:var(--red);border-color:rgba(224,85,85,0.4);background:rgba(224,85,85,0.08);}
+.row-count{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold-light);align-self:center;}
+.empty{padding:2rem;text-align:center;color:var(--muted);font-size:0.9rem;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(5,6,8,0.94);z-index:100;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--black2);border:1px solid var(--border);width:100%;max-width:680px;}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);}
+.modal-title{font-family:'Cinzel',serif;font-size:1rem;font-weight:700;color:var(--gold-light);}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;}
+.modal-body{padding:1.5rem;}
+.modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem;}
+.field-group{margin-bottom:1rem;}
+.field-label{font-size:0.68rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:0.4rem;}
+.field-input{width:100%;}
+.field-input option{background:var(--black2);}
+.btn-submit{font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.65rem 1.8rem;cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
+.btn-cancel{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;}
+.toast{display:none;position:sticky;top:calc(var(--nav-h) + 8px);z-index:40;background:var(--black2);border:1px solid var(--border-neon);border-left:3px solid var(--neon);padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.85rem;font-weight:700;}
+.toast.show{display:block;}
+.loading{display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:rgba(5,6,8,0.72);backdrop-filter:blur(3px);}
+.loading.show{display:flex;}
+.loading-box{border:1px solid var(--border-neon);background:var(--black2);padding:1.1rem 1.4rem;min-width:260px;text-align:center;box-shadow:0 0 30px rgba(0,180,255,0.08);}
+.loading-title{font-size:0.72rem;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;color:var(--neon);margin-bottom:0.45rem;}
+.loading-text{font-size:0.9rem;color:var(--text);}
+.denied{display:none;min-height:80vh;align-items:center;justify-content:center;text-align:center;color:var(--muted);padding:2rem;}
+@media(max-width:950px){.stats-grid{grid-template-columns:repeat(3,1fr);}.page-top{align-items:flex-start;flex-direction:column;}.search-input{min-width:0;width:100%;}.top-actions{width:100%;}.field-row{grid-template-columns:1fr;}}
+@media(max-width:620px){.sticky-nav{height:auto;min-height:var(--nav-h);padding:0.6rem 0.85rem;flex-wrap:wrap;}.stats-grid{grid-template-columns:repeat(2,1fr);}.page{padding:1rem;}.tool-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="denied" id="deniedScreen"><div><div class="section-title">Inventory Access</div><p>Global Tools is available to Owner, Manager, and Planner roles.</p><a href="/hub" class="nav-hub-btn" style="margin-top:1rem;display:inline-flex;">Back to Hub</a></div></div>
+
+<div class="app" id="app">
+  <nav class="sticky-nav">
+    <div class="nav-logo-sm">BOFT<span>.</span></div>
+    <div class="nav-link">Inventory</div>
+    <div class="nav-right">
+      <img class="nav-avatar" id="navAvatar" src="" alt="">
+      <span class="nav-username" id="navUsername"></span>
+      <span class="nav-role-badge" id="navRoleBadge"></span>
+      <button class="nav-notify hidden" id="navNotifyBadge" onclick="toggleLiveNotifications(event)">0 New</button>
+      <a href="/hub" class="nav-hub-btn">Hub</a>
+      <button class="nav-logout" onclick="doLogout()">Logout</button>
+    </div>
+  </nav>
+  <div id="notificationPanel" class="notification-panel hidden"></div>
+
+  <div class="page">
+    <div class="toast" id="toast"></div>
+    <div class="loading" id="loading"><div class="loading-box"><div class="loading-title">BOFT</div><div class="loading-text" id="loadingText">Working...</div></div></div>
+
+    <div class="page-top">
+      <div>
+        <div class="section-label">Inventory</div>
+        <div class="section-title">Global Tools</div>
+      </div>
+      <div class="top-actions">
+        <input class="search-input" id="searchInput" placeholder="Search Tool ID, name, brand, model, serial..." oninput="renderInventory()">
+        <button class="btn-action gold" id="newToolBtn" onclick="openNewToolModal()">+ New Tool</button>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total Tools</div><div class="stat-num" id="statTotal">0</div><div class="stat-sub">Registered</div></div>
+      <div class="stat-card"><div class="stat-label">In Field</div><div class="stat-num" id="statField">0</div><div class="stat-sub">Assigned / moving</div></div>
+      <div class="stat-card"><div class="stat-label">Good Use</div><div class="stat-num" id="statGood">0</div><div class="stat-sub">Ready or working</div></div>
+      <div class="stat-card"><div class="stat-label">New</div><div class="stat-num" id="statNew">0</div><div class="stat-sub">New condition</div></div>
+      <div class="stat-card"><div class="stat-label">In Repair</div><div class="stat-num" id="statRepair">0</div><div class="stat-sub">Broken / repair</div></div>
+      <div class="stat-card"><div class="stat-label">Lost</div><div class="stat-num" id="statLost">0</div><div class="stat-sub">Missing</div></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="Global" onclick="setTab('Global')">Global</button>
+      <button class="tab-btn" data-tab="Conex" onclick="setTab('Conex')">Conex</button>
+      <button class="tab-btn" data-tab="Trailers" onclick="setTab('Trailers')">Trailers</button>
+      <button class="tab-btn" data-tab="Shop" onclick="setTab('Shop')">Shop</button>
+    </div>
+
+    <div class="panel">
+      <div class="list-head"><span id="listTitle">Latest tools</span><span id="listCount">0 shown</span></div>
+      <div id="inventoryList"><div class="empty">Loading inventory...</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="modal-new-tool" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">New Tool</span><button class="modal-close" onclick="closeModal('new-tool')">x</button></div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div><label class="field-label">Asset Type</label><select class="field-input" id="nt-asset-type" onchange="handleAssetTypeChange()"><option value="Tool">Tool</option><option value="Conex">Conex</option><option value="Trailer">Trailer</option></select></div>
+        <div><label class="field-label">Tool / Unit Name</label><input class="field-input" id="nt-name" placeholder="Hilti Concrete Gun, Main Conex..."></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Category</label><input class="field-input" id="nt-category" placeholder="Power Tool, Container, Trailer..."></div>
+        <div><label class="field-label">Condition</label><select class="field-input" id="nt-condition"><option value="New">New</option><option value="Good">Good</option><option value="Used / Working">Used / Working</option><option value="Needs Repair">Needs Repair</option><option value="Broken">Broken</option></select></div>
+      </div>
+      <div class="field-row tool-only">
+        <div><label class="field-label">Brand</label><input class="field-input" id="nt-brand" placeholder="Hilti, Paslode..."></div>
+        <div><label class="field-label">Model</label><input class="field-input" id="nt-model" placeholder="Model"></div>
+      </div>
+      <div class="field-row tool-only">
+        <div><label class="field-label">Serial Number</label><input class="field-input" id="nt-serial" placeholder="Serial"></div>
+        <div><label class="field-label">Container ID</label><input class="field-input" id="nt-container" placeholder="CX0001 / TR0001"></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Status</label><select class="field-input" id="nt-status"><option value="Available">Available</option><option value="Assigned">Assigned</option><option value="On Site">On Site</option><option value="In Transit">In Transit</option><option value="In Repair">In Repair</option><option value="Lost">Lost</option></select></div>
+        <div><label class="field-label">Current Location</label><input class="field-input" id="nt-location" value="Shop"></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Request ID</label><input class="field-input" id="nt-request" placeholder="MR00000"></div>
+        <div><label class="field-label">Transaction ID</label><input class="field-input" id="nt-transaction" placeholder="Optional"></div>
+      </div>
+      <div class="field-row">
+        <div><label class="field-label">Purchase Date</label><input class="field-input" id="nt-purchase-date" type="date"></div>
+        <div><label class="field-label">Purchase Cost</label><input class="field-input" id="nt-purchase-cost" type="number" step="0.01" placeholder="0.00"></div>
+      </div>
+      <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="nt-notes" rows="3" style="resize:vertical;"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('new-tool')">Cancel</button><button class="btn-submit" onclick="submitNewTool()">Save Tool</button></div>
+  </div>
+</div>
+
+<div id="modal-container" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title" id="containerTitle">Container</span><button class="modal-close" onclick="closeModal('container')">x</button></div>
+    <div class="modal-body" id="containerBody"></div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('container')">Close</button></div>
+  </div>
+</div>
+
+<script>
+const API_URL = '/api/proxy';
+let ACCESS_TOKEN = null;
+let CURRENT_ROLE = 'Viewer';
+let tools = [];
+let stats = {};
+let activeTab = 'Global';
+let liveNotifications = [];
+let livePollTimer = null;
+const pendingPostKeys = new Set();
+
+function tryRestoreSession() {
+  const token = sessionStorage.getItem('boft_token');
+  const exp = parseInt(sessionStorage.getItem('boft_token_exp') || '0', 10);
+  const userStr = sessionStorage.getItem('boft_user');
+  const role = sessionStorage.getItem('boft_role') || 'Viewer';
+  if (!token || exp <= Date.now() || !userStr) { window.location.href = '/hub'; return false; }
+  ACCESS_TOKEN = token;
+  CURRENT_ROLE = role;
+  const user = JSON.parse(userStr);
+  if (!['Owner','Manager','Planner'].includes(role)) {
+    document.getElementById('deniedScreen').style.display = 'flex';
+    return false;
+  }
+  loginSuccess(user, role);
+  return true;
+}
+
+function loginSuccess(user, role) {
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('navUsername').textContent = user.name || user.email;
+  const badge = document.getElementById('navRoleBadge');
+  badge.textContent = role;
+  badge.style.display = 'inline-block';
+  if (user.picture) {
+    const avatar = document.getElementById('navAvatar');
+    avatar.src = user.picture;
+    avatar.style.display = 'block';
+  }
+  document.getElementById('newToolBtn').style.display = ['Owner','Manager'].includes(role) ? 'inline-block' : 'none';
+  loadInventory();
+  startLiveUpdates();
+}
+
+function setLoading(show, text) {
+  const overlay = document.getElementById('loading');
+  const label = document.getElementById('loadingText');
+  if (label && text) label.textContent = text;
+  if (overlay) overlay.classList.toggle('show', !!show);
+}
+
+async function apiGet(action, params = {}, silent = false) {
+  params.action = action;
+  const qs = new URLSearchParams(params);
+  qs.set('token', ACCESS_TOKEN);
+  if (!silent) setLoading(true, 'Loading...');
+  try {
+    const res = await fetch(API_URL + '?' + qs.toString(), { headers:{ Authorization:'Bearer ' + ACCESS_TOKEN } });
+    return res.json();
+  } finally {
+    if (!silent) setLoading(false);
+  }
+}
+
+async function apiPost(payload) {
+  const key = [payload && payload.action || 'post', payload && (payload.id || payload.name || '')].join(':');
+  if (pendingPostKeys.has(key)) return { success:false, message:'Already processing' };
+  pendingPostKeys.add(key);
+  setLoading(true, 'Saving...');
+  try {
+    const res = await fetch(API_URL, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + ACCESS_TOKEN }, body:JSON.stringify(payload) });
+    return res.json();
+  } finally {
+    pendingPostKeys.delete(key);
+    setLoading(false);
+  }
+}
+
+async function loadInventory(silent = false) {
+  try {
+    const data = await apiGet('globalTools', {}, silent);
+    tools = data.tools || [];
+    stats = data.stats || {};
+    renderStats();
+    renderInventory();
+  } catch(e) {
+    showToast('Error loading inventory');
+  }
+}
+
+function renderStats() {
+  document.getElementById('statTotal').textContent = stats.total || 0;
+  document.getElementById('statField').textContent = stats.inField || 0;
+  document.getElementById('statGood').textContent = stats.goodUse || 0;
+  document.getElementById('statNew').textContent = stats.newTools || 0;
+  document.getElementById('statRepair').textContent = stats.inRepair || 0;
+  document.getElementById('statLost').textContent = stats.lost || 0;
+}
+
+function setTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+  renderInventory();
+}
+
+function filteredTools() {
+  const q = escNorm(document.getElementById('searchInput').value);
+  let list = tools.slice();
+  if (activeTab === 'Global') list = list.filter(t => t.assetType === 'Tool' || t.assetType === 'Conex' || t.assetType === 'Trailer');
+  if (activeTab === 'Conex') list = list.filter(t => t.assetType === 'Conex');
+  if (activeTab === 'Trailers') list = list.filter(t => t.assetType === 'Trailer');
+  if (activeTab === 'Shop') list = list.filter(t => t.assetType === 'Tool' && escNorm(t.currentLocation).includes('shop'));
+  if (q) {
+    list = list.filter(t => escNorm([t.id,t.name,t.category,t.brand,t.model,t.serialNumber,t.currentLocation,t.containerId,t.currentProjectName].join(' ')).includes(q));
+  }
+  return list;
+}
+
+function renderInventory() {
+  const list = filteredTools();
+  const limit = activeTab === 'Global' ? 20 : 100;
+  const shown = list.slice(0, limit);
+  const listTitle = {
+    Global: 'Latest registered assets',
+    Conex: 'Conex units',
+    Trailers: 'Trailer units',
+    Shop: 'Shop tools'
+  }[activeTab] || 'Inventory';
+  document.getElementById('listTitle').textContent = listTitle;
+  document.getElementById('listCount').textContent = shown.length + ' shown' + (list.length > shown.length ? ' of ' + list.length : '');
+  const el = document.getElementById('inventoryList');
+  if (!shown.length) {
+    el.innerHTML = '<div class="empty">No inventory items found.</div>';
+    return;
+  }
+  el.innerHTML = shown.map(item => renderToolRow(item)).join('');
+}
+
+function renderToolRow(item) {
+  const isContainer = item.assetType === 'Conex' || item.assetType === 'Trailer';
+  const insideCount = isContainer ? tools.filter(t => t.containerId === item.id && t.assetType === 'Tool').length : 0;
+  const metaParts = [
+    item.assetType,
+    item.brand,
+    item.model,
+    item.serialNumber ? 'Serial ' + item.serialNumber : '',
+    item.containerId ? 'Container ' + item.containerId : '',
+    item.currentProjectName ? 'Project ' + item.currentProjectName : '',
+    item.currentLocation ? 'Location ' + item.currentLocation : ''
+  ].filter(Boolean);
+  const click = isContainer ? ` onclick="openContainer('${escAttr(item.id)}')"` : '';
+  return `<div class="tool-row ${isContainer ? 'clickable' : ''}"${click}>
+    <div>
+      <div class="tool-title"><strong>${esc(item.id)}</strong>${esc(item.name || 'Unnamed')}</div>
+      <div class="tool-meta">${esc(metaParts.join(' · ') || 'No details')}</div>
+      <div class="tags">
+        <span class="tag ${statusClass(item.status)}">${esc(item.status || 'Available')}</span>
+        <span class="tag ${conditionClass(item.condition)}">${esc(item.condition || 'Good')}</span>
+        ${item.category ? `<span class="tag">${esc(item.category)}</span>` : ''}
+        ${isContainer ? `<span class="tag field">${insideCount} tools inside</span>` : ''}
+      </div>
+    </div>
+    <div class="row-count">${isContainer ? insideCount : ''}</div>
+  </div>`;
+}
+
+function openContainer(id) {
+  const container = tools.find(t => t.id === id);
+  if (!container) return;
+  const inside = tools.filter(t => t.containerId === id && t.assetType === 'Tool');
+  document.getElementById('containerTitle').textContent = container.id + ' · ' + container.name;
+  document.getElementById('containerBody').innerHTML = `
+    <div class="tool-meta" style="margin-bottom:1rem;">${esc(container.assetType)} · ${esc(container.status || '')} · ${esc(container.currentLocation || 'No location')}${container.currentProjectName ? ' · Project ' + esc(container.currentProjectName) : ''}</div>
+    <div class="request-items-list">
+      ${inside.length ? inside.map(tool => `<div class="tool-row"><div><div class="tool-title"><strong>${esc(tool.id)}</strong>${esc(tool.name)}</div><div class="tool-meta">${esc([tool.brand,tool.model,tool.serialNumber ? 'Serial ' + tool.serialNumber : '', tool.condition].filter(Boolean).join(' · '))}</div><div class="tags"><span class="tag ${statusClass(tool.status)}">${esc(tool.status || 'Available')}</span></div></div></div>`).join('') : '<div class="empty">No tools registered inside this unit yet.</div>'}
+    </div>`;
+  document.getElementById('modal-container').classList.add('open');
+}
+
+function openNewToolModal() {
+  clearNewToolForm();
+  document.getElementById('modal-new-tool').classList.add('open');
+}
+
+function clearNewToolForm() {
+  ['nt-name','nt-category','nt-brand','nt-model','nt-serial','nt-container','nt-request','nt-transaction','nt-purchase-date','nt-purchase-cost','nt-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('nt-asset-type').value = 'Tool';
+  document.getElementById('nt-condition').value = 'Good';
+  document.getElementById('nt-status').value = 'Available';
+  document.getElementById('nt-location').value = 'Shop';
+  handleAssetTypeChange();
+}
+
+function handleAssetTypeChange() {
+  const type = document.getElementById('nt-asset-type').value;
+  document.querySelectorAll('.tool-only').forEach(el => el.style.display = type === 'Tool' ? 'grid' : 'none');
+  if (type === 'Conex') {
+    document.getElementById('nt-category').value = 'Container';
+    document.getElementById('nt-location').value = document.getElementById('nt-location').value || 'Shop';
+  } else if (type === 'Trailer') {
+    document.getElementById('nt-category').value = 'Trailer';
+    document.getElementById('nt-location').value = document.getElementById('nt-location').value || 'Shop';
+  }
+}
+
+async function submitNewTool() {
+  const payload = {
+    action:'createGlobalTool',
+    assetType:document.getElementById('nt-asset-type').value,
+    name:document.getElementById('nt-name').value.trim(),
+    category:document.getElementById('nt-category').value.trim(),
+    brand:document.getElementById('nt-brand').value.trim(),
+    model:document.getElementById('nt-model').value.trim(),
+    serialNumber:document.getElementById('nt-serial').value.trim(),
+    condition:document.getElementById('nt-condition').value,
+    status:document.getElementById('nt-status').value,
+    currentLocation:document.getElementById('nt-location').value.trim(),
+    containerId:document.getElementById('nt-container').value.trim(),
+    assignedRequestId:document.getElementById('nt-request').value.trim(),
+    transactionId:document.getElementById('nt-transaction').value.trim(),
+    purchaseDate:document.getElementById('nt-purchase-date').value,
+    purchaseCost:document.getElementById('nt-purchase-cost').value,
+    notes:document.getElementById('nt-notes').value.trim(),
+    source:'Manual'
+  };
+  if (!payload.name) { showToast('Tool name required'); return; }
+  const result = await apiPost(payload);
+  if (result.success) {
+    closeModal('new-tool');
+    showToast('Registered ' + result.label);
+    await loadInventory(true);
+  } else showToast('Error: ' + (result.message || 'Could not save'));
+}
+
+async function loadLiveNotifications() {
+  try {
+    const data = await apiGet('myNotifications', {}, true);
+    liveNotifications = data.notifications || [];
+    const badge = document.getElementById('navNotifyBadge');
+    if (!badge) return;
+    const unread = Number(data.unread || 0);
+    badge.textContent = unread + ' New';
+    badge.classList.toggle('hidden', unread <= 0);
+  } catch(e) {}
+}
+
+function renderLiveNotificationPanel() {
+  const panel = document.getElementById('notificationPanel');
+  if (!panel) return;
+  const items = (liveNotifications || []).filter(n => n.read !== 'Yes').slice(0, 8);
+  const visibleItems = items.length ? items : (liveNotifications || []).slice(0, 5);
+  panel.innerHTML = `<div class="notification-panel-head"><div class="notification-panel-title">Latest Updates</div>${items.length ? '<button class="notification-clear-all" onclick="event.stopPropagation();markLiveNotificationsRead()">Clear all</button>' : ''}</div>` +
+    (visibleItems.length ? visibleItems.map(n => `<div class="notification-item"><div class="notification-item-top"><div class="notification-title">${esc(n.title || 'BOFT update')}</div>${n.read !== 'Yes' ? `<button class="notification-clear" onclick="event.stopPropagation();markLiveNotificationRead('${escAttr(n.id || '')}')">x</button>` : ''}</div><div class="notification-meta">${esc(n.timestamp || '')}${n.projectName ? ' · ' + esc(n.projectName) : ''}</div><div class="notification-meta">${esc(n.message || '')}</div></div>`).join('') : '<div class="notification-meta">No new updates.</div>');
+}
+
+async function toggleLiveNotifications(event) {
+  if (event) event.stopPropagation();
+  const panel = document.getElementById('notificationPanel');
+  if (!panel) return;
+  const shouldOpen = panel.classList.contains('hidden');
+  if (!shouldOpen) { panel.classList.add('hidden'); return; }
+  renderLiveNotificationPanel();
+  panel.classList.remove('hidden');
+}
+
+async function markLiveNotificationRead(id) {
+  try {
+    if (!id) return;
+    await apiPost({ action:'markNotificationsRead', ids:[id] });
+    liveNotifications = liveNotifications.map(n => String(n.id || '') === String(id) ? { ...n, read:'Yes' } : n);
+    renderLiveNotificationPanel();
+    await loadLiveNotifications();
+  } catch(e) {}
+}
+
+async function markLiveNotificationsRead() {
+  try {
+    const ids = (liveNotifications || []).filter(n => n.read !== 'Yes').map(n => n.id).filter(Boolean);
+    await apiPost({ action:'markNotificationsRead', ids });
+    liveNotifications = liveNotifications.map(n => ({ ...n, read:'Yes' }));
+    renderLiveNotificationPanel();
+    await loadLiveNotifications();
+  } catch(e) {}
+}
+
+function startLiveUpdates() {
+  loadLiveNotifications();
+  if (!window.__boftNotificationClickAway) {
+    window.__boftNotificationClickAway = true;
+    document.addEventListener('click', event => {
+      const panel = document.getElementById('notificationPanel');
+      const badge = document.getElementById('navNotifyBadge');
+      if (!panel || panel.classList.contains('hidden')) return;
+      if (panel.contains(event.target) || badge === event.target) return;
+      panel.classList.add('hidden');
+    });
+  }
+  livePollTimer = setInterval(() => { if (!document.hidden) { loadInventory(true); loadLiveNotifications(); } }, 30000);
+}
+
+function statusClass(status) {
+  const s = String(status || '').toLowerCase();
+  if (s.includes('lost')) return 'lost';
+  if (s.includes('repair') || s.includes('broken')) return 'repair';
+  if (s.includes('transit') || s.includes('way') || s.includes('confirmation')) return 'transit';
+  if (s.includes('site') || s.includes('assigned') || s.includes('field')) return 'field';
+  return 'available';
+}
+function conditionClass(condition) {
+  const s = String(condition || '').toLowerCase();
+  if (s.includes('lost')) return 'lost';
+  if (s.includes('repair') || s.includes('broken')) return 'broken';
+  if (s.includes('new')) return 'new';
+  return 'good';
+}
+function closeModal(id) { document.getElementById('modal-' + id).classList.remove('open'); }
+function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3200); }
+function doLogout() { sessionStorage.clear(); window.location.href = '/hub'; }
+function escNorm(value) { return String(value || '').toLowerCase().trim(); }
+function esc(value) { return String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+function escAttr(value) { return esc(value); }
+
+document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); }));
+tryRestoreSession();
+</script>
+</body>
+</html>
