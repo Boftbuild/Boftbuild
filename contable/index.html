@@ -200,6 +200,10 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 .field-input:focus{border-color:rgba(0,180,255,0.5);}
 .field-input option{background:var(--black2);}
 .field-hint{font-size:0.72rem;color:var(--muted);margin-top:0.3rem;}
+.check-row{display:flex;align-items:center;gap:0.55rem;font-size:0.86rem;color:var(--text);font-weight:700;margin:0.25rem 0 1rem;cursor:pointer;}
+.check-row input{accent-color:var(--gold);}
+.linked-tool-panel{display:none;border:1px solid var(--border-neon);background:rgba(0,180,255,0.035);padding:1rem;margin:0.75rem 0 1rem;}
+.linked-tool-panel.open{display:block;}
 .modal-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .btn-submit{font-family:'Rajdhani',sans-serif;font-size:0.82rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--black);background:var(--gold);border:none;padding:0.65rem 1.8rem;cursor:pointer;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
 .btn-cancel{font-family:'Rajdhani',sans-serif;font-size:0.78rem;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);background:none;border:none;cursor:pointer;}
@@ -674,13 +678,38 @@ body.role-no-delete .btn-delete{display:none!important;}
           </select>
         </div>
       </div>
-      <div class="field-group"><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" id="exp-description" placeholder="e.g. Drill Dewalt, Gas truck..."></div>
+      <div class="field-group"><label class="field-label">Description <span>*</span></label><input type="text" class="field-input" id="exp-description" placeholder="e.g. Drill Dewalt, Gas truck..." oninput="renderExpenseToolFields()"></div>
       <div class="field-row">
         <div><label class="field-label">Vendor</label><input type="text" class="field-input" id="exp-vendor" placeholder="Home Depot, Lowe's, Amazon..."></div>
         <div><label class="field-label">Project</label>
           <select class="field-input" id="exp-project">
             <option value="">Select project (optional)</option>
           </select></div>
+      </div>
+      <label class="check-row"><input type="checkbox" id="exp-register-tool" onchange="renderExpenseToolFields()"> Register as inventory tool</label>
+      <div class="linked-tool-panel" id="exp-tool-fields">
+        <div class="field-row">
+          <div><label class="field-label">Asset Type</label><select class="field-input" id="exp-tool-asset" onchange="renderExpenseToolFields()"><option value="Tool">Tool</option><option value="Conex">Conex</option><option value="Trailer">Trailer</option></select></div>
+          <div><label class="field-label">Tool / Unit Name <span>*</span></label><input type="text" class="field-input" id="exp-tool-name" placeholder="Hilti Concrete Gun"></div>
+        </div>
+        <div class="field-row">
+          <div><label class="field-label">Tool Category</label><input type="text" class="field-input" id="exp-tool-category" placeholder="Power Tool, Trailer..."></div>
+          <div><label class="field-label">Condition</label><select class="field-input" id="exp-tool-condition"><option value="New">New</option><option value="Good">Good</option><option value="Used / Working">Used / Working</option><option value="Needs Repair">Needs Repair</option><option value="Broken">Broken</option></select></div>
+        </div>
+        <div class="field-row exp-tool-only">
+          <div><label class="field-label">Brand</label><input type="text" class="field-input" id="exp-tool-brand" placeholder="Hilti, Paslode..."></div>
+          <div><label class="field-label">Model</label><input type="text" class="field-input" id="exp-tool-model" placeholder="Model"></div>
+        </div>
+        <div class="field-row exp-tool-only">
+          <div><label class="field-label">Serial Number</label><input type="text" class="field-input" id="exp-tool-serial" placeholder="Serial"></div>
+          <div><label class="field-label">Related Request ID</label><input type="text" class="field-input" id="exp-tool-request" placeholder="MR00000"></div>
+        </div>
+        <div class="field-row">
+          <div><label class="field-label">Status</label><select class="field-input" id="exp-tool-status"><option value="Available">Available</option><option value="Assigned">Assigned</option><option value="On Site">On Site</option><option value="In Transit">In Transit</option><option value="In Repair">In Repair</option></select></div>
+          <div><label class="field-label">Current Location</label><select class="field-input" id="exp-tool-location"><option value="Shop">Shop</option></select></div>
+        </div>
+        <div class="field-group"><label class="field-label">Tool Notes</label><input type="text" class="field-input" id="exp-tool-notes" placeholder="Optional inventory notes"></div>
+        <div class="field-hint">The transaction amount will be saved as purchase cost and linked to the generated Tool ID.</div>
       </div>
       <div class="field-group">
         <label class="field-label">Receipt</label>
@@ -1162,6 +1191,7 @@ let visibleTransactions = []; // array actual renderizado — acceso por índice
 
 // Almacena los Files seleccionados por prefijo de modal (exp, inc, pay, edit) — ahora arrays
 const selectedFiles = {};
+let inventoryLocationsCache = [];
 
 // ============================================================
 // IMAGE PROCESSING — HEIC → JPEG + compresión via Canvas
@@ -1288,6 +1318,9 @@ function validateExpense() {
     validateField('exp-category',    'Select a category'),
     validateField('exp-description', 'Description is required'),
   ];
+  if (document.getElementById('exp-register-tool')?.checked) {
+    checks.push(validateField('exp-tool-name', 'Tool name is required'));
+  }
   return checks.every(Boolean);
 }
 
@@ -1651,6 +1684,14 @@ async function uploadRemainingReceipts(prefix, transactionId, transactionType) {
 // ============================================================
 let receiptAction = null; // 'replace' | 'add'
 let receiptMode   = 'replace'; // se pasa al payload en saveEdit
+
+function esc(value) {
+  return String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+function escAttr(value) {
+  return esc(value);
+}
 
 function openReceiptSubModal() {
   clearFile('edit', null);
@@ -2228,6 +2269,50 @@ async function confirmDelete() {
 // ============================================================
 // SUBMIT FORMS (con upload de archivo — ahora soporta múltiples)
 // ============================================================
+async function loadInventoryLocationsForExpense() {
+  try {
+    const data = await apiGet('globalTools');
+    const tools = data.tools || [];
+    inventoryLocationsCache = tools.filter(t => ['Conex','Trailer'].includes(t.assetType) && String(t.status || '') === 'Available' && !String(t.currentProjectId || '').trim());
+    populateExpenseToolLocations();
+  } catch(e) {
+    inventoryLocationsCache = [];
+    populateExpenseToolLocations();
+  }
+}
+
+function populateExpenseToolLocations(selected = 'Shop') {
+  const select = document.getElementById('exp-tool-location');
+  if (!select) return;
+  const current = String(selected || select.value || 'Shop').trim() || 'Shop';
+  const options = ['<option value="Shop">Shop</option>'];
+  const seen = new Set(['Shop']);
+  inventoryLocationsCache.forEach(item => {
+    if (!item.id || seen.has(item.id)) return;
+    seen.add(item.id);
+    const label = `${item.id} · ${item.name || item.assetType}${item.currentLocation ? ' · ' + item.currentLocation : ''}`;
+    options.push(`<option value="${escAttr(item.id)}">${esc(label)}</option>`);
+  });
+  if (current && !seen.has(current)) options.push(`<option value="${escAttr(current)}">${esc(current)}</option>`);
+  select.innerHTML = options.join('');
+  select.value = current;
+}
+
+function renderExpenseToolFields() {
+  const checked = !!document.getElementById('exp-register-tool')?.checked;
+  const panel = document.getElementById('exp-tool-fields');
+  if (panel) panel.classList.toggle('open', checked);
+  if (!checked) return;
+  const assetType = document.getElementById('exp-tool-asset')?.value || 'Tool';
+  document.querySelectorAll('.exp-tool-only').forEach(el => el.style.display = assetType === 'Tool' ? 'grid' : 'none');
+  const desc = document.getElementById('exp-description')?.value.trim() || '';
+  const toolName = document.getElementById('exp-tool-name');
+  if (toolName && !toolName.value && desc) toolName.value = desc;
+  const category = document.getElementById('exp-tool-category');
+  if (category && !category.value) category.value = assetType === 'Conex' ? 'Container' : assetType === 'Trailer' ? 'Trailer' : 'Power Tool';
+  populateExpenseToolLocations();
+}
+
 async function submitForm(type) {
   if (type === 'expense' && !validateExpense()) return;
   if (type === 'income'  && !validateIncome())  return;
@@ -2248,6 +2333,8 @@ async function doSubmitForm(type) {
   let payload = { action: 'add' + type.charAt(0).toUpperCase() + type.slice(1) };
 
   if (type === 'expense') {
+    const registerTool = !!document.getElementById('exp-register-tool')?.checked;
+    const toolLocation = document.getElementById('exp-tool-location')?.value || 'Shop';
     payload = { ...payload,
       date:        document.getElementById('exp-date').value,
       account:     document.getElementById('exp-account').value,
@@ -2257,6 +2344,23 @@ async function doSubmitForm(type) {
       vendor:      document.getElementById('exp-vendor').value,
       project:     document.getElementById('exp-project').value,
     };
+    if (registerTool) {
+      payload.registerTool = true;
+      payload.tool = {
+        assetType: document.getElementById('exp-tool-asset').value,
+        name: document.getElementById('exp-tool-name').value.trim(),
+        category: document.getElementById('exp-tool-category').value.trim(),
+        brand: document.getElementById('exp-tool-brand').value.trim(),
+        model: document.getElementById('exp-tool-model').value.trim(),
+        serialNumber: document.getElementById('exp-tool-serial').value.trim(),
+        condition: document.getElementById('exp-tool-condition').value,
+        status: document.getElementById('exp-tool-status').value,
+        currentLocation: toolLocation,
+        containerId: /^(CX|TR)\d{4}$/i.test(toolLocation) ? toolLocation.toUpperCase() : '',
+        assignedRequestId: document.getElementById('exp-tool-request').value.trim(),
+        notes: document.getElementById('exp-tool-notes').value.trim()
+      };
+    }
   } else if (type === 'income') {
     payload = { ...payload,
       date:        document.getElementById('inc-date').value,
@@ -3037,6 +3141,7 @@ function openModal(type) {
   modal.querySelectorAll('input:not([type="hidden"]), select').forEach(el => {
     if (el.type === 'date') el.value = new Date().toISOString().split('T')[0];
     else if (el.type === 'number') el.value = '';
+    else if (el.type === 'checkbox') el.checked = false;
     else if (el.tagName === 'SELECT') el.selectedIndex = 0;
     else if (el.type !== 'file') el.value = '';
     el.classList.remove('error');
@@ -3051,6 +3156,10 @@ function openModal(type) {
     document.getElementById('pay-transfer-wrap').style.display = 'none';
     if (workersCache.length === 0) loadWorkers(); else populatePayeeDropdown();
     if (allTransactions.length > 0) loadProjects();
+  }
+  if (type === 'expense') {
+    renderExpenseToolFields();
+    loadInventoryLocationsForExpense();
   }
 }
 
