@@ -158,7 +158,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
 
 <div id="modal-new-tool" class="modal-overlay">
   <div class="modal">
-    <div class="modal-header"><span class="modal-title">New Tool</span><button class="modal-close" onclick="closeModal('new-tool')">x</button></div>
+    <div class="modal-header"><span class="modal-title" id="newToolTitle">New Tool</span><button class="modal-close" onclick="closeModal('new-tool')">x</button></div>
     <div class="modal-body">
       <div class="field-row">
         <div><label class="field-label">Asset Type</label><select class="field-input" id="nt-asset-type" onchange="handleAssetTypeChange()"><option value="Tool">Tool</option><option value="Conex">Conex</option><option value="Trailer">Trailer</option></select></div>
@@ -173,12 +173,11 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
         <div><label class="field-label">Model</label><input class="field-input" id="nt-model" placeholder="Model"></div>
       </div>
       <div class="field-row tool-only">
-        <div><label class="field-label">Serial Number</label><input class="field-input" id="nt-serial" placeholder="Serial"></div>
-        <div><label class="field-label">Container ID</label><input class="field-input" id="nt-container" placeholder="CX0001 / TR0001"></div>
+        <div style="grid-column:1 / -1;"><label class="field-label">Serial Number</label><input class="field-input" id="nt-serial" placeholder="Serial"></div>
       </div>
       <div class="field-row">
         <div><label class="field-label">Status</label><select class="field-input" id="nt-status"><option value="Available">Available</option><option value="Assigned">Assigned</option><option value="On Site">On Site</option><option value="In Transit">In Transit</option><option value="In Repair">In Repair</option><option value="Lost">Lost</option></select></div>
-        <div><label class="field-label">Current Location</label><input class="field-input" id="nt-location" value="Shop"></div>
+        <div><label class="field-label">Current Location</label><select class="field-input" id="nt-location"></select></div>
       </div>
       <div class="field-row">
         <div><label class="field-label">Request ID</label><input class="field-input" id="nt-request" placeholder="MR00000"></div>
@@ -190,7 +189,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
       </div>
       <div class="field-group"><label class="field-label">Notes</label><textarea class="field-input" id="nt-notes" rows="3" style="resize:vertical;"></textarea></div>
     </div>
-    <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('new-tool')">Cancel</button><button class="btn-submit" onclick="submitNewTool()">Save Tool</button></div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('new-tool')">Cancel</button><button class="btn-submit" id="saveToolBtn" onclick="submitNewTool()">Save Tool</button></div>
   </div>
 </div>
 
@@ -198,7 +197,7 @@ body{background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif
   <div class="modal">
     <div class="modal-header"><span class="modal-title" id="containerTitle">Container</span><button class="modal-close" onclick="closeModal('container')">x</button></div>
     <div class="modal-body" id="containerBody"></div>
-    <div class="modal-footer"><button class="btn-cancel" onclick="closeModal('container')">Close</button></div>
+    <div class="modal-footer" id="containerFooter"><button class="btn-cancel" onclick="closeModal('container')">Close</button></div>
   </div>
 </div>
 
@@ -209,6 +208,7 @@ let CURRENT_ROLE = 'Viewer';
 let tools = [];
 let stats = {};
 let activeTab = 'Global';
+let editingToolId = '';
 let liveNotifications = [];
 let livePollTimer = null;
 const pendingPostKeys = new Set();
@@ -342,7 +342,7 @@ function renderInventory() {
 
 function renderToolRow(item) {
   const isContainer = item.assetType === 'Conex' || item.assetType === 'Trailer';
-  const insideCount = isContainer ? tools.filter(t => t.containerId === item.id && t.assetType === 'Tool').length : 0;
+  const insideCount = isContainer ? tools.filter(t => toolIsInsideContainer(t, item.id)).length : 0;
   const metaParts = [
     item.assetType,
     item.brand,
@@ -352,8 +352,8 @@ function renderToolRow(item) {
     item.currentProjectName ? 'Project ' + item.currentProjectName : '',
     item.currentLocation ? 'Location ' + item.currentLocation : ''
   ].filter(Boolean);
-  const click = isContainer ? ` onclick="openContainer('${escAttr(item.id)}')"` : '';
-  return `<div class="tool-row ${isContainer ? 'clickable' : ''}"${click}>
+  const click = isContainer ? ` onclick="openContainer('${escAttr(item.id)}')"` : (canEditInventory() ? ` onclick="openEditToolModal('${escAttr(item.id)}')"` : '');
+  return `<div class="tool-row ${click ? 'clickable' : ''}"${click}>
     <div>
       <div class="tool-title"><strong>${esc(item.id)}</strong>${esc(item.name || 'Unnamed')}</div>
       <div class="tool-meta">${esc(metaParts.join(' · ') || 'No details')}</div>
@@ -371,14 +371,22 @@ function renderToolRow(item) {
 function openContainer(id) {
   const container = tools.find(t => t.id === id);
   if (!container) return;
-  const inside = tools.filter(t => t.containerId === id && t.assetType === 'Tool');
+  const inside = tools.filter(t => toolIsInsideContainer(t, id));
   document.getElementById('containerTitle').textContent = container.id + ' · ' + container.name;
   document.getElementById('containerBody').innerHTML = `
     <div class="tool-meta" style="margin-bottom:1rem;">${esc(container.assetType)} · ${esc(container.status || '')} · ${esc(container.currentLocation || 'No location')}${container.currentProjectName ? ' · Project ' + esc(container.currentProjectName) : ''}</div>
     <div class="request-items-list">
-      ${inside.length ? inside.map(tool => `<div class="tool-row"><div><div class="tool-title"><strong>${esc(tool.id)}</strong>${esc(tool.name)}</div><div class="tool-meta">${esc([tool.brand,tool.model,tool.serialNumber ? 'Serial ' + tool.serialNumber : '', tool.condition].filter(Boolean).join(' · '))}</div><div class="tags"><span class="tag ${statusClass(tool.status)}">${esc(tool.status || 'Available')}</span></div></div></div>`).join('') : '<div class="empty">No tools registered inside this unit yet.</div>'}
+      ${inside.length ? inside.map(tool => `<div class="tool-row ${canEditInventory() ? 'clickable' : ''}" ${canEditInventory() ? `onclick="closeModal('container');openEditToolModal('${escAttr(tool.id)}')"` : ''}><div><div class="tool-title"><strong>${esc(tool.id)}</strong>${esc(tool.name)}</div><div class="tool-meta">${esc([tool.brand,tool.model,tool.serialNumber ? 'Serial ' + tool.serialNumber : '', tool.condition].filter(Boolean).join(' · '))}</div><div class="tags"><span class="tag ${statusClass(tool.status)}">${esc(tool.status || 'Available')}</span></div></div></div>`).join('') : '<div class="empty">No tools registered inside this unit yet.</div>'}
     </div>`;
+  document.getElementById('containerFooter').innerHTML = canEditInventory()
+    ? `<button class="btn-cancel" onclick="closeModal('container')">Close</button><button class="btn-submit" onclick="closeModal('container');openEditToolModal('${escAttr(container.id)}')">Edit</button>`
+    : `<button class="btn-cancel" onclick="closeModal('container')">Close</button>`;
   document.getElementById('modal-container').classList.add('open');
+}
+
+function toolIsInsideContainer(tool, containerId) {
+  const id = String(containerId || '').trim();
+  return tool && tool.assetType === 'Tool' && (String(tool.containerId || '').trim() === id || String(tool.currentLocation || '').trim() === id);
 }
 
 function openNewToolModal() {
@@ -386,15 +394,74 @@ function openNewToolModal() {
   document.getElementById('modal-new-tool').classList.add('open');
 }
 
+function canEditInventory() {
+  return ['Owner','Manager'].includes(CURRENT_ROLE);
+}
+
+function getAvailableContainers(selectedLocation = '') {
+  const selected = String(selectedLocation || '').trim();
+  return tools.filter(t => ['Conex','Trailer'].includes(t.assetType) && (
+    t.id === selected ||
+    (String(t.status || '') === 'Available' && !String(t.currentProjectId || '').trim())
+  ));
+}
+
+function populateLocationSelect(selected = 'Shop') {
+  const select = document.getElementById('nt-location');
+  if (!select) return;
+  const current = String(selected || 'Shop').trim() || 'Shop';
+  const containers = getAvailableContainers(current);
+  const seen = new Set(['Shop']);
+  const options = ['<option value="Shop">Shop</option>'];
+  containers.forEach(container => {
+    if (seen.has(container.id)) return;
+    seen.add(container.id);
+    const label = `${container.id} · ${container.name || container.assetType}${container.currentLocation ? ' · ' + container.currentLocation : ''}`;
+    options.push(`<option value="${escAttr(container.id)}">${esc(label)}</option>`);
+  });
+  if (!seen.has(current) && current) options.push(`<option value="${escAttr(current)}">${esc(current)}</option>`);
+  select.innerHTML = options.join('');
+  select.value = seen.has(current) || current ? current : 'Shop';
+}
+
+function openEditToolModal(id) {
+  const item = tools.find(t => t.id === id);
+  if (!item || !canEditInventory()) return;
+  editingToolId = item.id;
+  document.getElementById('newToolTitle').textContent = 'Edit ' + item.id;
+  document.getElementById('saveToolBtn').textContent = 'Update Tool';
+  document.getElementById('nt-asset-type').value = item.assetType || 'Tool';
+  document.getElementById('nt-asset-type').disabled = true;
+  document.getElementById('nt-name').value = item.name || '';
+  document.getElementById('nt-category').value = item.category || '';
+  document.getElementById('nt-condition').value = item.condition || 'Good';
+  document.getElementById('nt-brand').value = item.brand || '';
+  document.getElementById('nt-model').value = item.model || '';
+  document.getElementById('nt-serial').value = item.serialNumber || '';
+  document.getElementById('nt-status').value = item.status || 'Available';
+  populateLocationSelect(item.currentLocation || item.containerId || 'Shop');
+  document.getElementById('nt-request').value = item.assignedRequestId || '';
+  document.getElementById('nt-transaction').value = item.transactionId || '';
+  document.getElementById('nt-purchase-date').value = String(item.purchaseDate || '').slice(0, 10);
+  document.getElementById('nt-purchase-cost').value = item.purchaseCost === '' ? '' : item.purchaseCost;
+  document.getElementById('nt-notes').value = item.notes || '';
+  handleAssetTypeChange();
+  document.getElementById('modal-new-tool').classList.add('open');
+}
+
 function clearNewToolForm() {
-  ['nt-name','nt-category','nt-brand','nt-model','nt-serial','nt-container','nt-request','nt-transaction','nt-purchase-date','nt-purchase-cost','nt-notes'].forEach(id => {
+  editingToolId = '';
+  document.getElementById('newToolTitle').textContent = 'New Tool';
+  document.getElementById('saveToolBtn').textContent = 'Save Tool';
+  document.getElementById('nt-asset-type').disabled = false;
+  ['nt-name','nt-category','nt-brand','nt-model','nt-serial','nt-request','nt-transaction','nt-purchase-date','nt-purchase-cost','nt-notes'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
   document.getElementById('nt-asset-type').value = 'Tool';
   document.getElementById('nt-condition').value = 'Good';
   document.getElementById('nt-status').value = 'Available';
-  document.getElementById('nt-location').value = 'Shop';
+  populateLocationSelect('Shop');
   handleAssetTypeChange();
 }
 
@@ -411,8 +478,10 @@ function handleAssetTypeChange() {
 }
 
 async function submitNewTool() {
+  const locationValue = document.getElementById('nt-location').value || 'Shop';
   const payload = {
-    action:'createGlobalTool',
+    action: editingToolId ? 'updateGlobalTool' : 'createGlobalTool',
+    id: editingToolId,
     assetType:document.getElementById('nt-asset-type').value,
     name:document.getElementById('nt-name').value.trim(),
     category:document.getElementById('nt-category').value.trim(),
@@ -421,8 +490,8 @@ async function submitNewTool() {
     serialNumber:document.getElementById('nt-serial').value.trim(),
     condition:document.getElementById('nt-condition').value,
     status:document.getElementById('nt-status').value,
-    currentLocation:document.getElementById('nt-location').value.trim(),
-    containerId:document.getElementById('nt-container').value.trim(),
+    currentLocation:locationValue,
+    containerId:/^(CX|TR)\d{4}$/i.test(locationValue) ? locationValue.toUpperCase() : '',
     assignedRequestId:document.getElementById('nt-request').value.trim(),
     transactionId:document.getElementById('nt-transaction').value.trim(),
     purchaseDate:document.getElementById('nt-purchase-date').value,
@@ -434,7 +503,7 @@ async function submitNewTool() {
   const result = await apiPost(payload);
   if (result.success) {
     closeModal('new-tool');
-    showToast('Registered ' + result.label);
+    showToast(editingToolId ? 'Updated ' + editingToolId : 'Registered ' + result.label);
     await loadInventory(true);
   } else showToast('Error: ' + (result.message || 'Could not save'));
 }
